@@ -1,0 +1,9 @@
+{
+  "name": "IM MUSIC",
+  "description": "Elite music distribution, marketing, and royalty management platform powered by AI.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}
