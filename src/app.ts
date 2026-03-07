@@ -13,8 +13,9 @@ import royaltyRoutes from './routes/royaltyRoutes';
 import marketingRoutes from './routes/marketingRoutes';
 import aiRoutes from './routes/aiRoutes';
 import legalAgentRoutes from './routes/legalAgentRoutes';
-// Nueva ruta para el marketplace
 import marketplaceRoutes from './routes/marketplaceRoutes';
+// NUEVA RUTA DE FINANCIACIÓN
+import financingRoutes from './routes/financingRoutes';
 
 dotenv.config();
 
@@ -47,7 +48,9 @@ app.use('/api/royalties', royaltyRoutes);
 app.use('/api/marketing', marketingRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/legal-agent', legalAgentRoutes);
-app.use('/api/marketplace', marketplaceRoutes); // <--- NUEVA RUTA
+app.use('/api/marketplace', marketplaceRoutes);
+// NUEVA RUTA DE FINANCIACIÓN
+app.use('/api/financing', financingRoutes);
 
 // Ruta de salud (pública)
 app.get('/api/health', (req, res) => {

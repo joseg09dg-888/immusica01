@@ -143,6 +143,26 @@ db.exec(`
     FOREIGN KEY(usuario_id) REFERENCES users(id) ON DELETE CASCADE,
     UNIQUE(beat_id, usuario_id) -- Un usuario solo puede valorar una vez el mismo beat
   );
+
+  -- Tabla para financiación (Sound Royalties)
+  CREATE TABLE IF NOT EXISTS financing_eligibility (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    artist_id INTEGER NOT NULL UNIQUE,
+    ingresos_anuales INTEGER,
+    ingresos_ultimos_12_meses INTEGER,
+    numero_canciones_publicadas INTEGER,
+    es_propietario_masters BOOLEAN,
+    tiene_disputas_legales BOOLEAN,
+    puntuacion_total INTEGER,
+    es_elegible BOOLEAN,
+    fecha_ultima_evaluacion TEXT,
+    nombre_completo TEXT,
+    email TEXT,
+    telefono TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(artist_id) REFERENCES artists(id) ON DELETE CASCADE
+  );
 `);
 
 export default db;

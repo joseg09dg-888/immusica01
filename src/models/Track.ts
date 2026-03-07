@@ -13,6 +13,41 @@ export interface Track {
   created_at: string;
 }
 
+export const createTrack = (
+  artistId: number,
+  title: string,
+  releaseDate?: string,
+  cover?: string,
+  audioUrl?: string,
+  isrc?: string,
+  upc?: string
+) => {
+  const stmt = db.prepare(`
+    INSERT INTO tracks (artist_id, title, release_date, cover, audio_url, isrc, upc)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `);
+  return stmt.run(artistId, title, releaseDate, cover, audioUrl, isrc, upc);
+};
+
+export const getTracksByArtist = (artistId: number): Track[] => {
+  return db.prepare('SELECT * FROM tracks WHERE artist_id = ? ORDER BY created_at DESC').all(artistId) as Track[];
+};
+
 export const getAllTracks = (): Track[] => {
-  return db.prepare('SELECT * FROM tracks').all() as Track[];
+  return db.prepare('SELECT * FROM tracks ORDER BY created_at DESC').all() as Track[];
+};
+
+export const getTrackById = (id: number): Track | undefined => {
+  return db.prepare('SELECT * FROM tracks WHERE id = ?').get(id) as Track | undefined;
+};
+
+export const updateTrack = (id: number, data: Partial<Track>) => {
+  const fields = Object.keys(data).map(key => `${key} = ?`).join(', ');
+  const values = Object.values(data);
+  const stmt = db.prepare(`UPDATE tracks SET ${fields} WHERE id = ?`);
+  return stmt.run(...values, id);
+};
+
+export const deleteTrack = (id: number) => {
+  return db.prepare('DELETE FROM tracks WHERE id = ?').run(id);
 };
