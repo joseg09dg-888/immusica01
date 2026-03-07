@@ -91,7 +91,7 @@ db.exec(`
     FOREIGN KEY(artist_id) REFERENCES artists(id) ON DELETE CASCADE
   );
 
-  -- Nueva tabla para consultas legales
+  -- Tabla para consultas legales
   CREATE TABLE IF NOT EXISTS legal_queries (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     artist_id INTEGER NOT NULL,
@@ -99,6 +99,49 @@ db.exec(`
     respuesta TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(artist_id) REFERENCES artists(id) ON DELETE CASCADE
+  );
+
+  -- Tablas del marketplace
+  CREATE TABLE IF NOT EXISTS beats (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    productor_id INTEGER NOT NULL,
+    titulo TEXT NOT NULL,
+    genero TEXT NOT NULL,
+    bpm INTEGER,
+    tonalidad TEXT,
+    precio INTEGER NOT NULL, -- en centavos
+    archivo_url TEXT,
+    archivo_completo_url TEXT,
+    portada_url TEXT,
+    descripcion TEXT,
+    estado TEXT DEFAULT 'disponible',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(productor_id) REFERENCES artists(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS purchases (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    beat_id INTEGER NOT NULL,
+    comprador_id INTEGER NOT NULL,
+    monto INTEGER NOT NULL, -- en centavos
+    comision_plataforma INTEGER NOT NULL,
+    fecha TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(beat_id) REFERENCES beats(id) ON DELETE CASCADE,
+    FOREIGN KEY(comprador_id) REFERENCES users(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS ratings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    beat_id INTEGER NOT NULL,
+    usuario_id INTEGER NOT NULL,
+    puntuacion INTEGER NOT NULL CHECK(puntuacion BETWEEN 1 AND 5),
+    comentario TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(beat_id) REFERENCES beats(id) ON DELETE CASCADE,
+    FOREIGN KEY(usuario_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(beat_id, usuario_id) -- Un usuario solo puede valorar una vez el mismo beat
   );
 `);
 

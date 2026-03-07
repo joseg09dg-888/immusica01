@@ -1,0 +1,352 @@
+import { Request, Response } from 'express';
+import { AuthRequest } from '../middleware/auth';
+import * as ArtistModel from '../models/Artist';
+import * as BeatModel from '../models/Beat';
+import * as PurchaseModel from '../models/Purchase';
+import * as RatingModel from '../models/Rating';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+// Configuración de multer para subir archivos (demos, portadas, beats completos)
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    let folder = 'uploads/';
+    if (file.fieldname === 'demo') folder += 'demos/';
+    else if (file.fieldname === 'full') folder += 'full/';
+    else if (file.fieldname === 'cover') folder += 'covers/';
+    if (!fs.existsSync(folder)) fs.mkdirSync(folder, { recursive: true });
+    cb(null, folder);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+const upload = multer({ storage });
+
+// ============================================
+// LISTAR BEATS CON RANKINGS
+// ============================================
+
+export const listarBeats = (req: Request, res: Response) => {
+  try {
+    const { genero, orden } = req.query;
+    const beats = BeatModel.getAllBeats({ genero: genero as string, orden: orden as string });
+
+    // Enriquecer con datos adicionales (valoraciones, compras)
+    const beatsConDetalles = beats.map((beat) => {
+      const promedio = RatingModel.getAverageRatingByBeat(beat.id);
+      const compras = PurchaseModel.getPurchasesByBeat(beat.id);
+      return {
+        ...beat,
+        rating_promedio: promedio,
+        total_compras: compras.length
+      };
+    });
+
+    // Aplicar ordenamientos personalizados
+    if (orden === 'mas_comprados') {
+      beatsConDetalles.sort((a, b) => b.total_compras - a.total_compras);
+    } else if (orden === 'mejor_puntuados') {
+      beatsConDetalles.sort((a, b) => b.rating_promedio - a.rating_promedio);
+    }
+
+    res.json(beatsConDetalles);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al listar beats' });
+  }
+};
+
+// ============================================
+// OBTENER DETALLE DE UN BEAT
+// ============================================
+
+export const verBeat = (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id as string);
+    const beat = BeatModel.getBeatById(id);
+    if (!beat) return res.status(404).json({ error: 'Beat no encontrado' });
+
+    const promedio = RatingModel.getAverageRatingByBeat(id);
+    const compras = PurchaseModel.getPurchasesByBeat(id);
+    const ratings = RatingModel.getRatingsByBeat(id);
+
+    res.json({
+      ...beat,
+      rating_promedio: promedio,
+      total_compras: compras.length,
+      ratings
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al obtener beat' });
+  }
+};
+
+// ============================================
+// SUBIR UN BEAT (SOLO PRODUCTORES)
+// ============================================
+
+export const subirBeat = [
+  upload.fields([
+    { name: 'demo', maxCount: 1 },
+    { name: 'full', maxCount: 1 },
+    { name: 'cover', maxCount: 1 }
+  ]),
+  (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user) return res.status(401).json({ error: 'No autorizado' });
+
+      const artists = ArtistModel.getArtistsByUser(req.user.id);
+      if (artists.length === 0) return res.status(404).json({ error: 'Debes ser artista para vender beats' });
+      const artist = artists[0];
+
+      const { titulo, genero, bpm, tonalidad, precio, descripcion } = req.body;
+      if (!titulo || !genero || !precio) {
+        return res.status(400).json({ error: 'Título, género y precio son requeridos' });
+      }
+
+      // Manejo de archivos
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      const demoUrl = files['demo'] ? '/uploads/demos/' + files['demo'][0].filename : null;
+      const fullUrl = files['full'] ? '/uploads/full/' + files['full'][0].filename : null;
+      const coverUrl = files['cover'] ? '/uploads/covers/' + files['cover'][0].filename : null;
+
+      const result = BeatModel.createBeat({
+        productor_id: artist.id,
+        titulo,
+        genero,
+        bpm: bpm ? parseInt(bpm) : null,
+        tonalidad: tonalidad || null,
+        precio: Math.round(parseFloat(precio) * 100), // convertir a centavos
+        archivo_url: demoUrl,
+        archivo_completo_url: fullUrl,
+        portada_url: coverUrl,
+        descripcion: descripcion || null,
+        estado: 'disponible'
+      });
+
+      const newBeat = BeatModel.getBeatById(result.lastInsertRowid as number);
+      res.status(201).json(newBeat);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Error al subir beat' });
+    }
+  }
+];
+
+// ============================================
+// COMPRAR UN BEAT
+// ============================================
+
+export const comprarBeat = (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'No autorizado' });
+
+    const beatId = parseInt(req.params.id as string);
+    const beat = BeatModel.getBeatById(beatId);
+    if (!beat) return res.status(404).json({ error: 'Beat no encontrado' });
+    if (beat.estado !== 'disponible') return res.status(400).json({ error: 'Beat no disponible' });
+
+    // Verificar que el comprador no sea el mismo productor (opcional)
+    if (beat.productor_id === req.user.id) {
+      return res.status(400).json({ error: 'No puedes comprar tu propio beat' });
+    }
+
+    // Calcular comisión del 5%
+    const monto = beat.precio;
+    const comision = Math.round(monto * 0.05);
+
+    // Registrar la compra
+    const purchase = PurchaseModel.createPurchase({
+      beat_id: beatId,
+      comprador_id: req.user.id,
+      monto,
+      comision_plataforma: comision,
+      fecha: new Date().toISOString()
+    });
+
+    // Opcional: generar URL de descarga (el archivo completo)
+    const downloadUrl = beat.archivo_completo_url;
+
+    res.json({
+      mensaje: 'Compra exitosa',
+      beatId,
+      monto,
+      comision,
+      downloadUrl
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al comprar beat' });
+  }
+};
+
+// ============================================
+// VALORAR UN BEAT
+// ============================================
+
+export const valorarBeat = (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'No autorizado' });
+
+    const beatId = parseInt(req.params.id as string);
+    const { puntuacion, comentario } = req.body;
+    if (!puntuacion || puntuacion < 1 || puntuacion > 5) {
+      return res.status(400).json({ error: 'La puntuación debe ser entre 1 y 5' });
+    }
+
+    const beat = BeatModel.getBeatById(beatId);
+    if (!beat) return res.status(404).json({ error: 'Beat no encontrado' });
+
+    RatingModel.createRating({
+      beat_id: beatId,
+      usuario_id: req.user.id,
+      puntuacion,
+      comentario: comentario || null
+    });
+
+    // Devolver el nuevo promedio
+    const promedio = RatingModel.getAverageRatingByBeat(beatId);
+    res.json({ mensaje: 'Valoración guardada', promedio });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al valorar beat' });
+  }
+};
+
+// ============================================
+// MIS BEATS (los que he subido)
+// ============================================
+
+export const misBeats = (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'No autorizado' });
+
+    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    if (artists.length === 0) return res.status(404).json({ error: 'No eres artista' });
+    const artist = artists[0];
+
+    const beats = BeatModel.getBeatsByProducer(artist.id);
+    const beatsConDetalles = beats.map((beat) => {
+      const promedio = RatingModel.getAverageRatingByBeat(beat.id);
+      const compras = PurchaseModel.getPurchasesByBeat(beat.id);
+      return {
+        ...beat,
+        rating_promedio: promedio,
+        total_compras: compras.length
+      };
+    });
+
+    res.json(beatsConDetalles);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al obtener tus beats' });
+  }
+};
+
+// ============================================
+// MIS COMPRAS (beats que he comprado)
+// ============================================
+
+export const misCompras = (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'No autorizado' });
+
+    const purchases = PurchaseModel.getPurchasesByBuyer(req.user.id);
+    // Enriquecer con datos del beat
+    const comprasConBeat = purchases.map((p) => {
+      const beat = BeatModel.getBeatById(p.beat_id);
+      return { ...p, beat };
+    });
+
+    res.json(comprasConBeat);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al obtener compras' });
+  }
+};
+
+// ============================================
+// ESTADÍSTICAS DE USUARIO (para el hot ranking)
+// ============================================
+
+export const estadisticasUsuario = (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'No autorizado' });
+
+    // Estadísticas como comprador
+    const totalCompras = PurchaseModel.getTotalComprasPorComprador(req.user.id);
+
+    // Estadísticas como vendedor (si es productor)
+    let beatsSubidos = 0;
+    let totalVentas = 0;
+    let promedioRatingVendedor = 0;
+    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    if (artists.length > 0) {
+      const artist = artists[0];
+      const beats = BeatModel.getBeatsByProducer(artist.id);
+      beatsSubidos = beats.length;
+      totalVentas = PurchaseModel.getTotalComprasPorProductor(artist.id);
+      
+      // Calcular promedio de rating de todos sus beats
+      if (beats.length > 0) {
+        const ratings = beats.map(b => RatingModel.getAverageRatingByBeat(b.id));
+        const suma = ratings.reduce((acc, r) => acc + r, 0);
+        promedioRatingVendedor = suma / beats.length;
+      }
+    }
+
+    res.json({
+      compras_realizadas: totalCompras,
+      beats_subidos: beatsSubidos,
+      ventas_realizadas: totalVentas,
+      rating_promedio_vendedor: promedioRatingVendedor
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al obtener estadísticas' });
+  }
+};
+
+// ============================================
+// RANKINGS GLOBALES (para la página principal dopamínica)
+// ============================================
+
+export const rankings = (req: Request, res: Response) => {
+  try {
+    // Beats más comprados
+    const beatsMasComprados = BeatModel.getAllBeats();
+    const beatsConCompras = beatsMasComprados.map((beat) => {
+      const compras = PurchaseModel.getPurchasesByBeat(beat.id);
+      return { ...beat, total_compras: compras.length };
+    });
+    beatsConCompras.sort((a, b) => b.total_compras - a.total_compras);
+    const top10MasComprados = beatsConCompras.slice(0, 10);
+
+    // Beats mejor puntuados
+    const beatsMejorPuntuados = BeatModel.getAllBeats();
+    const beatsConRating = beatsMejorPuntuados.map((beat) => {
+      const promedio = RatingModel.getAverageRatingByBeat(beat.id);
+      return { ...beat, rating_promedio: promedio };
+    });
+    beatsConRating.sort((a, b) => b.rating_promedio - a.rating_promedio);
+    const top10MejorPuntuados = beatsConRating.slice(0, 10);
+
+    // Usuarios que más compran (top compradores) - se puede implementar después
+
+    res.json({
+      mas_comprados: top10MasComprados,
+      mejor_puntuados: top10MejorPuntuados
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al obtener rankings' });
+  }
+};

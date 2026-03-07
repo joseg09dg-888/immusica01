@@ -12,8 +12,9 @@ import campaignRoutes from './routes/campaignRoutes';
 import royaltyRoutes from './routes/royaltyRoutes';
 import marketingRoutes from './routes/marketingRoutes';
 import aiRoutes from './routes/aiRoutes';
-// Nueva ruta para el agente legal
 import legalAgentRoutes from './routes/legalAgentRoutes';
+// Nueva ruta para el marketplace
+import marketplaceRoutes from './routes/marketplaceRoutes';
 
 dotenv.config();
 
@@ -25,6 +26,9 @@ app.set('trust proxy', 1);
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
 app.use(express.json());
+
+// Servir archivos estáticos (para los uploads de beats)
+app.use('/uploads', express.static('uploads'));
 
 // Limitador de peticiones (opcional)
 const limiter = rateLimit({
@@ -42,7 +46,8 @@ app.use('/api/campaigns', campaignRoutes);
 app.use('/api/royalties', royaltyRoutes);
 app.use('/api/marketing', marketingRoutes);
 app.use('/api/ai', aiRoutes);
-app.use('/api/legal-agent', legalAgentRoutes); // <--- NUEVA RUTA
+app.use('/api/legal-agent', legalAgentRoutes);
+app.use('/api/marketplace', marketplaceRoutes); // <--- NUEVA RUTA
 
 // Ruta de salud (pública)
 app.get('/api/health', (req, res) => {
