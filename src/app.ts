@@ -4,7 +4,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 
-// Importar rutas
+// Importar rutas existentes
 import authRoutes from './routes/authRoutes';
 import artistRoutes from './routes/artistRoutes';
 import trackRoutes from './routes/trackRoutes';
@@ -12,6 +12,8 @@ import campaignRoutes from './routes/campaignRoutes';
 import royaltyRoutes from './routes/royaltyRoutes';
 import marketingRoutes from './routes/marketingRoutes';
 import aiRoutes from './routes/aiRoutes';
+// Nueva ruta para el agente legal
+import legalAgentRoutes from './routes/legalAgentRoutes';
 
 dotenv.config();
 
@@ -24,15 +26,9 @@ app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
 app.use(express.json());
 
-// 🔽🔽🔽 RUTA DE PRUEBA ULTRA SIMPLE (agregada aquí) 🔽🔽🔽
-app.get('/api/test', (req, res) => {
-  res.send('SERVIDOR OK');
-});
-// 🔼🔼🔼 FIN DE LA RUTA DE PRUEBA 🔼🔼🔼
-
 // Limitador de peticiones (opcional)
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
+  windowMs: 15 * 60 * 1000,
   max: 1000,
   message: { error: 'Demasiadas peticiones, intenta más tarde' }
 });
@@ -46,6 +42,7 @@ app.use('/api/campaigns', campaignRoutes);
 app.use('/api/royalties', royaltyRoutes);
 app.use('/api/marketing', marketingRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/legal-agent', legalAgentRoutes); // <--- NUEVA RUTA
 
 // Ruta de salud (pública)
 app.get('/api/health', (req, res) => {

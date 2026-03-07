@@ -90,6 +90,16 @@ db.exec(`
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(artist_id) REFERENCES artists(id) ON DELETE CASCADE
   );
+
+  -- Nueva tabla para consultas legales
+  CREATE TABLE IF NOT EXISTS legal_queries (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    artist_id INTEGER NOT NULL,
+    pregunta TEXT NOT NULL,
+    respuesta TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(artist_id) REFERENCES artists(id) ON DELETE CASCADE
+  );
 `);
 
 export default db;
