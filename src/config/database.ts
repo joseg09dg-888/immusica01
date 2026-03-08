@@ -144,12 +144,11 @@ db.exec(`
     UNIQUE(beat_id, usuario_id) -- Un usuario solo puede valorar una vez el mismo beat
   );
 
-  -- Tabla para financiación (Sound Royalties)
+  -- Tablas para financiación
   CREATE TABLE IF NOT EXISTS financing_eligibility (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     artist_id INTEGER NOT NULL UNIQUE,
     ingresos_anuales INTEGER,
-    ingresos_ultimos_12_meses INTEGER,
     numero_canciones_publicadas INTEGER,
     es_propietario_masters BOOLEAN,
     tiene_disputas_legales BOOLEAN,
@@ -162,6 +161,48 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(artist_id) REFERENCES artists(id) ON DELETE CASCADE
+  );
+
+  -- Tablas para subida masiva de catálogos (NUEVAS)
+  CREATE TABLE IF NOT EXISTS upload_jobs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    artist_id INTEGER NOT NULL,
+    status TEXT DEFAULT 'pending', -- pending, processing, completed, failed, reviewing
+    progress INTEGER DEFAULT 0, -- 0-100
+    total_items INTEGER DEFAULT 0,
+    processed_items INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    completed_at DATETIME,
+    FOREIGN KEY(artist_id) REFERENCES artists(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS upload_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    job_id INTEGER NOT NULL,
+    original_filename TEXT NOT NULL,
+    file_path TEXT NOT NULL,
+    file_type TEXT, -- audio, document, spreadsheet, image, archive
+    mime_type TEXT,
+    file_size INTEGER,
+    extracted_data TEXT, -- JSON con los datos extraídos por IA
+    suggested_track_id INTEGER, -- si se identificó una canción existente
+    status TEXT DEFAULT 'pending', -- pending, processing, completed, failed, confirmed
+    error TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    processed_at DATETIME,
+    FOREIGN KEY(job_id) REFERENCES upload_jobs(id) ON DELETE CASCADE,
+    FOREIGN KEY(suggested_track_id) REFERENCES tracks(id) ON DELETE SET NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS splits (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    track_id INTEGER NOT NULL,
+    artist_name TEXT NOT NULL,
+    role TEXT, -- composer, producer, performer, lyricist
+    percentage REAL, -- 0-100
+    contract_ref TEXT, -- referencia al documento original
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(track_id) REFERENCES tracks(id) ON DELETE CASCADE
   );
 `);
 
