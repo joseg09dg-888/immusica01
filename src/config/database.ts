@@ -163,12 +163,12 @@ db.exec(`
     FOREIGN KEY(artist_id) REFERENCES artists(id) ON DELETE CASCADE
   );
 
-  -- Tablas para subida masiva de catálogos (NUEVAS)
+  -- Tablas para subida masiva de catálogos
   CREATE TABLE IF NOT EXISTS upload_jobs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     artist_id INTEGER NOT NULL,
-    status TEXT DEFAULT 'pending', -- pending, processing, completed, failed, reviewing
-    progress INTEGER DEFAULT 0, -- 0-100
+    status TEXT DEFAULT 'pending',
+    progress INTEGER DEFAULT 0,
     total_items INTEGER DEFAULT 0,
     processed_items INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -181,12 +181,12 @@ db.exec(`
     job_id INTEGER NOT NULL,
     original_filename TEXT NOT NULL,
     file_path TEXT NOT NULL,
-    file_type TEXT, -- audio, document, spreadsheet, image, archive
+    file_type TEXT,
     mime_type TEXT,
     file_size INTEGER,
-    extracted_data TEXT, -- JSON con los datos extraídos por IA
-    suggested_track_id INTEGER, -- si se identificó una canción existente
-    status TEXT DEFAULT 'pending', -- pending, processing, completed, failed, confirmed
+    extracted_data TEXT,
+    suggested_track_id INTEGER,
+    status TEXT DEFAULT 'pending',
     error TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     processed_at DATETIME,
@@ -198,11 +198,47 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     track_id INTEGER NOT NULL,
     artist_name TEXT NOT NULL,
-    role TEXT, -- composer, producer, performer, lyricist
-    percentage REAL, -- 0-100
-    contract_ref TEXT, -- referencia al documento original
+    role TEXT,
+    percentage REAL,
+    contract_ref TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(track_id) REFERENCES tracks(id) ON DELETE CASCADE
+  );
+
+  -- Tablas para Mood Discovery (NUEVAS)
+  CREATE TABLE IF NOT EXISTS spotify_tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    artist_id INTEGER NOT NULL UNIQUE,
+    access_token TEXT NOT NULL,
+    refresh_token TEXT NOT NULL,
+    expires_at DATETIME NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(artist_id) REFERENCES artists(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS mood_playlists (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    artist_id INTEGER NOT NULL,
+    mood_description TEXT NOT NULL,
+    playlist_url TEXT NOT NULL,
+    playlist_id TEXT NOT NULL,
+    tracks_count INTEGER DEFAULT 0,
+    valence REAL,
+    energy REAL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(artist_id) REFERENCES artists(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS artist_fingerprints (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    artist_id INTEGER NOT NULL UNIQUE,
+    avg_valence REAL,
+    avg_energy REAL,
+    avg_danceability REAL,
+    avg_tempo REAL,
+    embedding TEXT,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(artist_id) REFERENCES artists(id) ON DELETE CASCADE
   );
 `);
 

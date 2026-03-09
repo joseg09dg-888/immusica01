@@ -15,6 +15,8 @@ import legalAgentRoutes from './routes/legalAgentRoutes';
 import marketplaceRoutes from './routes/marketplaceRoutes';
 import financingRoutes from './routes/financingRoutes';
 import uploadRoutes from './routes/uploadRoutes';
+// Importar las nuevas rutas de mood discovery
+import moodRoutes from './routes/moodRoutes';
 
 dotenv.config();
 
@@ -47,6 +49,8 @@ app.use('/api/legal-agent', legalAgentRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
 app.use('/api/financing', financingRoutes);
 app.use('/api/upload', uploadRoutes);
+// Registrar las nuevas rutas de mood
+app.use('/api/mood', moodRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Servidor funcionando' });
