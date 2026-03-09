@@ -15,6 +15,7 @@
   "dependencies": {
     "@google/genai": "^1.44.0",
     "@google/generative-ai": "^0.24.1",
+    "@types/node-fetch": "^2.6.13",
     "adm-zip": "^0.5.16",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.6.2",
@@ -31,10 +32,12 @@
     "mammoth": "^1.11.0",
     "multer": "^2.1.1",
     "music-metadata": "^11.12.1",
+    "node-fetch": "^3.3.2",
     "pdf-parse": "^2.4.5",
     "querystring": "^0.2.1",
     "sharp": "^0.34.5",
-    "spotify-web-api-node": "^5.0.2"
+    "spotify-web-api-node": "^5.0.2",
+    "stripe": "^20.4.1"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

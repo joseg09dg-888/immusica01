@@ -15,8 +15,8 @@ import legalAgentRoutes from './routes/legalAgentRoutes';
 import marketplaceRoutes from './routes/marketplaceRoutes';
 import financingRoutes from './routes/financingRoutes';
 import uploadRoutes from './routes/uploadRoutes';
-// Importar las nuevas rutas de mood discovery
 import moodRoutes from './routes/moodRoutes';
+import wompiRoutes from './routes/wompiRoutes';
 
 dotenv.config();
 
@@ -26,9 +26,28 @@ const PORT = parseInt(process.env.PORT || '3000', 10);
 app.set('trust proxy', 1);
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
+
+// Webhook de Wompi (debe ser raw)
+app.post('/api/wompi/webhook', express.raw({ type: 'application/json' }), (req, res) => {
+  // req.body es un Buffer
+  try {
+    const rawBody = req.body as Buffer;
+    const jsonBody = JSON.parse(rawBody.toString('utf8'));
+    // Crear un nuevo request con el body parseado
+    (req as any).parsedBody = jsonBody;
+    // Llamar al controlador
+    import('./controllers/wompiController').then(({ wompiWebhook }) => {
+      req.body = jsonBody; // reemplazar para que el controlador lo vea
+      wompiWebhook(req, res);
+    });
+  } catch (error) {
+    console.error('Error parsing webhook body:', error);
+    res.status(400).send('Invalid JSON');
+  }
+});
+
 app.use(express.json());
 
-// Servir archivos estáticos (para uploads)
 app.use('/uploads', express.static('uploads'));
 
 const limiter = rateLimit({
@@ -49,8 +68,8 @@ app.use('/api/legal-agent', legalAgentRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
 app.use('/api/financing', financingRoutes);
 app.use('/api/upload', uploadRoutes);
-// Registrar las nuevas rutas de mood
 app.use('/api/mood', moodRoutes);
+app.use('/api/wompi', wompiRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Servidor funcionando' });
