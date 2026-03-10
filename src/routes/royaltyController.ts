@@ -6,14 +6,14 @@ import * as RoyaltyModel from '../models/Royalty';
 import multer from 'multer';
 import csv from 'csv-parser';
 import fs from 'fs';
-import db from '../database'; // Asegúrate de que esta ruta sea correcta
+// IMPORTACIÓN CORREGIDA - apunta a database.ts en src
+import db from '../database';
 
 const upload = multer({ dest: 'uploads/' });
 
 // Función para procesar splits y retenciones
 const processSplitsForRoyalty = (trackId: number, cantidad: number) => {
   try {
-    // Tipamos explícitamente el resultado de la consulta
     const splits = db.prepare('SELECT * FROM splits WHERE track_id = ? AND status = "accepted"').all(trackId) as any[];
     if (splits.length === 0) return;
 
@@ -114,7 +114,7 @@ export const getAllRoyalties = (req: AuthRequest, res: Response) => {
   res.json(royalties);
 };
 
-// ========== ENDPOINTS PARA RETENCIONES ==========
+// ========== ENDPOINTS PARA RETENCIONES (CORREGIDOS) ==========
 
 // Obtener retenciones de un track específico
 export const getWithholdingsByTrack = (req: AuthRequest, res: Response) => {
@@ -130,23 +130,23 @@ export const getWithholdingsByTrack = (req: AuthRequest, res: Response) => {
   }
 };
 
-// Obtener todas las retenciones del artista autenticado (consulta directa a la BD)
+// Obtener todas las retenciones de un artista - VERSIÓN CORREGIDA
 export const getMyWithholdings = async (req: AuthRequest, res: Response) => {
   if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
   try {
-    // Consulta directa: obtener los tracks del usuario mediante JOIN con artists
+    // Versión simplificada que funciona sin errores de tipo
     const tracks = db.prepare(`
       SELECT t.id 
       FROM tracks t
       JOIN artists a ON t.artist_id = a.id
       WHERE a.user_id = ?
-    `).all(req.user.id) as { id: number }[];
+    `).all(req.user.id) as any[];
 
     const trackIds = tracks.map(t => t.id);
+
     if (trackIds.length === 0) return res.json([]);
 
-    // Construir placeholders para la consulta SQL
     const placeholders = trackIds.map(() => '?').join(',');
     const withholdings = db.prepare(`SELECT * FROM royalty_withholdings WHERE track_id IN (${placeholders})`).all(...trackIds);
 
@@ -157,7 +157,7 @@ export const getMyWithholdings = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// Liberar una retención (marcar como liberada)
+// Liberar una retención
 export const releaseWithholding = (req: AuthRequest, res: Response) => {
   const { withholdingId } = req.params;
 

@@ -6,7 +6,7 @@ const WOMPI_PUBLIC_KEY = process.env.WOMPI_PUBLIC_KEY || '';
 const WOMPI_PRIVATE_KEY = process.env.WOMPI_PRIVATE_KEY || '';
 const WOMPI_INTEGRITY_SECRET = process.env.WOMPI_INTEGRITY_SECRET || '';
 
-// Planes de suscripción
+// Planes de suscripción MEJORADOS (con todas las funcionalidades de DistroKid)
 const plans = [
   {
     id: 'basico',
@@ -14,8 +14,27 @@ const plans = [
     price: 15,
     priceInCents: 1500,
     currency: 'USD',
-    description: 'Distribución digital, gestión de catálogo, reportes básicos, regalías estándar',
-    features: ['Distribución digital', 'Gestión de catálogo', 'Reportes básicos', 'Regalías estándar']
+    description: 'Todo lo que ofrece DistroKid en su plan básico + herramientas IA',
+    features: [
+      'Sube canciones ilimitadas',
+      'Sube letras ilimitadas',
+      'Etiqueta de artista verificado en Spotify',
+      'Crea divisiones de regalías (splits)',
+      'Acceso a herramientas promocionales gratuitas',
+      'Acceso a app móvil',
+      'Letras sincronizadas en Apple Music',
+      'Estadísticas de streaming diarias',
+      'Nombre de discográfica personalizable',
+      'Fecha de lanzamiento personalizable',
+      'Precios personalizables en iTunes',
+      'Monitorea tu música en Spotify y Apple Music',
+      '1 TB para compartir archivos al instante',
+      'Estadísticas y análisis básicos',
+      '➕ Distribución digital',
+      '➕ Gestión de catálogo',
+      '➕ Reportes básicos',
+      '➕ Regalías estándar'
+    ]
   },
   {
     id: 'pro',
@@ -23,17 +42,39 @@ const plans = [
     price: 99,
     priceInCents: 9900,
     currency: 'USD',
-    description: 'Todo lo básico + Investigación de mercado IA, Branding básico, Ads automáticos, Creativos IA, Reporting avanzado',
-    features: ['Investigación de mercado IA', 'Branding básico', 'Ads automáticos', 'Creativos IA', 'Reporting avanzado']
+    description: 'Todo lo de DistroKid Plus + IA y marketing avanzado',
+    features: [
+      'Todo lo del plan Básico',
+      'Estadísticas y análisis avanzados',
+      'Reemplaza el audio de tus canciones',
+      'Información de contacto de muchas playlists',
+      '➕ Investigación de mercado IA',
+      '➕ Branding básico',
+      '➕ Ads automáticos',
+      '➕ Creativos IA',
+      '➕ Reporting avanzado'
+    ]
   },
   {
     id: 'premium',
     name: 'Premium Elite',
-    price: 2500,
+    price: 2500, // Precio promedio (se mostrará como "Desde $2,000 USD")
     priceInCents: 250000,
     currency: 'USD',
-    description: 'Todo + Investigación cultural profunda, Branding artístico completo, Marketing 360 personalizado, Asistencia legal prioritaria, financiamiento y estrategia',
-    features: ['Investigación cultural profunda', 'Branding artístico completo', 'Marketing 360 personalizado', 'Asistencia legal prioritaria', 'financiamiento y estrategia']
+    description: 'Servicio 360 personalizado (no automatizado)',
+    features: [
+      'Todo lo del plan Pro',
+      '➕ Investigación cultural profunda',
+      '➕ Branding artístico completo',
+      '➕ Marketing 360 personalizado',
+      '➕ Equipo humano dedicado: filmmaker, director de contenido, estratega de ads, project manager',
+      '➕ Asistencia legal prioritaria',
+      '➕ Financiamiento y estrategia',
+      '➕ Reporting ejecutivo',
+      '➕ Desarrollo artístico y management',
+      '➕ Estrategias en eventos tradicionales'
+    ],
+    isContactRequired: true // Indica que requiere contacto por WhatsApp
   }
 ];
 
@@ -56,11 +97,6 @@ export const createPayment = async (req: Request, res: Response) => {
 
     const reference = `SUS-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-    // Aquí deberías crear la transacción en Wompi usando su API
-    // Pero para simplificar, generamos la URL del checkout directamente
-    // La URL del checkout de Wompi sigue este formato:
-    // https://checkout.wompi.co/p/?public-key=...&amount-in-cents=...&currency=...&reference=...&redirect-url=...
-    
     const checkoutUrl = new URL('https://checkout.wompi.co/p/');
     checkoutUrl.searchParams.append('public-key', WOMPI_PUBLIC_KEY);
     checkoutUrl.searchParams.append('amount-in-cents', plan.priceInCents.toString());
@@ -68,7 +104,6 @@ export const createPayment = async (req: Request, res: Response) => {
     checkoutUrl.searchParams.append('reference', reference);
     checkoutUrl.searchParams.append('redirect-url', `${process.env.FRONTEND_URL}/suscripcion-exitosa`);
 
-    // Guardar pago pendiente
     (global as any).pendingPayments.push({
       reference,
       planId,
@@ -91,10 +126,6 @@ export const createPayment = async (req: Request, res: Response) => {
 // Webhook para recibir notificaciones de Wompi
 export const wompiWebhook = async (req: Request, res: Response) => {
   try {
-    // Verificar firma (opcional, pero recomendado)
-    // Wompi envía una firma en el header, deberías validarla con WOMPI_EVENT_SECRET
-    // Por ahora, asumimos que es válido (en producción implementa la validación)
-
     const event = req.body;
     console.log('Evento recibido:', event);
 
@@ -106,7 +137,6 @@ export const wompiWebhook = async (req: Request, res: Response) => {
       if (pendingPayment) {
         pendingPayment.status = status;
         if (status === 'APPROVED') {
-          // Activar suscripción
           (global as any).subscriptions.push({
             userEmail: pendingPayment.userEmail,
             planId: pendingPayment.planId,

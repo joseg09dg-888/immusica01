@@ -57,6 +57,7 @@ db.exec(`
     FOREIGN KEY(artist_id) REFERENCES artists(id) ON DELETE CASCADE
   );
 
+  -- Tabla de royalties original (la conservamos)
   CREATE TABLE IF NOT EXISTS royalties (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     fecha TEXT NOT NULL,
@@ -141,7 +142,7 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(beat_id) REFERENCES beats(id) ON DELETE CASCADE,
     FOREIGN KEY(usuario_id) REFERENCES users(id) ON DELETE CASCADE,
-    UNIQUE(beat_id, usuario_id) -- Un usuario solo puede valorar una vez el mismo beat
+    UNIQUE(beat_id, usuario_id)
   );
 
   -- Tablas para financiación
@@ -194,18 +195,48 @@ db.exec(`
     FOREIGN KEY(suggested_track_id) REFERENCES tracks(id) ON DELETE SET NULL
   );
 
-  CREATE TABLE IF NOT EXISTS splits (
+  -- ========== NUEVAS TABLAS PARA SPLITS MEJORADOS (COMO DISTROKID) ==========
+  -- Reemplazamos la tabla splits anterior por una más completa
+  DROP TABLE IF EXISTS splits;
+  CREATE TABLE splits (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     track_id INTEGER NOT NULL,
     artist_name TEXT NOT NULL,
+    email TEXT,
     role TEXT,
-    percentage REAL,
-    contract_ref TEXT,
+    percentage REAL NOT NULL,
+    status TEXT DEFAULT 'pending',        -- 'pending', 'accepted', 'rejected'
+    invitation_token TEXT UNIQUE,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    accepted_at DATETIME,
     FOREIGN KEY(track_id) REFERENCES tracks(id) ON DELETE CASCADE
   );
 
-  -- Tablas para Mood Discovery (NUEVAS)
+  CREATE TABLE IF NOT EXISTS split_invitations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    split_id INTEGER NOT NULL,
+    email TEXT NOT NULL,
+    token TEXT UNIQUE NOT NULL,
+    status TEXT DEFAULT 'pending',        -- 'pending', 'accepted', 'expired'
+    expires_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(split_id) REFERENCES splits(id) ON DELETE CASCADE
+  );
+
+  -- Tabla para retención de regalías (ganancias no reclamadas)
+  CREATE TABLE IF NOT EXISTS royalty_withholdings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    track_id INTEGER NOT NULL,
+    split_id INTEGER,                      -- NULL si es del propietario original
+    cantidad REAL NOT NULL,
+    estado TEXT DEFAULT 'retenido',        -- 'retenido', 'liberado'
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    released_at DATETIME,
+    FOREIGN KEY(track_id) REFERENCES tracks(id) ON DELETE CASCADE,
+    FOREIGN KEY(split_id) REFERENCES splits(id) ON DELETE SET NULL
+  );
+
+  -- Tablas para Mood Discovery (tuyas, las conservamos)
   CREATE TABLE IF NOT EXISTS spotify_tokens (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     artist_id INTEGER NOT NULL UNIQUE,
