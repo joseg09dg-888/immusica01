@@ -90,6 +90,20 @@ db.exec(`
     FOREIGN KEY(track_id) REFERENCES tracks(id) ON DELETE CASCADE,
     FOREIGN KEY(split_id) REFERENCES splits(id) ON DELETE SET NULL
   );
+
+  -- NUEVA TABLA PARA ESTADÍSTICAS DIARIAS
+  CREATE TABLE IF NOT EXISTS daily_stats (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    track_id INTEGER NOT NULL,
+    fecha TEXT NOT NULL,
+    plataforma TEXT NOT NULL,
+    streams INTEGER DEFAULT 0,
+    ingresos REAL DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(track_id) REFERENCES tracks(id) ON DELETE CASCADE,
+    UNIQUE(track_id, fecha, plataforma)
+  );
 `);
 
 export default db;

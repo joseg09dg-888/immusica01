@@ -17,6 +17,8 @@ import financingRoutes from './routes/financingRoutes';
 import uploadRoutes from './routes/uploadRoutes';
 import moodRoutes from './routes/moodRoutes';
 import wompiRoutes from './routes/wompiRoutes';
+import splitRoutes from './routes/splitRoutes';      // <-- NUEVO
+import statsRoutes from './routes/statsRoutes';      // <-- NUEVO
 
 dotenv.config();
 
@@ -29,15 +31,12 @@ app.use(cors());
 
 // Webhook de Wompi (debe ser raw)
 app.post('/api/wompi/webhook', express.raw({ type: 'application/json' }), (req, res) => {
-  // req.body es un Buffer
   try {
     const rawBody = req.body as Buffer;
     const jsonBody = JSON.parse(rawBody.toString('utf8'));
-    // Crear un nuevo request con el body parseado
     (req as any).parsedBody = jsonBody;
-    // Llamar al controlador
     import('./controllers/wompiController').then(({ wompiWebhook }) => {
-      req.body = jsonBody; // reemplazar para que el controlador lo vea
+      req.body = jsonBody;
       wompiWebhook(req, res);
     });
   } catch (error) {
@@ -70,6 +69,8 @@ app.use('/api/financing', financingRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/mood', moodRoutes);
 app.use('/api/wompi', wompiRoutes);
+app.use('/api', splitRoutes);                // <-- NUEVO: rutas de splits (sin prefijo extra)
+app.use('/api/stats', statsRoutes);          // <-- NUEVO: rutas de estadísticas
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Servidor funcionando' });
