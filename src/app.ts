@@ -17,8 +17,13 @@ import financingRoutes from './routes/financingRoutes';
 import uploadRoutes from './routes/uploadRoutes';
 import moodRoutes from './routes/moodRoutes';
 import wompiRoutes from './routes/wompiRoutes';
-import splitRoutes from './routes/splitRoutes';      // <-- NUEVO
-import statsRoutes from './routes/statsRoutes';      // <-- NUEVO
+import splitRoutes from './routes/splitRoutes';
+import statsRoutes from './routes/statsRoutes';
+import landingRoutes from './routes/landingRoutes';      // <-- NUEVA: HyperFollow
+import releaseRoutes from './routes/releaseRoutes';      // <-- NUEVA: Programación de lanzamientos
+
+// Importar el job automático de publicación
+import { startReleasePublisher } from './jobs/releasePublisher';
 
 dotenv.config();
 
@@ -56,6 +61,7 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter);
 
+// ========== RUTAS ==========
 app.use('/api/auth', authRoutes);
 app.use('/api/artists', artistRoutes);
 app.use('/api/tracks', trackRoutes);
@@ -69,13 +75,18 @@ app.use('/api/financing', financingRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/mood', moodRoutes);
 app.use('/api/wompi', wompiRoutes);
-app.use('/api', splitRoutes);                // <-- NUEVO: rutas de splits (sin prefijo extra)
-app.use('/api/stats', statsRoutes);          // <-- NUEVO: rutas de estadísticas
+app.use('/api', splitRoutes);                // splits (sin prefijo extra)
+app.use('/api/stats', statsRoutes);          // estadísticas diarias
+app.use('/api/landing', landingRoutes);      // HyperFollow
+app.use('/api/releases', releaseRoutes);     // Programación de lanzamientos
 
+// Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Servidor funcionando' });
 });
 
+// Iniciar servidor y jobs
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
+  startReleasePublisher(); // Inicia el job de publicación automática
 });

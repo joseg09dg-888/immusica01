@@ -91,7 +91,7 @@ db.exec(`
     FOREIGN KEY(split_id) REFERENCES splits(id) ON DELETE SET NULL
   );
 
-  -- NUEVA TABLA PARA ESTADÍSTICAS DIARIAS
+  -- TABLA PARA ESTADÍSTICAS DIARIAS
   CREATE TABLE IF NOT EXISTS daily_stats (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     track_id INTEGER NOT NULL,
@@ -104,6 +104,40 @@ db.exec(`
     FOREIGN KEY(track_id) REFERENCES tracks(id) ON DELETE CASCADE,
     UNIQUE(track_id, fecha, plataforma)
   );
+
+  -- ========== TABLAS PARA HYPERFOLLOW (LANDING PAGES) ==========
+  CREATE TABLE IF NOT EXISTS landing_pages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    track_id INTEGER NOT NULL,
+    artist_id INTEGER NOT NULL,
+    slug TEXT UNIQUE NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    cover_url TEXT,
+    spotify_url TEXT,
+    apple_music_url TEXT,
+    youtube_url TEXT,
+    other_url TEXT,
+    config TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(track_id) REFERENCES tracks(id) ON DELETE CASCADE,
+    FOREIGN KEY(artist_id) REFERENCES artists(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS leads (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    landing_page_id INTEGER NOT NULL,
+    email TEXT NOT NULL,
+    name TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(landing_page_id) REFERENCES landing_pages(id) ON DELETE CASCADE,
+    UNIQUE(landing_page_id, email)
+  );
+
+  -- Agregar columnas de programación a tracks (si no existen)
+  ALTER TABLE tracks ADD COLUMN scheduled_date TEXT;
+  ALTER TABLE tracks ADD COLUMN published_at TEXT;
 `);
 
 export default db;
