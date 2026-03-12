@@ -34,6 +34,8 @@ db.exec(`
     artist_id INTEGER NOT NULL,
     title TEXT NOT NULL,
     release_date TEXT,
+    scheduled_date TEXT,
+    published_at TEXT,
     cover TEXT,
     audio_url TEXT,
     status TEXT DEFAULT 'draft',
@@ -134,10 +136,6 @@ db.exec(`
     FOREIGN KEY(landing_page_id) REFERENCES landing_pages(id) ON DELETE CASCADE,
     UNIQUE(landing_page_id, email)
   );
-
-  -- Agregar columnas de programación a tracks (si no existen)
-  ALTER TABLE tracks ADD COLUMN scheduled_date TEXT;
-  ALTER TABLE tracks ADD COLUMN published_at TEXT;
 `);
 
 export default db;
