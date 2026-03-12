@@ -19,8 +19,9 @@ import moodRoutes from './routes/moodRoutes';
 import wompiRoutes from './routes/wompiRoutes';
 import splitRoutes from './routes/splitRoutes';
 import statsRoutes from './routes/statsRoutes';
-import landingRoutes from './routes/landingRoutes';      // <-- NUEVA: HyperFollow
-import releaseRoutes from './routes/releaseRoutes';      // <-- NUEVA: Programación de lanzamientos
+import landingRoutes from './routes/landingRoutes';      // HyperFollow
+import releaseRoutes from './routes/releaseRoutes';      // Programación de lanzamientos
+import promoRoutes from './routes/promoRoutes';           // <-- NUEVA: Tarjetas promocionales
 
 // Importar el job automático de publicación
 import { startReleasePublisher } from './jobs/releasePublisher';
@@ -79,6 +80,7 @@ app.use('/api', splitRoutes);                // splits (sin prefijo extra)
 app.use('/api/stats', statsRoutes);          // estadísticas diarias
 app.use('/api/landing', landingRoutes);      // HyperFollow
 app.use('/api/releases', releaseRoutes);     // Programación de lanzamientos
+app.use('/api/promo', promoRoutes);          // <-- NUEVA: Tarjetas promocionales
 
 // Health check
 app.get('/api/health', (req, res) => {
