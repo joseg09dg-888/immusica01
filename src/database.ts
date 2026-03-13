@@ -151,6 +151,29 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(submitted_by) REFERENCES users(id) ON DELETE SET NULL
   );
+
+  -- ========== TABLA PARA DISTRIBUCIÓN DE VIDEOS ==========
+  CREATE TABLE IF NOT EXISTS videos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    artist_id INTEGER NOT NULL,
+    track_id INTEGER, -- Opcional: asociar a una canción existente
+    title TEXT NOT NULL,
+    description TEXT,
+    video_url TEXT NOT NULL, -- URL del archivo de video (local o cloud)
+    thumbnail_url TEXT,      -- URL de la miniatura
+    duration_seconds INTEGER,
+    resolution TEXT,         -- ej: "1920x1080"
+    status TEXT DEFAULT 'draft', -- draft, processing, published, failed
+    platform_status TEXT,    -- JSON con estado en cada plataforma (YouTube, Vevo)
+    youtube_url TEXT,        -- URL final en YouTube
+    vevo_url TEXT,           -- URL final en Vevo
+    tags TEXT,               -- JSON array de etiquetas
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    published_at DATETIME,
+    FOREIGN KEY(artist_id) REFERENCES artists(id) ON DELETE CASCADE,
+    FOREIGN KEY(track_id) REFERENCES tracks(id) ON DELETE SET NULL
+  );
 `);
 
 export default db;
