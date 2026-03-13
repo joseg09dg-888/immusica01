@@ -19,35 +19,41 @@ export const assignArtistToUser = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'artistId y userId son obligatorios' });
     }
 
+    // Convertir a números (los IDs vienen como string en el body)
+    const artistIdNum = parseInt(artistId);
+    const userIdNum = parseInt(userId);
+    if (isNaN(artistIdNum) || isNaN(userIdNum)) {
+      return res.status(400).json({ error: 'IDs inválidos' });
+    }
+
     // Verificar que el usuario actual es owner del artista o admin
-    const currentUserRole = await UserArtistModel.getUserArtistRole(req.user.id, artistId);
+    const currentUserRole = await UserArtistModel.getUserArtistRole(req.user.id, artistIdNum);
     if (currentUserRole !== 'owner' && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'No tienes permiso para asignar este artista' });
     }
 
     // Verificar que el artista existe
-    const artist = ArtistModel.getArtistById(artistId);
+    const artist = ArtistModel.getArtistById(artistIdNum);
     if (!artist) {
       return res.status(404).json({ error: 'Artista no encontrado' });
     }
 
     // Verificar que el usuario a asignar existe
-    const user = db.prepare('SELECT id FROM users WHERE id = ?').get(userId);
+    const user = db.prepare('SELECT id FROM users WHERE id = ?').get(userIdNum);
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
-    // --- NUEVA VALIDACIÓN DE LÍMITE PARA EL USUARIO DESTINO ---
-    if (!canUserAddArtist(userId)) {
-      const info = getUserArtistLimitInfo(userId);
+    // Validar límite para el usuario destino
+    if (!canUserAddArtist(userIdNum)) {
+      const info = getUserArtistLimitInfo(userIdNum);
       return res.status(403).json({
         error: `El usuario destino ha alcanzado su límite de artistas (${info.current}/${info.max}).`
       });
     }
-    // ---------------------------------------------------------
 
     // Asignar
-    const id = UserArtistModel.assignUserToArtist(userId, artistId, role || 'manager');
+    const id = UserArtistModel.assignUserToArtist(userIdNum, artistIdNum, role || 'manager');
 
     res.status(201).json({
       id,
@@ -66,12 +72,21 @@ export const removeArtistFromUser = async (req: AuthRequest, res: Response) => {
 
     const { artistId, userId } = req.params;
 
-    const currentUserRole = await UserArtistModel.getUserArtistRole(req.user.id, parseInt(artistId));
+    // Convertir a números (los parámetros de ruta vienen como string o string[])
+    const artistIdStr = Array.isArray(artistId) ? artistId[0] : artistId;
+    const userIdStr = Array.isArray(userId) ? userId[0] : userId;
+    const artistIdNum = parseInt(artistIdStr);
+    const userIdNum = parseInt(userIdStr);
+    if (isNaN(artistIdNum) || isNaN(userIdNum)) {
+      return res.status(400).json({ error: 'IDs inválidos' });
+    }
+
+    const currentUserRole = await UserArtistModel.getUserArtistRole(req.user.id, artistIdNum);
     if (currentUserRole !== 'owner' && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'No tienes permiso para quitar acceso' });
     }
 
-    UserArtistModel.removeUserFromArtist(parseInt(userId), parseInt(artistId));
+    UserArtistModel.removeUserFromArtist(userIdNum, artistIdNum);
 
     res.json({ message: 'Acceso removido correctamente' });
   } catch (error) {
@@ -100,12 +115,19 @@ export const getArtistUsers = async (req: AuthRequest, res: Response) => {
 
     const { artistId } = req.params;
 
-    const currentUserRole = await UserArtistModel.getUserArtistRole(req.user.id, parseInt(artistId));
+    // Convertir a número
+    const artistIdStr = Array.isArray(artistId) ? artistId[0] : artistId;
+    const artistIdNum = parseInt(artistIdStr);
+    if (isNaN(artistIdNum)) {
+      return res.status(400).json({ error: 'ID de artista inválido' });
+    }
+
+    const currentUserRole = await UserArtistModel.getUserArtistRole(req.user.id, artistIdNum);
     if (currentUserRole !== 'owner' && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'No tienes permiso para ver esta información' });
     }
 
-    const users = UserArtistModel.getUsersByArtist(parseInt(artistId));
+    const users = UserArtistModel.getUsersByArtist(artistIdNum);
     res.json(users);
   } catch (error) {
     console.error(error);
@@ -154,9 +176,17 @@ export const addTeamMember = async (req: AuthRequest, res: Response) => {
     const { teamId } = req.params;
     const { userId, role } = req.body;
 
+    // Convertir a números
+    const teamIdStr = Array.isArray(teamId) ? teamId[0] : teamId;
+    const teamIdNum = parseInt(teamIdStr);
+    const userIdNum = parseInt(userId);
+    if (isNaN(teamIdNum) || isNaN(userIdNum)) {
+      return res.status(400).json({ error: 'IDs inválidos' });
+    }
+
     const member = db.prepare(`
       SELECT role FROM team_members WHERE team_id = ? AND user_id = ?
-    `).get(teamId, req.user.id) as { role: string } | undefined;
+    `).get(teamIdNum, req.user.id) as { role: string } | undefined;
 
     if (!member || member.role !== 'admin') {
       return res.status(403).json({ error: 'No tienes permiso para agregar miembros' });
@@ -165,7 +195,7 @@ export const addTeamMember = async (req: AuthRequest, res: Response) => {
     db.prepare(`
       INSERT OR IGNORE INTO team_members (team_id, user_id, role)
       VALUES (?, ?, ?)
-    `).run(teamId, userId, role || 'member');
+    `).run(teamIdNum, userIdNum, role || 'member');
 
     res.json({ message: 'Miembro agregado correctamente' });
   } catch (error) {

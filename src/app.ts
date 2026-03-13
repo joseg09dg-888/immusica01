@@ -26,8 +26,10 @@ import releaseRoutes from './routes/releaseRoutes';
 import chatRoutes from './routes/chatRoutes';
 import playlistRoutes from './routes/playlistRoutes';
 import videoRoutes from './routes/videoRoutes';
-import lyricsRoutes from './routes/lyricsRoutes';          // <-- NUEVA: Letras sincronizadas
-import publishingRoutes from './routes/publishingRoutes';  // <-- NUEVA: Regalías editoriales
+import lyricsRoutes from './routes/lyricsRoutes';
+import publishingRoutes from './routes/publishingRoutes';
+import teamRoutes from './routes/teamRoutes';
+import spotlightRoutes from './routes/spotlightRoutes';
 
 // Importar el job automático de publicación
 import { startReleasePublisher } from './jobs/releasePublisher';
@@ -38,7 +40,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: '*', // En producción, restringir a tu dominio
+    origin: '*',
     methods: ['GET', 'POST']
   }
 });
@@ -89,26 +91,26 @@ app.use('/api/financing', financingRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/mood', moodRoutes);
 app.use('/api/wompi', wompiRoutes);
-app.use('/api', splitRoutes);                // splits (sin prefijo extra)
-app.use('/api/stats', statsRoutes);          // estadísticas diarias
-app.use('/api/landing', landingRoutes);      // HyperFollow
-app.use('/api/releases', releaseRoutes);     // Programación de lanzamientos
-app.use('/api/chat', chatRoutes);            // Chat comunitario
-app.use('/api/playlists', playlistRoutes);   // Base de datos de playlists
-app.use('/api/videos', videoRoutes);         // Distribución de videos
-app.use('/api/lyrics', lyricsRoutes);        // Letras sincronizadas
-app.use('/api/publishing', publishingRoutes); // Regalías editoriales
+app.use('/api', splitRoutes);
+app.use('/api/stats', statsRoutes);
+app.use('/api/landing', landingRoutes);
+app.use('/api/releases', releaseRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/playlists', playlistRoutes);
+app.use('/api/videos', videoRoutes);
+app.use('/api/lyrics', lyricsRoutes);
+app.use('/api/publishing', publishingRoutes);
+app.use('/api/team', teamRoutes);
+app.use('/api/spotlight', spotlightRoutes);
 
 // Configuración de Socket.io
 io.on('connection', (socket) => {
   console.log('🔌 Nuevo cliente conectado al chat');
-  
   socket.on('disconnect', () => {
     console.log('🔌 Cliente desconectado del chat');
   });
 });
 
-// Exportar io para usarlo en los controladores
 export { io };
 
 // Health check
@@ -119,5 +121,5 @@ app.get('/api/health', (req, res) => {
 // Iniciar servidor y jobs
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-  startReleasePublisher(); // Inicia el job de publicación automática
+  startReleasePublisher();
 });

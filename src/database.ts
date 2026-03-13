@@ -303,7 +303,7 @@ db.exec(`
     UNIQUE(user_id, artist_id)
   );
 
-  -- Tabla de suscripciones (ya existente)
+  -- ========== TABLA DE SUSCRIPCIONES ==========
   CREATE TABLE IF NOT EXISTS subscriptions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_email TEXT NOT NULL,
@@ -311,7 +311,24 @@ db.exec(`
     start_date DATETIME NOT NULL,
     status TEXT DEFAULT 'active',
     transaction_id TEXT,
+    max_artists INTEGER DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  -- ========== TABLA PARA ENVÍOS A PLAYLISTS (SPOTLIGHT) ==========
+  CREATE TABLE IF NOT EXISTS playlist_submissions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    playlist_id INTEGER NOT NULL,
+    track_id INTEGER NOT NULL,
+    artist_id INTEGER NOT NULL,
+    message TEXT,
+    contact_email TEXT,
+    status TEXT DEFAULT 'pending',
+    submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    responded_at DATETIME,
+    FOREIGN KEY(playlist_id) REFERENCES playlists(id) ON DELETE CASCADE,
+    FOREIGN KEY(track_id) REFERENCES tracks(id) ON DELETE CASCADE,
+    FOREIGN KEY(artist_id) REFERENCES artists(id) ON DELETE CASCADE
   );
 `);
 
