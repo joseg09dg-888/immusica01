@@ -1,12 +1,11 @@
 import { Request, Response } from 'express';
+import db from '../database';
 
-// Configuración de Wompi (desde .env)
 const WOMPI_BASE_URL = process.env.WOMPI_BASE_URL || 'https://sandbox.wompi.co/v1';
 const WOMPI_PUBLIC_KEY = process.env.WOMPI_PUBLIC_KEY || '';
 const WOMPI_PRIVATE_KEY = process.env.WOMPI_PRIVATE_KEY || '';
-const WOMPI_INTEGRITY_SECRET = process.env.WOMPI_INTEGRITY_SECRET || '';
 
-// Planes de suscripción MEJORADOS (con todas las funcionalidades de DistroKid)
+// Definición de los planes con sus límites de artistas
 const plans = [
   {
     id: 'basico',
@@ -14,83 +13,81 @@ const plans = [
     price: 15,
     priceInCents: 1500,
     currency: 'USD',
-    description: 'Todo lo que ofrece DistroKid en su plan básico + herramientas IA',
+    maxArtists: 1,
+    description: 'Todo lo esencial para lanzar tu música',
     features: [
       'Sube canciones ilimitadas',
       'Sube letras ilimitadas',
-      'Etiqueta de artista verificado en Spotify',
       'Crea divisiones de regalías (splits)',
-      'Acceso a herramientas promocionales gratuitas',
-      'Acceso a app móvil',
-      'Letras sincronizadas en Apple Music',
       'Estadísticas de streaming diarias',
       'Nombre de discográfica personalizable',
-      'Fecha de lanzamiento personalizable',
-      'Precios personalizables en iTunes',
-      'Monitorea tu música en Spotify y Apple Music',
-      '1 TB para compartir archivos al instante',
-      'Estadísticas y análisis básicos',
-      '➕ Distribución digital',
-      '➕ Gestión de catálogo',
-      '➕ Reportes básicos',
-      '➕ Regalías estándar'
+      '1 TB para compartir archivos'
     ]
   },
   {
     id: 'pro',
-    name: 'Pro',
-    price: 99,
-    priceInCents: 9900,
+    name: 'Músico Plus',
+    price: 3.75,
+    priceInCents: 375,
     currency: 'USD',
-    description: 'Todo lo de DistroKid Plus + IA y marketing avanzado',
+    maxArtists: 2,
+    description: 'Para artistas que buscan más control',
     features: [
       'Todo lo del plan Básico',
+      'Fecha de lanzamiento personalizable',
+      'Precios personalizables en iTunes',
       'Estadísticas y análisis avanzados',
       'Reemplaza el audio de tus canciones',
-      'Información de contacto de muchas playlists',
-      '➕ Investigación de mercado IA',
-      '➕ Branding básico',
-      '➕ Ads automáticos',
-      '➕ Creativos IA',
-      '➕ Reporting avanzado'
+      'Información de contacto de playlists'
     ]
   },
   {
     id: 'premium',
-    name: 'Premium Elite',
-    price: 2500, // Precio promedio (se mostrará como "Desde $2,000 USD")
-    priceInCents: 250000,
+    name: 'Premium',
+    price: 7.5,
+    priceInCents: 750,
     currency: 'USD',
-    description: 'Servicio 360 personalizado (no automatizado)',
+    maxArtists: 5,
+    description: 'Gestión profesional completa',
     features: [
       'Todo lo del plan Pro',
-      '➕ Investigación cultural profunda',
-      '➕ Branding artístico completo',
-      '➕ Marketing 360 personalizado',
-      '➕ Equipo humano dedicado: filmmaker, director de contenido, estratega de ads, project manager',
-      '➕ Asistencia legal prioritaria',
-      '➕ Financiamiento y estrategia',
-      '➕ Reporting ejecutivo',
-      '➕ Desarrollo artístico y management',
-      '➕ Estrategias en eventos tradicionales'
-    ],
-    isContactRequired: true // Indica que requiere contacto por WhatsApp
+      'Múltiples artistas bajo una cuenta',
+      'Monitorea tu música en Spotify y Apple Music',
+      'Soporte prioritario',
+      'Herramientas promocionales avanzadas'
+    ]
+  },
+  {
+    id: 'enterprise_10',
+    name: 'Enterprise 10',
+    price: 19.99,
+    priceInCents: 1999,
+    currency: 'USD',
+    maxArtists: 10,
+    description: 'Para sellos pequeños',
+    features: [
+      'Todo lo del plan Premium',
+      'Hasta 10 artistas',
+      'Reportes consolidados',
+      'API de acceso'
+    ]
   }
+  // Puedes agregar más planes (enterprise_20, etc.)
 ];
 
-// Almacenamiento en memoria (para pruebas)
-(global as any).pendingPayments = (global as any).pendingPayments || [];
-(global as any).subscriptions = (global as any).subscriptions || [];
+// Mapa de límites para uso rápido
+const planLimits: { [key: string]: number } = {};
+plans.forEach(p => { planLimits[p.id] = p.maxArtists; });
 
-// Obtener planes
+// Almacenamiento en memoria para pagos pendientes (en producción usar BD)
+(global as any).pendingPayments = (global as any).pendingPayments || [];
+
 export const getPlans = (req: Request, res: Response) => {
   res.json(plans);
 };
 
-// Crear pago (genera URL de Wompi)
 export const createPayment = async (req: Request, res: Response) => {
   const { planId, email = 'cliente@ejemplo.com' } = req.body;
-
   try {
     const plan = plans.find(p => p.id === planId);
     if (!plan) return res.status(404).json({ error: 'Plan no encontrado' });
@@ -102,8 +99,9 @@ export const createPayment = async (req: Request, res: Response) => {
     checkoutUrl.searchParams.append('amount-in-cents', plan.priceInCents.toString());
     checkoutUrl.searchParams.append('currency', plan.currency);
     checkoutUrl.searchParams.append('reference', reference);
-    checkoutUrl.searchParams.append('redirect-url', `${process.env.FRONTEND_URL}/suscripcion-exitosa`);
+    checkoutUrl.searchParams.append('redirect-url', `${process.env.FRONTEND_URL}/suscripcion-exitosa?reference=${reference}`);
 
+    // Guardar pago pendiente
     (global as any).pendingPayments.push({
       reference,
       planId,
@@ -112,18 +110,13 @@ export const createPayment = async (req: Request, res: Response) => {
       createdAt: new Date()
     });
 
-    res.json({
-      paymentUrl: checkoutUrl.toString(),
-      reference,
-      plan: plan.name
-    });
+    res.json({ paymentUrl: checkoutUrl.toString(), reference, plan: plan.name });
   } catch (error: any) {
     console.error(error);
     res.status(500).json({ error: error.message });
   }
 };
 
-// Webhook para recibir notificaciones de Wompi
 export const wompiWebhook = async (req: Request, res: Response) => {
   try {
     const event = req.body;
@@ -133,22 +126,33 @@ export const wompiWebhook = async (req: Request, res: Response) => {
       const transaction = event.data.transaction;
       const { reference, status, id: transactionId } = transaction;
 
-      const pendingPayment = (global as any).pendingPayments.find((p: any) => p.reference === reference);
+      const pendingPayments = (global as any).pendingPayments || [];
+      const pendingPayment = pendingPayments.find((p: any) => p.reference === reference);
+
       if (pendingPayment) {
         pendingPayment.status = status;
+
         if (status === 'APPROVED') {
-          (global as any).subscriptions.push({
-            userEmail: pendingPayment.userEmail,
-            planId: pendingPayment.planId,
-            startDate: new Date(),
-            status: 'ACTIVE',
-            transactionId
-          });
-          console.log(`✅ Suscripción activada para ${pendingPayment.userEmail}`);
+          // Obtener el límite de artistas según el plan
+          const maxArtists = planLimits[pendingPayment.planId] || 1;
+
+          // Guardar suscripción en la base de datos con max_artists
+          const stmt = db.prepare(`
+            INSERT INTO subscriptions (user_email, plan_id, start_date, status, transaction_id, max_artists)
+            VALUES (?, ?, ?, ?, ?, ?)
+          `);
+          stmt.run(
+            pendingPayment.userEmail,
+            pendingPayment.planId,
+            new Date().toISOString(),
+            'ACTIVE',
+            transactionId,
+            maxArtists
+          );
+          console.log(`✅ Suscripción activada para ${pendingPayment.userEmail} con límite de ${maxArtists} artistas`);
         }
       }
     }
-
     res.status(200).send('OK');
   } catch (error: any) {
     console.error('Error en webhook:', error);
@@ -156,7 +160,6 @@ export const wompiWebhook = async (req: Request, res: Response) => {
   }
 };
 
-// Consultar estado de transacción
 export const checkTransactionStatus = async (req: Request, res: Response) => {
   const { transactionId } = req.params;
   try {
@@ -170,9 +173,11 @@ export const checkTransactionStatus = async (req: Request, res: Response) => {
   }
 };
 
-// Obtener suscripciones de un usuario
 export const getUserSubscriptions = (req: Request, res: Response) => {
-  const userEmail = req.query.email as string || 'cliente@ejemplo.com';
-  const userSubs = (global as any).subscriptions.filter((s: any) => s.userEmail === userEmail && s.status === 'ACTIVE');
-  res.json(userSubs);
+  const userEmail = req.query.email as string;
+  if (!userEmail) return res.status(400).json({ error: 'Email requerido' });
+
+  const stmt = db.prepare('SELECT * FROM subscriptions WHERE user_email = ? AND status = "ACTIVE"');
+  const subscriptions = stmt.all(userEmail);
+  res.json(subscriptions);
 };

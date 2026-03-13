@@ -171,20 +171,18 @@ db.exec(`
     FOREIGN KEY(track_id) REFERENCES tracks(id) ON DELETE SET NULL
   );
 
-  -- ========== TABLA PARA LETRAS SINCRONIZADAS ==========
   CREATE TABLE IF NOT EXISTS track_lyrics (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     track_id INTEGER NOT NULL UNIQUE,
-    lyrics_text TEXT,           -- Letra sin sincronizar
-    synced_lyrics TEXT,         -- Letra con timestamps (formato LRC)
-    language TEXT,              -- Código ISO del idioma (ej: 'es', 'en')
+    lyrics_text TEXT,
+    synced_lyrics TEXT,
+    language TEXT,
     is_synced BOOLEAN DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(track_id) REFERENCES tracks(id) ON DELETE CASCADE
   );
 
-  -- ========== TABLAS PARA REGALÍAS EDITORIALES (PUBLISHING) ==========
   CREATE TABLE IF NOT EXISTS compositions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
@@ -272,6 +270,48 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(publishing_royalty_id) REFERENCES publishing_royalties(id) ON DELETE CASCADE,
     FOREIGN KEY(composer_id) REFERENCES composers(id) ON DELETE CASCADE
+  );
+
+  -- ========== TABLAS PARA MÚLTIPLES ARTISTAS (LABEL PLANS) ==========
+  CREATE TABLE IF NOT EXISTS teams (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    owner_id INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(owner_id) REFERENCES users(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS team_members (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    team_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    role TEXT DEFAULT 'member',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(team_id) REFERENCES teams(id) ON DELETE CASCADE,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(team_id, user_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS user_artists (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    artist_id INTEGER NOT NULL,
+    role TEXT DEFAULT 'owner',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY(artist_id) REFERENCES artists(id) ON DELETE CASCADE,
+    UNIQUE(user_id, artist_id)
+  );
+
+  -- Tabla de suscripciones (ya existente)
+  CREATE TABLE IF NOT EXISTS subscriptions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_email TEXT NOT NULL,
+    plan_id TEXT NOT NULL,
+    start_date DATETIME NOT NULL,
+    status TEXT DEFAULT 'active',
+    transaction_id TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 `);
 
