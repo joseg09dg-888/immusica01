@@ -136,6 +136,21 @@ db.exec(`
     FOREIGN KEY(landing_page_id) REFERENCES landing_pages(id) ON DELETE CASCADE,
     UNIQUE(landing_page_id, email)
   );
+
+  -- ========== TABLA DE PLAYLISTS (PARA BASE DE DATOS COMUNITARIA) ==========
+  CREATE TABLE IF NOT EXISTS playlists (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    url TEXT NOT NULL,
+    genre TEXT,
+    mood_tags TEXT, -- JSON array de moods asociados (ej: ["alegre", "energético"])
+    contact_email TEXT,
+    description TEXT,
+    submitted_by INTEGER, -- ID del usuario que la agregó
+    verified BOOLEAN DEFAULT 0, -- si ha sido verificada por el equipo
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(submitted_by) REFERENCES users(id) ON DELETE SET NULL
+  );
 `);
 
 export default db;

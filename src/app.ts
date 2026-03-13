@@ -1,4 +1,6 @@
 import express from 'express';
+import http from 'http';
+import { Server } from 'socket.io';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -19,9 +21,10 @@ import moodRoutes from './routes/moodRoutes';
 import wompiRoutes from './routes/wompiRoutes';
 import splitRoutes from './routes/splitRoutes';
 import statsRoutes from './routes/statsRoutes';
-import landingRoutes from './routes/landingRoutes';      // HyperFollow
-import releaseRoutes from './routes/releaseRoutes';      // Programación de lanzamientos
-import promoRoutes from './routes/promoRoutes';           // <-- NUEVA: Tarjetas promocionales
+import landingRoutes from './routes/landingRoutes';
+import releaseRoutes from './routes/releaseRoutes';
+import chatRoutes from './routes/chatRoutes';
+import playlistRoutes from './routes/playlistRoutes'; // <-- NUEVA RUTA
 
 // Importar el job automático de publicación
 import { startReleasePublisher } from './jobs/releasePublisher';
@@ -29,6 +32,14 @@ import { startReleasePublisher } from './jobs/releasePublisher';
 dotenv.config();
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: '*', // En producción, restringir a tu dominio
+    methods: ['GET', 'POST']
+  }
+});
+
 const PORT = parseInt(process.env.PORT || '3000', 10);
 
 app.set('trust proxy', 1);
@@ -52,7 +63,6 @@ app.post('/api/wompi/webhook', express.raw({ type: 'application/json' }), (req, 
 });
 
 app.use(express.json());
-
 app.use('/uploads', express.static('uploads'));
 
 const limiter = rateLimit({
@@ -80,7 +90,20 @@ app.use('/api', splitRoutes);                // splits (sin prefijo extra)
 app.use('/api/stats', statsRoutes);          // estadísticas diarias
 app.use('/api/landing', landingRoutes);      // HyperFollow
 app.use('/api/releases', releaseRoutes);     // Programación de lanzamientos
-app.use('/api/promo', promoRoutes);          // <-- NUEVA: Tarjetas promocionales
+app.use('/api/chat', chatRoutes);            // Chat comunitario
+app.use('/api/playlists', playlistRoutes);   // Base de datos de playlists
+
+// Configuración de Socket.io
+io.on('connection', (socket) => {
+  console.log('🔌 Nuevo cliente conectado al chat');
+  
+  socket.on('disconnect', () => {
+    console.log('🔌 Cliente desconectado del chat');
+  });
+});
+
+// Exportar io para usarlo en los controladores
+export { io };
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -88,7 +111,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // Iniciar servidor y jobs
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
   startReleasePublisher(); // Inicia el job de publicación automática
 });
