@@ -93,7 +93,6 @@ db.exec(`
     FOREIGN KEY(split_id) REFERENCES splits(id) ON DELETE SET NULL
   );
 
-  -- TABLA PARA ESTADÍSTICAS DIARIAS
   CREATE TABLE IF NOT EXISTS daily_stats (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     track_id INTEGER NOT NULL,
@@ -107,7 +106,6 @@ db.exec(`
     UNIQUE(track_id, fecha, plataforma)
   );
 
-  -- ========== TABLAS PARA HYPERFOLLOW (LANDING PAGES) ==========
   CREATE TABLE IF NOT EXISTS landing_pages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     track_id INTEGER NOT NULL,
@@ -137,42 +135,143 @@ db.exec(`
     UNIQUE(landing_page_id, email)
   );
 
-  -- ========== TABLA DE PLAYLISTS (PARA BASE DE DATOS COMUNITARIA) ==========
   CREATE TABLE IF NOT EXISTS playlists (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     url TEXT NOT NULL,
     genre TEXT,
-    mood_tags TEXT, -- JSON array de moods asociados (ej: ["alegre", "energético"])
+    mood_tags TEXT,
     contact_email TEXT,
     description TEXT,
-    submitted_by INTEGER, -- ID del usuario que la agregó
-    verified BOOLEAN DEFAULT 0, -- si ha sido verificada por el equipo
+    submitted_by INTEGER,
+    verified BOOLEAN DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(submitted_by) REFERENCES users(id) ON DELETE SET NULL
   );
 
-  -- ========== TABLA PARA DISTRIBUCIÓN DE VIDEOS ==========
   CREATE TABLE IF NOT EXISTS videos (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     artist_id INTEGER NOT NULL,
-    track_id INTEGER, -- Opcional: asociar a una canción existente
+    track_id INTEGER,
     title TEXT NOT NULL,
     description TEXT,
-    video_url TEXT NOT NULL, -- URL del archivo de video (local o cloud)
-    thumbnail_url TEXT,      -- URL de la miniatura
+    video_url TEXT NOT NULL,
+    thumbnail_url TEXT,
     duration_seconds INTEGER,
-    resolution TEXT,         -- ej: "1920x1080"
-    status TEXT DEFAULT 'draft', -- draft, processing, published, failed
-    platform_status TEXT,    -- JSON con estado en cada plataforma (YouTube, Vevo)
-    youtube_url TEXT,        -- URL final en YouTube
-    vevo_url TEXT,           -- URL final en Vevo
-    tags TEXT,               -- JSON array de etiquetas
+    resolution TEXT,
+    status TEXT DEFAULT 'draft',
+    platform_status TEXT,
+    youtube_url TEXT,
+    vevo_url TEXT,
+    tags TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     published_at DATETIME,
     FOREIGN KEY(artist_id) REFERENCES artists(id) ON DELETE CASCADE,
     FOREIGN KEY(track_id) REFERENCES tracks(id) ON DELETE SET NULL
+  );
+
+  -- ========== TABLA PARA LETRAS SINCRONIZADAS ==========
+  CREATE TABLE IF NOT EXISTS track_lyrics (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    track_id INTEGER NOT NULL UNIQUE,
+    lyrics_text TEXT,           -- Letra sin sincronizar
+    synced_lyrics TEXT,         -- Letra con timestamps (formato LRC)
+    language TEXT,              -- Código ISO del idioma (ej: 'es', 'en')
+    is_synced BOOLEAN DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(track_id) REFERENCES tracks(id) ON DELETE CASCADE
+  );
+
+  -- ========== TABLAS PARA REGALÍAS EDITORIALES (PUBLISHING) ==========
+  CREATE TABLE IF NOT EXISTS compositions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    iswc TEXT UNIQUE,
+    language TEXT,
+    duration_seconds INTEGER,
+    lyrics TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS track_compositions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    track_id INTEGER NOT NULL,
+    composition_id INTEGER NOT NULL,
+    percentage_used REAL DEFAULT 100,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(track_id) REFERENCES tracks(id) ON DELETE CASCADE,
+    FOREIGN KEY(composition_id) REFERENCES compositions(id) ON DELETE CASCADE,
+    UNIQUE(track_id, composition_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS composers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    full_name TEXT NOT NULL,
+    email TEXT,
+    pro_affiliation TEXT,
+    pro_number TEXT,
+    ipi TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS composition_splits (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    composition_id INTEGER NOT NULL,
+    composer_id INTEGER NOT NULL,
+    role TEXT,
+    percentage REAL NOT NULL CHECK(percentage > 0 AND percentage <= 100),
+    ownership_type TEXT DEFAULT 'writer',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(composition_id) REFERENCES compositions(id) ON DELETE CASCADE,
+    FOREIGN KEY(composer_id) REFERENCES composers(id) ON DELETE CASCADE,
+    UNIQUE(composition_id, composer_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS composition_registrations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    composition_id INTEGER NOT NULL,
+    pro_name TEXT NOT NULL,
+    registration_number TEXT,
+    registration_date TEXT,
+    status TEXT DEFAULT 'pending',
+    response_data TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(composition_id) REFERENCES compositions(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS publishing_royalties (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    composition_id INTEGER NOT NULL,
+    track_id INTEGER,
+    fecha TEXT NOT NULL,
+    plataforma TEXT NOT NULL,
+    tipo TEXT,
+    cantidad REAL NOT NULL,
+    territorio TEXT,
+    uso_categoria TEXT,
+    estado TEXT DEFAULT 'proyectado',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(composition_id) REFERENCES compositions(id) ON DELETE CASCADE,
+    FOREIGN KEY(track_id) REFERENCES tracks(id) ON DELETE SET NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS publishing_distributions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    publishing_royalty_id INTEGER NOT NULL,
+    composer_id INTEGER NOT NULL,
+    amount REAL NOT NULL,
+    percentage_applied REAL NOT NULL,
+    status TEXT DEFAULT 'pending',
+    paid_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(publishing_royalty_id) REFERENCES publishing_royalties(id) ON DELETE CASCADE,
+    FOREIGN KEY(composer_id) REFERENCES composers(id) ON DELETE CASCADE
   );
 `);
 

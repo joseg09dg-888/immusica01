@@ -25,7 +25,9 @@ import landingRoutes from './routes/landingRoutes';
 import releaseRoutes from './routes/releaseRoutes';
 import chatRoutes from './routes/chatRoutes';
 import playlistRoutes from './routes/playlistRoutes';
-import videoRoutes from './routes/videoRoutes'; // <-- NUEVA RUTA PARA VIDEOS
+import videoRoutes from './routes/videoRoutes';
+import lyricsRoutes from './routes/lyricsRoutes';          // <-- NUEVA: Letras sincronizadas
+import publishingRoutes from './routes/publishingRoutes';  // <-- NUEVA: Regalías editoriales
 
 // Importar el job automático de publicación
 import { startReleasePublisher } from './jobs/releasePublisher';
@@ -93,7 +95,9 @@ app.use('/api/landing', landingRoutes);      // HyperFollow
 app.use('/api/releases', releaseRoutes);     // Programación de lanzamientos
 app.use('/api/chat', chatRoutes);            // Chat comunitario
 app.use('/api/playlists', playlistRoutes);   // Base de datos de playlists
-app.use('/api/videos', videoRoutes);         // Distribución de videos musicales
+app.use('/api/videos', videoRoutes);         // Distribución de videos
+app.use('/api/lyrics', lyricsRoutes);        // Letras sincronizadas
+app.use('/api/publishing', publishingRoutes); // Regalías editoriales
 
 // Configuración de Socket.io
 io.on('connection', (socket) => {
