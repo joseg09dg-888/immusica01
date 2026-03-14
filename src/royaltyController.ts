@@ -1,17 +1,14 @@
 import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
+import * as ArtistModel from '../models/Artist';
+import * as TrackModel from '../models/Track';
+import * as RoyaltyModel from '../models/Royalty';
 import multer from 'multer';
 import csv from 'csv-parser';
 import fs from 'fs';
 import db from '../database';
 
 const upload = multer({ dest: 'uploads/' });
-
-// Función auxiliar para obtener un string seguro de req.params
-const getParamAsString = (param: string | string[] | undefined): string => {
-  if (Array.isArray(param)) return param[0];
-  return param || '';
-};
 
 // ============================================
 // FUNCIÓN AUXILIAR: Procesar splits y retenciones
@@ -45,32 +42,15 @@ export const getSummary = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
-    // Obtener el artist_id del usuario actual
-    const userArtists = db.prepare(`
-      SELECT artist_id FROM user_artists WHERE user_id = ? AND role = 'owner'
-    `).all(req.user.id) as { artist_id: number }[];
-
-    if (userArtists.length === 0) {
-      return res.json({ total: 0, byPlatform: {}, byMonth: {} });
+    let artistId: number | undefined;
+    if (req.user.role !== 'admin') {
+      const artists = ArtistModel.getArtistsByUser(req.user.id);
+      if (artists.length === 0) return res.json({ total: 0, byPlatform: {}, byMonth: {} });
+      artistId = artists[0].id;
     }
 
-    const artistId = userArtists[0].artist_id;
-
-    const royalties = db.prepare(`
-      SELECT * FROM royalties WHERE track_id IN (SELECT id FROM tracks WHERE artist_id = ?)
-    `).all(artistId) as any[];
-
-    const total = royalties.reduce((acc, r) => acc + r.cantidad, 0);
-    const byPlatform: any = {};
-    const byMonth: any = {};
-
-    royalties.forEach(r => {
-      byPlatform[r.plataforma] = (byPlatform[r.plataforma] || 0) + r.cantidad;
-      const month = r.fecha.substring(0, 7);
-      byMonth[month] = (byMonth[month] || 0) + r.cantidad;
-    });
-
-    res.json({ total, byPlatform, byMonth });
+    const summary = RoyaltyModel.getSummary(artistId);
+    res.json(summary);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error al obtener resumen' });
@@ -86,15 +66,6 @@ export const uploadRoyalties = [
     try {
       if (!req.user) return res.status(401).json({ error: 'No autorizado' });
       if (!req.file) return res.status(400).json({ error: 'No se subió ningún archivo' });
-
-      const userArtists = db.prepare(`
-        SELECT artist_id FROM user_artists WHERE user_id = ? AND role = 'owner'
-      `).all(req.user.id) as { artist_id: number }[];
-
-      if (userArtists.length === 0) {
-        return res.status(404).json({ error: 'El usuario no tiene un artista asociado' });
-      }
-      const artistId = userArtists[0].artist_id;
 
       const results: any[] = [];
       fs.createReadStream(req.file.path)
@@ -116,11 +87,17 @@ export const uploadRoyalties = [
             if (row.track_id) {
               trackId = parseInt(row.track_id, 10);
             } else if (row.track_title) {
-              const track = db.prepare(`
-                SELECT id FROM tracks WHERE artist_id = ? AND title = ?
-              `).get(artistId, row.track_title) as { id: number } | undefined;
-              if (track) {
-                trackId = track.id;
+              // Buscar el track por título (solo para el artista autenticado)
+              const artists = ArtistModel.getArtistsByUser(req.user.id);
+              if (artists.length > 0) {
+                const artistId = artists[0].id;
+                // Consulta directa a la base de datos en lugar de usar getAllTracks
+                const track = db.prepare(`
+                  SELECT id FROM tracks WHERE artist_id = ? AND title = ?
+                `).get(artistId, row.track_title) as { id: number } | undefined;
+                if (track) {
+                  trackId = track.id;
+                }
               }
             }
 
@@ -129,11 +106,18 @@ export const uploadRoyalties = [
               continue;
             }
 
-            db.prepare(`
-              INSERT INTO royalties (track_id, fecha, plataforma, cantidad, estado)
-              VALUES (?, ?, ?, ?, ?)
-            `).run(trackId, row.fecha, row.plataforma, parseFloat(row.cantidad), row.estado || 'proyectado');
+            // Insertar la regalía
+            RoyaltyModel.createRoyalty({
+              fecha: row.fecha,
+              plataforma: row.plataforma,
+              tipo: row.tipo || null,
+              cantidad: parseFloat(row.cantidad),
+              track_id: trackId,
+              concepto: row.concepto || null,
+              estado: row.estado || 'proyectado'
+            });
 
+            // Procesar splits y retenciones
             processSplitsForRoyalty(trackId, parseFloat(row.cantidad));
           }
 
@@ -155,17 +139,16 @@ export const uploadRoyalties = [
 // ============================================
 export const getAllRoyalties = (req: AuthRequest, res: Response) => {
   if (req.user?.role !== 'admin') return res.status(403).json({ error: 'Prohibido' });
-  const royalties = db.prepare('SELECT * FROM royalties').all();
+  const royalties = RoyaltyModel.getAllRoyalties();
   res.json(royalties);
 };
 
 // ============================================
-// RETENCIONES
+// RETENCIONES (WITHHOLDINGS)
 // ============================================
 export const getWithholdingsByTrack = (req: AuthRequest, res: Response) => {
-  const trackIdParam = getParamAsString(req.params.trackId);
-  const trackId = parseInt(trackIdParam, 10);
-  if (isNaN(trackId)) return res.status(400).json({ error: 'ID de track inválido' });
+  const { trackId } = req.params;
+  if (!trackId) return res.status(400).json({ error: 'trackId requerido' });
 
   try {
     const withholdings = db.prepare('SELECT * FROM royalty_withholdings WHERE track_id = ?').all(trackId);
@@ -180,15 +163,14 @@ export const getMyWithholdings = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
-    const userArtists = db.prepare(`
-      SELECT artist_id FROM user_artists WHERE user_id = ? AND role = 'owner'
-    `).all(req.user.id) as { artist_id: number }[];
-
-    if (userArtists.length === 0) return res.json([]);
-    const artistId = userArtists[0].artist_id;
+    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    if (artists.length === 0) return res.json([]);
+    const artistId = artists[0].id;
 
     const tracks = db.prepare(`
-      SELECT id FROM tracks WHERE artist_id = ?
+      SELECT t.id 
+      FROM tracks t
+      WHERE t.artist_id = ?
     `).all(artistId) as { id: number }[];
 
     const trackIds = tracks.map(t => t.id);
@@ -207,17 +189,15 @@ export const getMyWithholdings = async (req: AuthRequest, res: Response) => {
 };
 
 export const releaseWithholding = (req: AuthRequest, res: Response) => {
-  const idParam = getParamAsString(req.params.withholdingId);
-  const id = parseInt(idParam, 10);
-  if (isNaN(id)) return res.status(400).json({ error: 'ID inválido' });
+  const { withholdingId } = req.params;
 
   try {
-    const withholding = db.prepare('SELECT * FROM royalty_withholdings WHERE id = ?').get(id);
+    const withholding = db.prepare('SELECT * FROM royalty_withholdings WHERE id = ?').get(withholdingId);
     if (!withholding) return res.status(404).json({ error: 'Retención no encontrada' });
 
     db.prepare(`
       UPDATE royalty_withholdings SET estado = "liberado", released_at = ? WHERE id = ?
-    `).run(new Date().toISOString(), id);
+    `).run(new Date().toISOString(), withholdingId);
 
     res.json({ message: 'Retención liberada' });
   } catch (error) {

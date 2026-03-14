@@ -43,6 +43,8 @@ db.exec(`
     isrc TEXT,
     upc TEXT,
     auto_distribute BOOLEAN DEFAULT 0,
+    is_legacy BOOLEAN DEFAULT 0,
+    legacy_purchased_at DATETIME,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(artist_id) REFERENCES artists(id) ON DELETE CASCADE
   );
@@ -374,21 +376,55 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS youtube_content_id (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     track_id INTEGER NOT NULL,
-    registration_id TEXT UNIQUE,          -- ID simulado del registro en YouTube
-    status TEXT DEFAULT 'pending',         -- pending, registered, claimed, monetized
-    claim_url TEXT,                        -- URL del reclamo (simulado)
+    registration_id TEXT UNIQUE,
+    status TEXT DEFAULT 'pending',
+    claim_url TEXT,
     registered_at DATETIME,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(track_id) REFERENCES tracks(id) ON DELETE CASCADE
   );
+
+  -- ========== TABLA PARA LEAVE A LEGACY ==========
+  CREATE TABLE IF NOT EXISTS legacy_purchases (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    artist_id INTEGER NOT NULL,
+    track_id INTEGER,
+    amount REAL NOT NULL,
+    purchase_date DATETIME NOT NULL,
+    expires_at DATETIME,
+    status TEXT DEFAULT 'active',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY(artist_id) REFERENCES artists(id) ON DELETE CASCADE,
+    FOREIGN KEY(track_id) REFERENCES tracks(id) ON DELETE SET NULL
+  );
+
+  -- ========== TABLA DE SUGERENCIAS Y REPORTES (FEEDBACK) ==========
+  CREATE TABLE IF NOT EXISTS feedback (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    type TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    status TEXT DEFAULT 'pending',
+    admin_notes TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+  );
 `);
 
-// Añadir columna auto_distribute a tracks si no existe (ignorar error si ya existe)
+// Añadir columnas a tracks si no existen (ignorar error si ya existen)
 try {
   db.exec('ALTER TABLE tracks ADD COLUMN auto_distribute BOOLEAN DEFAULT 0;');
-} catch (e) {
-  // La columna ya existe, ignoramos
-}
+} catch (e) {}
+try {
+  db.exec('ALTER TABLE tracks ADD COLUMN is_legacy BOOLEAN DEFAULT 0;');
+} catch (e) {}
+try {
+  db.exec('ALTER TABLE tracks ADD COLUMN legacy_purchased_at DATETIME;');
+} catch (e) {}
 
 export default db;
