@@ -32,9 +32,12 @@ import teamRoutes from './routes/teamRoutes';
 import spotlightRoutes from './routes/spotlightRoutes';
 import vaultRoutes from './routes/vaultRoutes';
 import riaaRoutes from './routes/riaaRoutes';
+import storeRoutes from './routes/storeRoutes';
+import youtubeRoutes from './routes/youtubeRoutes';
 
-// Importar el job automático de publicación
+// Importar los jobs automáticos
 import { startReleasePublisher } from './jobs/releasePublisher';
+import { startStoreMaximizer } from './jobs/storeMaximizerJob';
 
 dotenv.config();
 
@@ -105,7 +108,9 @@ app.use('/api/publishing', publishingRoutes);
 app.use('/api/team', teamRoutes);
 app.use('/api/spotlight', spotlightRoutes);
 app.use('/api/vault', vaultRoutes);
-app.use('/api/riaa', riaaRoutes); // <-- NUEVA RUTA
+app.use('/api/riaa', riaaRoutes);
+app.use('/api/store', storeRoutes);
+app.use('/api/youtube', youtubeRoutes);
 
 // Configuración de Socket.io
 io.on('connection', (socket) => {
@@ -126,4 +131,5 @@ app.get('/api/health', (req, res) => {
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
   startReleasePublisher();
+  startStoreMaximizer();
 });

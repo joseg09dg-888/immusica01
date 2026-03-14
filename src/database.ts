@@ -42,6 +42,7 @@ db.exec(`
     status TEXT DEFAULT 'draft',
     isrc TEXT,
     upc TEXT,
+    auto_distribute BOOLEAN DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(artist_id) REFERENCES artists(id) ON DELETE CASCADE
   );
@@ -350,12 +351,44 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS riaa_certifications (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     artist_id INTEGER NOT NULL,
-    certification_type TEXT NOT NULL, -- 'gold', 'platinum', 'diamond', etc.
+    certification_type TEXT NOT NULL,
     threshold INTEGER NOT NULL,
     achieved_at DATETIME NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(artist_id) REFERENCES artists(id) ON DELETE CASCADE
   );
+
+  -- ========== TABLA PARA STORE MAXIMIZER ==========
+  CREATE TABLE IF NOT EXISTS store_distributions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    track_id INTEGER NOT NULL,
+    store_name TEXT NOT NULL,
+    store_url TEXT,
+    status TEXT DEFAULT 'pending',
+    sent_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(track_id) REFERENCES tracks(id) ON DELETE CASCADE
+  );
+
+  -- ========== TABLA PARA YOUTUBE CONTENT ID ==========
+  CREATE TABLE IF NOT EXISTS youtube_content_id (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    track_id INTEGER NOT NULL,
+    registration_id TEXT UNIQUE,          -- ID simulado del registro en YouTube
+    status TEXT DEFAULT 'pending',         -- pending, registered, claimed, monetized
+    claim_url TEXT,                        -- URL del reclamo (simulado)
+    registered_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(track_id) REFERENCES tracks(id) ON DELETE CASCADE
+  );
 `);
+
+// Añadir columna auto_distribute a tracks si no existe (ignorar error si ya existe)
+try {
+  db.exec('ALTER TABLE tracks ADD COLUMN auto_distribute BOOLEAN DEFAULT 0;');
+} catch (e) {
+  // La columna ya existe, ignoramos
+}
 
 export default db;
