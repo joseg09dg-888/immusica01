@@ -345,6 +345,17 @@ db.exec(`
     uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(artist_id) REFERENCES artists(id) ON DELETE CASCADE
   );
+
+  -- ========== TABLA PARA CERTIFICACIONES RIAA ==========
+  CREATE TABLE IF NOT EXISTS riaa_certifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    artist_id INTEGER NOT NULL,
+    certification_type TEXT NOT NULL, -- 'gold', 'platinum', 'diamond', etc.
+    threshold INTEGER NOT NULL,
+    achieved_at DATETIME NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(artist_id) REFERENCES artists(id) ON DELETE CASCADE
+  );
 `);
 
 export default db;

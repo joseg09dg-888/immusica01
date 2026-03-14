@@ -31,6 +31,7 @@ import publishingRoutes from './routes/publishingRoutes';
 import teamRoutes from './routes/teamRoutes';
 import spotlightRoutes from './routes/spotlightRoutes';
 import vaultRoutes from './routes/vaultRoutes';
+import riaaRoutes from './routes/riaaRoutes';
 
 // Importar el job automático de publicación
 import { startReleasePublisher } from './jobs/releasePublisher';
@@ -104,6 +105,7 @@ app.use('/api/publishing', publishingRoutes);
 app.use('/api/team', teamRoutes);
 app.use('/api/spotlight', spotlightRoutes);
 app.use('/api/vault', vaultRoutes);
+app.use('/api/riaa', riaaRoutes); // <-- NUEVA RUTA
 
 // Configuración de Socket.io
 io.on('connection', (socket) => {
