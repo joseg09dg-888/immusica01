@@ -25,6 +25,7 @@ db.exec(`
     bio TEXT,
     tier TEXT DEFAULT 'Basic',
     avatar TEXT,
+    spotify_verified BOOLEAN DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
   );
@@ -328,6 +329,20 @@ db.exec(`
     responded_at DATETIME,
     FOREIGN KEY(playlist_id) REFERENCES playlists(id) ON DELETE CASCADE,
     FOREIGN KEY(track_id) REFERENCES tracks(id) ON DELETE CASCADE,
+    FOREIGN KEY(artist_id) REFERENCES artists(id) ON DELETE CASCADE
+  );
+
+  -- ========== TABLA PARA VAULT (BACKUP DE ARCHIVOS) ==========
+  CREATE TABLE IF NOT EXISTS vault_files (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    artist_id INTEGER NOT NULL,
+    filename TEXT NOT NULL,
+    file_url TEXT NOT NULL,
+    file_size INTEGER,
+    mime_type TEXT,
+    category TEXT DEFAULT 'other',
+    description TEXT,
+    uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(artist_id) REFERENCES artists(id) ON DELETE CASCADE
   );
 `);

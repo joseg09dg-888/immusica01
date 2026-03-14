@@ -30,6 +30,7 @@ import lyricsRoutes from './routes/lyricsRoutes';
 import publishingRoutes from './routes/publishingRoutes';
 import teamRoutes from './routes/teamRoutes';
 import spotlightRoutes from './routes/spotlightRoutes';
+import vaultRoutes from './routes/vaultRoutes';
 
 // Importar el job automático de publicación
 import { startReleasePublisher } from './jobs/releasePublisher';
@@ -102,6 +103,7 @@ app.use('/api/lyrics', lyricsRoutes);
 app.use('/api/publishing', publishingRoutes);
 app.use('/api/team', teamRoutes);
 app.use('/api/spotlight', spotlightRoutes);
+app.use('/api/vault', vaultRoutes);
 
 // Configuración de Socket.io
 io.on('connection', (socket) => {
