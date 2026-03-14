@@ -6,13 +6,23 @@ import * as TrackModel from '../models/Track';
 import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
+import ffmpeg from 'fluent-ffmpeg';
+import ffmpegStatic from 'ffmpeg-static';
+import { getArtistById } from '../models/Artist';
+
+// Configurar ffmpeg con la ruta estática
+if (ffmpegStatic) {
+  ffmpeg.setFfmpegPath(ffmpegStatic);
+}
 
 // Definir interfaz para Track con datos del artista
 interface TrackWithArtist extends TrackModel.Track {
   artist_name?: string;
 }
 
-// Generar tarjeta promocional
+// ============================================
+// GENERAR TARJETA PROMOCIONAL (IMAGEN)
+// ============================================
 export const generatePromoCard = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
@@ -122,7 +132,9 @@ export const generatePromoCard = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// Versión simple que genera una tarjeta con texto solamente
+// ============================================
+// GENERAR TARJETA SIMPLE (SOLO TEXTO)
+// ============================================
 export const generateSimpleCard = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
@@ -192,5 +204,109 @@ export const generateSimpleCard = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error al generar tarjeta simple' });
+  }
+};
+
+// ============================================
+// GENERAR REEL (VIDEO CORTO)
+// ============================================
+export const generateReel = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'No autorizado' });
+
+    const { trackId, message, duration = 15 } = req.body;
+    if (!trackId) {
+      return res.status(400).json({ error: 'trackId es obligatorio' });
+    }
+
+    // Verificar que el track pertenezca al artista
+    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    if (artists.length === 0) return res.status(404).json({ error: 'Artista no encontrado' });
+    const artistId = artists[0].id;
+
+    const track = await TrackModel.getTrackById(trackId) as TrackWithArtist | null;
+    if (!track || track.artist_id !== artistId) {
+      return res.status(404).json({ error: 'Track no encontrado o no pertenece al artista' });
+    }
+
+    // Obtener nombre del artista
+    const artist = artists.find(a => a.id === track.artist_id) || artists[0];
+    const artistName = artist?.name || 'Artista';
+
+    // Verificar que el track tenga portada y audio
+    if (!track.cover || !track.audio_url) {
+      return res.status(400).json({ error: 'El track debe tener portada y audio para generar un reel' });
+    }
+
+    // Rutas de los archivos
+    const coverPath = path.join(__dirname, '../..', track.cover);
+    const audioPath = path.join(__dirname, '../..', track.audio_url);
+    const outputDir = path.join(__dirname, '../../uploads/reels');
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+    const outputFilename = `reel-${trackId}-${Date.now()}.mp4`;
+    const outputPath = path.join(outputDir, outputFilename);
+
+    // Comprobar que los archivos existen
+    if (!fs.existsSync(coverPath)) {
+      return res.status(404).json({ error: 'Archivo de portada no encontrado en el servidor' });
+    }
+    if (!fs.existsSync(audioPath)) {
+      return res.status(404).json({ error: 'Archivo de audio no encontrado en el servidor' });
+    }
+
+    // Duración del video (máximo 30 segundos)
+    const videoDuration = Math.min(duration, 30);
+
+    // Texto a mostrar: título y artista, más un mensaje opcional
+    const titleText = track.title;
+    const artistText = artistName;
+    const messageText = message ? `"${message}"` : '';
+
+    // Construir filtros de texto
+    let drawTextFilters = [
+      `drawtext=text='${titleText}':fontcolor=white:fontsize=48:x=(w-text_w)/2:y=h/2-50:shadowx=2:shadowy=2`,
+      `drawtext=text='${artistText}':fontcolor=white:fontsize=36:x=(w-text_w)/2:y=h/2+20:shadowx=2:shadowy=2`
+    ];
+    if (messageText) {
+      drawTextFilters.push(`drawtext=text='${messageText}':fontcolor=yellow:fontsize=30:x=(w-text_w)/2:y=h-80:shadowx=2:shadowy=2`);
+    }
+
+    const filterComplex = drawTextFilters.join(',');
+
+    // Ejecutar ffmpeg
+    await new Promise((resolve, reject) => {
+      ffmpeg()
+        .input(coverPath)
+        .loop(videoDuration)
+        .input(audioPath)
+        .audioCodec('aac')
+        .videoCodec('libx264')
+        .outputOptions([
+          '-t', videoDuration.toString(),
+          '-vf', filterComplex,
+          '-pix_fmt', 'yuv420p',
+          '-shortest'
+        ])
+        .on('end', resolve)
+        .on('error', reject)
+        .save(outputPath);
+    });
+
+    // Enviar el video al cliente
+    res.download(outputPath, `reel-${track.title}.mp4`, (err) => {
+      if (err) {
+        console.error('Error al enviar el archivo:', err);
+      }
+      // Eliminar el archivo temporal después de 1 minuto
+      setTimeout(() => {
+        fs.unlink(outputPath, () => {});
+      }, 60000);
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al generar reel' });
   }
 };

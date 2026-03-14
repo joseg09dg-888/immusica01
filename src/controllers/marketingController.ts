@@ -2,7 +2,9 @@ import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import * as ArtistModel from '../models/Artist';
 import * as BrandingModel from '../models/Branding';
+import * as TrackModel from '../models/Track';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import * as geminiService from '../services/geminiService'; // <-- NUEVO SERVICIO
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -324,5 +326,114 @@ export const getMiBranding = (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error al obtener branding' });
+  }
+};
+
+// ============================================
+// NUEVAS FUNCIONES DE PROMOCIÓN CON IA
+// ============================================
+
+/**
+ * Genera una descripción promocional para un track.
+ */
+export const generateDescription = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'No autorizado' });
+
+    const { trackId, customTitle, customArtist, genre, mood } = req.body;
+
+    let title: string;
+    let artist: string;
+
+    if (trackId) {
+      // Usar datos del track existente
+      const track = await TrackModel.getTrackById(trackId);
+      if (!track) return res.status(404).json({ error: 'Track no encontrado' });
+      title = track.title;
+      // Obtener nombre del artista
+      const artistObj = await ArtistModel.getArtistById(track.artist_id);
+      artist = artistObj?.name || 'Artista';
+    } else {
+      // Usar datos proporcionados manualmente
+      if (!customTitle || !customArtist) {
+        return res.status(400).json({ error: 'Se requiere trackId o customTitle y customArtist' });
+      }
+      title = customTitle;
+      artist = customArtist;
+    }
+
+    const description = await geminiService.generateSongDescription(title, artist, genre, mood);
+    res.json({ description });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al generar descripción' });
+  }
+};
+
+/**
+ * Genera hashtags para un track.
+ */
+export const generateHashtags = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'No autorizado' });
+
+    const { trackId, customTitle, customArtist, genre, mood } = req.body;
+
+    let title: string;
+    let artist: string;
+
+    if (trackId) {
+      const track = await TrackModel.getTrackById(trackId);
+      if (!track) return res.status(404).json({ error: 'Track no encontrado' });
+      title = track.title;
+      const artistObj = await ArtistModel.getArtistById(track.artist_id);
+      artist = artistObj?.name || 'Artista';
+    } else {
+      if (!customTitle || !customArtist) {
+        return res.status(400).json({ error: 'Se requiere trackId o customTitle y customArtist' });
+      }
+      title = customTitle;
+      artist = customArtist;
+    }
+
+    const hashtags = await geminiService.generateHashtags(title, artist, genre, mood);
+    res.json({ hashtags });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al generar hashtags' });
+  }
+};
+
+/**
+ * Genera un post completo para redes sociales.
+ */
+export const generateSocialPost = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'No autorizado' });
+
+    const { trackId, customTitle, customArtist, genre, mood } = req.body;
+
+    let title: string;
+    let artist: string;
+
+    if (trackId) {
+      const track = await TrackModel.getTrackById(trackId);
+      if (!track) return res.status(404).json({ error: 'Track no encontrado' });
+      title = track.title;
+      const artistObj = await ArtistModel.getArtistById(track.artist_id);
+      artist = artistObj?.name || 'Artista';
+    } else {
+      if (!customTitle || !customArtist) {
+        return res.status(400).json({ error: 'Se requiere trackId o customTitle y customArtist' });
+      }
+      title = customTitle;
+      artist = customArtist;
+    }
+
+    const post = await geminiService.generateSocialPost(title, artist, genre, mood);
+    res.json(post);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al generar post' });
   }
 };
