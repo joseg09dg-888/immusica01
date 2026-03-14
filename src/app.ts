@@ -35,7 +35,8 @@ import riaaRoutes from './routes/riaaRoutes';
 import storeRoutes from './routes/storeRoutes';
 import youtubeRoutes from './routes/youtubeRoutes';
 import legacyRoutes from './routes/legacyRoutes';
-import feedbackRoutes from './routes/feedbackRoutes'; // <-- NUEVA RUTA
+import feedbackRoutes from './routes/feedbackRoutes';
+import openClawRoutes from './routes/openClawRoutes'; // <-- NUEVA RUTA
 
 // Importar jobs automáticos
 import { startReleasePublisher } from './jobs/releasePublisher';
@@ -114,7 +115,8 @@ app.use('/api/riaa', riaaRoutes);
 app.use('/api/store', storeRoutes);
 app.use('/api/youtube', youtubeRoutes);
 app.use('/api/legacy', legacyRoutes);
-app.use('/api/feedback', feedbackRoutes); // <-- NUEVA RUTA
+app.use('/api/feedback', feedbackRoutes);
+app.use('/api/openclaw', openClawRoutes); // <-- NUEVA RUTA
 
 // Configuración de Socket.io
 io.on('connection', (socket) => {

@@ -414,6 +414,62 @@ db.exec(`
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
   );
+
+  -- ========== TABLAS PARA OPENCLAW (IA ADMIN) ==========
+  CREATE TABLE IF NOT EXISTS ai_agent_config (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    agent_name TEXT DEFAULT 'OpenClaw',
+    emergency_stop BOOLEAN DEFAULT 0,
+    max_tasks_per_hour INTEGER DEFAULT 50,
+    working_hours_start TEXT DEFAULT '00:00',
+    working_hours_end TEXT DEFAULT '23:59',
+    github_repo TEXT,
+    github_token_encrypted TEXT,
+    telegram_bot_token TEXT,
+    whatsapp_api_key TEXT,
+    last_heartbeat DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS ai_tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_type TEXT NOT NULL,
+    status TEXT DEFAULT 'pending',
+    priority INTEGER DEFAULT 1,
+    input_data TEXT,
+    output_data TEXT,
+    error_message TEXT,
+    started_at DATETIME,
+    completed_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS ai_action_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    action TEXT NOT NULL,
+    details TEXT,
+    ip_address TEXT,
+    user_agent TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS ai_inbox (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    source TEXT NOT NULL,
+    sender TEXT NOT NULL,
+    subject TEXT,
+    message TEXT NOT NULL,
+    priority INTEGER DEFAULT 1,
+    status TEXT DEFAULT 'unread',
+    assigned_task_id INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    resolved_at DATETIME,
+    FOREIGN KEY(assigned_task_id) REFERENCES ai_tasks(id) ON DELETE SET NULL
+  );
+
+  -- Insertar configuración por defecto de IA
+  INSERT OR IGNORE INTO ai_agent_config (id) VALUES (1);
 `);
 
 // Añadir columnas a tracks si no existen (ignorar error si ya existen)
