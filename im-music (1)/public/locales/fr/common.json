@@ -1,0 +1,20 @@
+{
+  "welcome": "Bienvenue sur IM Music",
+  "plans": "Forfaits",
+  "splits": "Répartitions",
+  "stats": "Statistiques",
+  "chat": "Discussion",
+  "login": "Se connecter",
+  "logout": "Se déconnecter",
+  "select_plan": "Choisir un forfait",
+  "contact_whatsapp": "Contacter via WhatsApp",
+  "upload_file": "Télécharger un fichier",
+  "save": "Enregistrer",
+  "cancel": "Annuler",
+  "delete": "Supprimer",
+  "edit": "Modifier",
+  "loading": "Chargement...",
+  "error_generic": "Une erreur est survenue",
+  "success": "Opération réussie",
+  "enter_email": "Entrez votre e-mail"
+}
