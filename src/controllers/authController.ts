@@ -1,11 +1,16 @@
 import { Request, Response } from 'express';
 import SpotifyWebApi from 'spotify-web-api-node';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import db from '../database';
 
 const spotifyApi = new SpotifyWebApi({
   clientId: process.env.SPOTIFY_CLIENT_ID,
   clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
   redirectUri: process.env.SPOTIFY_REDIRECT_URI,
 });
+
+const JWT_SECRET = process.env.JWT_SECRET || 'secret-dev-key';
 
 export const login = (req: Request, res: Response) => {
   const scopes = [
@@ -39,5 +44,48 @@ export const callback = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error al obtener token:', error);
     res.status(500).send('Error al autenticar con Spotify');
+  }
+};
+
+export const loginEmail = async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email y contraseña son obligatorios' });
+    }
+
+    // Buscar usuario en la base de datos
+    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as any;
+    
+    if (!user) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    // Verificar contraseña
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    // Generar JWT token
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('Error en login email:', error);
+    res.status(500).json({ error: 'Error al iniciar sesión' });
   }
 };
