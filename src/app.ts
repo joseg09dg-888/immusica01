@@ -5,6 +5,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
+import { WebSocketServer } from 'ws'; // <-- Importar WebSocketServer
 
 import authRoutes from './routes/authRoutes';
 import artistRoutes from './routes/artistRoutes';
@@ -36,7 +37,7 @@ import storeRoutes from './routes/storeRoutes';
 import youtubeRoutes from './routes/youtubeRoutes';
 import legacyRoutes from './routes/legacyRoutes';
 import feedbackRoutes from './routes/feedbackRoutes';
-import openClawRoutes from './routes/openClawRoutes'; // <-- NUEVA RUTA
+import openClawRoutes from './routes/openClawRoutes';
 
 // Importar jobs automáticos
 import { startReleasePublisher } from './jobs/releasePublisher';
@@ -51,6 +52,29 @@ const io = new Server(server, {
     origin: '*',
     methods: ['GET', 'POST']
   }
+});
+
+// ========== NUEVO WEBSOCKET PARA OPENCLAW ==========
+const wss = new WebSocketServer({ server, path: '/gateway' });
+
+wss.on('connection', (ws, req) => {
+  console.log('🔌 OpenClaw conectado a /gateway');
+  // Opcional: enviar un mensaje de bienvenida
+  ws.send(JSON.stringify({ type: 'welcome', message: 'Conectado a IM Music Gateway' }));
+
+  ws.on('message', (data) => {
+    console.log('Mensaje de OpenClaw:', data.toString());
+    // Aquí puedes procesar los mensajes según sea necesario
+    // Por ejemplo, podrías responder con un pong o manejar comandos
+  });
+
+  ws.on('close', () => {
+    console.log('OpenClaw desconectado de /gateway');
+  });
+
+  ws.on('error', (error) => {
+    console.error('Error en WebSocket de OpenClaw:', error);
+  });
 });
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
@@ -116,9 +140,9 @@ app.use('/api/store', storeRoutes);
 app.use('/api/youtube', youtubeRoutes);
 app.use('/api/legacy', legacyRoutes);
 app.use('/api/feedback', feedbackRoutes);
-app.use('/api/openclaw', openClawRoutes); // <-- NUEVA RUTA
+app.use('/api/openclaw', openClawRoutes);
 
-// Configuración de Socket.io
+// Configuración de Socket.io (para el chat)
 io.on('connection', (socket) => {
   console.log('🔌 Nuevo cliente conectado al chat');
   socket.on('disconnect', () => {
