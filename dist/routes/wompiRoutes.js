@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const wompiController_1 = require("../controllers/wompiController");
+const router = (0, express_1.Router)();
+router.get('/plans', wompiController_1.getPlans);
+router.post('/create-payment', wompiController_1.createPayment);
+router.post('/webhook', wompiController_1.wompiWebhook);
+router.get('/transaction/:transactionId', wompiController_1.checkTransactionStatus);
+router.get('/subscriptions', wompiController_1.getUserSubscriptions);
+exports.default = router;

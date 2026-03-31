@@ -6,12 +6,10 @@ import * as RoyaltyModel from '../models/Royalty';
 import multer from 'multer';
 import csv from 'csv-parser';
 import fs from 'fs';
-// IMPORTACIÓN CORREGIDA - apunta a database.ts en src
 import db from '../database';
 
 const upload = multer({ dest: 'uploads/' });
 
-// Función para procesar splits y retenciones
 const processSplitsForRoyalty = (trackId: number, cantidad: number) => {
   try {
     const splits = db.prepare('SELECT * FROM splits WHERE track_id = ? AND status = "accepted"').all(trackId) as any[];
@@ -72,12 +70,17 @@ export const uploadRoyalties = [
               continue;
             }
 
-            let trackId = null;
+            let trackId: number | null = null;
             if (row.track_id) {
               trackId = parseInt(row.track_id);
             } else if (row.track_title) {
-              const tracks = TrackModel.getAllTracks().filter((t: any) => t.title === row.track_title);
-              if (tracks.length > 0) trackId = tracks[0].id;
+              const track = db.prepare('SELECT id FROM tracks WHERE title = ?').get(row.track_title) as { id: number } | undefined;
+              if (track) trackId = track.id;
+            }
+
+            if (!trackId) {
+              console.warn('No se pudo determinar el track para la fila:', row);
+              continue;
             }
 
             RoyaltyModel.createRoyalty({
@@ -90,9 +93,7 @@ export const uploadRoyalties = [
               estado: row.estado || 'proyectado'
             });
 
-            if (trackId) {
-              processSplitsForRoyalty(trackId, parseFloat(row.cantidad));
-            }
+            processSplitsForRoyalty(trackId, parseFloat(row.cantidad));
           }
 
           res.json({ message: 'Archivo procesado correctamente', filas: results.length });
@@ -114,9 +115,8 @@ export const getAllRoyalties = (req: AuthRequest, res: Response) => {
   res.json(royalties);
 };
 
-// ========== ENDPOINTS PARA RETENCIONES (CORREGIDOS) ==========
+// ========== ENDPOINTS PARA RETENCIONES ==========
 
-// Obtener retenciones de un track específico
 export const getWithholdingsByTrack = (req: AuthRequest, res: Response) => {
   const { trackId } = req.params;
   if (!trackId) return res.status(400).json({ error: 'trackId requerido' });
@@ -130,12 +130,10 @@ export const getWithholdingsByTrack = (req: AuthRequest, res: Response) => {
   }
 };
 
-// Obtener todas las retenciones de un artista - VERSIÓN CORREGIDA
 export const getMyWithholdings = async (req: AuthRequest, res: Response) => {
   if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
   try {
-    // Versión simplificada que funciona sin errores de tipo
     const tracks = db.prepare(`
       SELECT t.id 
       FROM tracks t
@@ -144,12 +142,10 @@ export const getMyWithholdings = async (req: AuthRequest, res: Response) => {
     `).all(req.user.id) as any[];
 
     const trackIds = tracks.map(t => t.id);
-
     if (trackIds.length === 0) return res.json([]);
 
     const placeholders = trackIds.map(() => '?').join(',');
     const withholdings = db.prepare(`SELECT * FROM royalty_withholdings WHERE track_id IN (${placeholders})`).all(...trackIds);
-
     res.json(withholdings);
   } catch (error) {
     console.error(error);
@@ -157,7 +153,6 @@ export const getMyWithholdings = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// Liberar una retención
 export const releaseWithholding = (req: AuthRequest, res: Response) => {
   const { withholdingId } = req.params;
 

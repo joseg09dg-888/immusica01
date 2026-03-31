@@ -72,8 +72,15 @@ export const getArtistLimit = async (req: AuthRequest, res: Response) => {
 export const getArtistById = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
+    
+    // Manejar correctamente el parámetro id (puede ser string o string[])
     const { id } = req.params;
-    const artistId = parseInt(id);
+    const idStr = Array.isArray(id) ? id[0] : id;
+    const artistId = parseInt(idStr, 10);
+    
+    if (isNaN(artistId)) {
+      return res.status(400).json({ error: 'ID de artista inválido' });
+    }
 
     // Verificar que el usuario tiene acceso a ese artista
     const role = await UserArtistModel.getUserArtistRole(req.user.id, artistId);
@@ -95,8 +102,14 @@ export const getArtistById = async (req: AuthRequest, res: Response) => {
 export const updateArtist = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
+    
     const { id } = req.params;
-    const artistId = parseInt(id);
+    const idStr = Array.isArray(id) ? id[0] : id;
+    const artistId = parseInt(idStr, 10);
+    
+    if (isNaN(artistId)) {
+      return res.status(400).json({ error: 'ID de artista inválido' });
+    }
 
     const role = await UserArtistModel.getUserArtistRole(req.user.id, artistId);
     if (!role || (role !== 'owner' && role !== 'manager')) {
@@ -117,8 +130,14 @@ export const updateArtist = async (req: AuthRequest, res: Response) => {
 export const deleteArtist = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
+    
     const { id } = req.params;
-    const artistId = parseInt(id);
+    const idStr = Array.isArray(id) ? id[0] : id;
+    const artistId = parseInt(idStr, 10);
+    
+    if (isNaN(artistId)) {
+      return res.status(400).json({ error: 'ID de artista inválido' });
+    }
 
     const role = await UserArtistModel.getUserArtistRole(req.user.id, artistId);
     if (role !== 'owner') {

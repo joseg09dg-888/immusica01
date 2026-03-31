@@ -8,14 +8,15 @@ export interface Artist {
   bio: string | null;
   tier: string;
   avatar: string | null;
+  spotify_verified: number; // 0 o 1, nueva propiedad
   created_at: string;
 }
 
 // Crear un artista
-export const createArtist = (artistData: { user_id: number; name: string; genre?: string; bio?: string; tier?: string; avatar?: string }): number => {
+export const createArtist = (artistData: { user_id: number; name: string; genre?: string; bio?: string; tier?: string; avatar?: string; spotify_verified?: number }): number => {
   const stmt = db.prepare(`
-    INSERT INTO artists (user_id, name, genre, bio, tier, avatar)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO artists (user_id, name, genre, bio, tier, avatar, spotify_verified)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
   const result = stmt.run(
     artistData.user_id,
@@ -23,7 +24,8 @@ export const createArtist = (artistData: { user_id: number; name: string; genre?
     artistData.genre || null,
     artistData.bio || null,
     artistData.tier || 'Basic',
-    artistData.avatar || null
+    artistData.avatar || null,
+    artistData.spotify_verified || 0
   );
   return result.lastInsertRowid as number;
 };
@@ -45,9 +47,7 @@ export const deleteArtist = (id: number): void => {
   db.prepare('DELETE FROM artists WHERE id = ?').run(id);
 };
 
-// Obtener artistas por usuario (si necesitas, pero ahora lo manejamos con UserArtistModel)
-// Esta función podría no ser necesaria si usas UserArtistModel.
-// Pero por compatibilidad, la mantenemos:
+// Obtener artistas por usuario
 export const getArtistsByUser = (userId: number): Artist[] => {
   return db.prepare('SELECT * FROM artists WHERE user_id = ?').all(userId) as Artist[];
 };

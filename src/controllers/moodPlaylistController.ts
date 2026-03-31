@@ -39,26 +39,40 @@ export const getSpotifyAuthUrl = (req: AuthRequest, res: Response) => {
 // ============================================
 export const spotifyCallback = async (req: Request, res: Response) => {
   const { code, state } = req.query;
+
+  // Validar y convertir code a string de forma segura
+  const codeStr = Array.isArray(code) ? code[0] : code;
+  if (!codeStr || typeof codeStr !== 'string') {
+    return res.status(400).json({ error: 'Código no proporcionado o inválido' });
+  }
+
   const artistId = parseInt(state as string);
+  if (isNaN(artistId)) {
+    return res.status(400).json({ error: 'ID de artista inválido' });
+  }
 
   try {
-    // Intercambiar código por token
-    const tokenResponse = await axios.post('https://accounts.spotify.com/api/token',
+    interface TokenResponse {
+      access_token: string;
+      refresh_token: string;
+      expires_in: number;
+    }
+
+    const tokenResponse = await axios.post<TokenResponse>(
+      'https://accounts.spotify.com/api/token',
       querystring.stringify({
         grant_type: 'authorization_code',
-        code: code,
+        code: codeStr,
         redirect_uri: SPOTIFY_REDIRECT_URI,
         client_id: SPOTIFY_CLIENT_ID,
         client_secret: SPOTIFY_CLIENT_SECRET
-      }), {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-      }
+      }),
+      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
     );
 
     const { access_token, refresh_token, expires_in } = tokenResponse.data;
     const expires_at = new Date(Date.now() + expires_in * 1000).toISOString();
 
-    // Guardar tokens en la base de datos
     await SpotifyTokenModel.saveSpotifyToken({
       artist_id: artistId,
       access_token,
@@ -66,10 +80,8 @@ export const spotifyCallback = async (req: Request, res: Response) => {
       expires_at
     });
 
-    // Redirigir al frontend con éxito
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000'; // Cambia esto por la URL de AI Studio
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     res.redirect(`${frontendUrl}?spotify=connected`);
-
   } catch (error) {
     console.error('Error en callback de Spotify:', error);
     res.status(500).json({ error: 'Error al conectar con Spotify' });
@@ -90,25 +102,27 @@ export const generateMoodPlaylist = async (req: AuthRequest, res: Response) => {
     const { mood_description } = req.body;
     if (!mood_description) return res.status(400).json({ error: 'Descripción de mood requerida' });
 
-    // Obtener token de Spotify del artista
     const tokenData = await SpotifyTokenModel.getSpotifyTokenByArtist(artist.id);
     if (!tokenData) {
       return res.status(401).json({ error: 'Debes conectar tu cuenta de Spotify primero' });
     }
 
-    // Verificar si el token ha expirado y refrescarlo si es necesario
     let accessToken = tokenData.access_token;
     if (new Date(tokenData.expires_at) < new Date()) {
-      // Refrescar token
-      const refreshResponse = await axios.post('https://accounts.spotify.com/api/token',
+      interface RefreshResponse {
+        access_token: string;
+        expires_in: number;
+      }
+
+      const refreshResponse = await axios.post<RefreshResponse>(
+        'https://accounts.spotify.com/api/token',
         querystring.stringify({
           grant_type: 'refresh_token',
           refresh_token: tokenData.refresh_token,
           client_id: SPOTIFY_CLIENT_ID,
           client_secret: SPOTIFY_CLIENT_SECRET
-        }), {
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-        }
+        }),
+        { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
       );
       accessToken = refreshResponse.data.access_token;
       const newExpiresAt = new Date(Date.now() + refreshResponse.data.expires_in * 1000).toISOString();
@@ -120,7 +134,6 @@ export const generateMoodPlaylist = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // 1. Usar Gemini para interpretar el mood y generar consultas de búsqueda
     const prompt = `
       Eres un experto musical. Basado en la siguiente descripción de mood, genera 10 consultas de búsqueda para encontrar canciones en Spotify que coincidan perfectamente con ese sentimiento.
       
@@ -136,21 +149,32 @@ export const generateMoodPlaylist = async (req: AuthRequest, res: Response) => {
     const result = await model.generateContent(prompt);
     const text = result.response.text();
 
-    // Extraer el array JSON de la respuesta
     const jsonMatch = text.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
       return res.status(500).json({ error: 'Error al generar consultas' });
     }
 
-    const searchQueries = JSON.parse(jsonMatch[0]);
+    const searchQueries = JSON.parse(jsonMatch[0]) as string[];
 
-    // 2. Crear una playlist en Spotify
-    const userProfileResponse = await axios.get('https://api.spotify.com/v1/me', {
+    interface UserProfile {
+      id: string;
+      display_name: string;
+      email?: string;
+    }
+
+    const userProfileResponse = await axios.get<UserProfile>('https://api.spotify.com/v1/me', {
       headers: { 'Authorization': `Bearer ${accessToken}` }
     });
     const userId = userProfileResponse.data.id;
 
-    const createPlaylistResponse = await axios.post(
+    interface CreatePlaylistResponse {
+      id: string;
+      external_urls: {
+        spotify: string;
+      };
+    }
+
+    const createPlaylistResponse = await axios.post<CreatePlaylistResponse>(
       `https://api.spotify.com/v1/users/${userId}/playlists`,
       {
         name: `Mood: ${mood_description.substring(0, 50)}`,
@@ -163,12 +187,19 @@ export const generateMoodPlaylist = async (req: AuthRequest, res: Response) => {
     const playlistId = createPlaylistResponse.data.id;
     const playlistUrl = createPlaylistResponse.data.external_urls.spotify;
 
-    // 3. Buscar y agregar canciones
-    const trackUris = [];
+    const trackUris: string[] = [];
+
+    interface TrackSearchResponse {
+      tracks: {
+        items: Array<{
+          uri: string;
+        }>;
+      };
+    }
 
     for (const query of searchQueries) {
       try {
-        const searchResponse = await axios.get('https://api.spotify.com/v1/search', {
+        const searchResponse = await axios.get<TrackSearchResponse>('https://api.spotify.com/v1/search', {
           params: {
             q: query,
             type: 'track',
@@ -185,7 +216,6 @@ export const generateMoodPlaylist = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    // Agregar tracks a la playlist (de 100 en 100)
     if (trackUris.length > 0) {
       await axios.post(
         `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
@@ -194,7 +224,6 @@ export const generateMoodPlaylist = async (req: AuthRequest, res: Response) => {
       );
     }
 
-    // 4. Guardar en base de datos
     await MoodPlaylistModel.createMoodPlaylist({
       artist_id: artist.id,
       mood_description,
@@ -211,7 +240,6 @@ export const generateMoodPlaylist = async (req: AuthRequest, res: Response) => {
       tracksFound: trackUris.length,
       mood_description
     });
-
   } catch (error) {
     console.error('Error generando playlist:', error);
     res.status(500).json({ error: 'Error al generar playlist' });
