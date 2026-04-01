@@ -5,7 +5,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
-import { WebSocketServer } from 'ws'; // <-- Importar WebSocketServer
+import { WebSocketServer } from 'ws';
 
 import authRoutes from './routes/authRoutes';
 import artistRoutes from './routes/artistRoutes';
@@ -39,7 +39,6 @@ import legacyRoutes from './routes/legacyRoutes';
 import feedbackRoutes from './routes/feedbackRoutes';
 import openClawRoutes from './routes/openClawRoutes';
 
-// Importar jobs automáticos
 import { startReleasePublisher } from './jobs/releasePublisher';
 import { startStoreMaximizer } from './jobs/storeMaximizerJob';
 
@@ -54,18 +53,15 @@ const io = new Server(server, {
   }
 });
 
-// ========== NUEVO WEBSOCKET PARA OPENCLAW ==========
+// WebSocket para OpenClaw
 const wss = new WebSocketServer({ server, path: '/gateway' });
 
 wss.on('connection', (ws, req) => {
   console.log('🔌 OpenClaw conectado a /gateway');
-  // Opcional: enviar un mensaje de bienvenida
   ws.send(JSON.stringify({ type: 'welcome', message: 'Conectado a IM Music Gateway' }));
 
   ws.on('message', (data) => {
     console.log('Mensaje de OpenClaw:', data.toString());
-    // Aquí puedes procesar los mensajes según sea necesario
-    // Por ejemplo, podrías responder con un pong o manejar comandos
   });
 
   ws.on('close', () => {
@@ -83,7 +79,7 @@ app.set('trust proxy', 1);
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
 
-// Webhook de Wompi (debe ser raw)
+// Webhook de Wompi — raw body para verificación de firma
 app.post('/api/wompi/webhook', express.raw({ type: 'application/json' }), (req, res) => {
   try {
     const rawBody = req.body as Buffer;
@@ -142,7 +138,7 @@ app.use('/api/legacy', legacyRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/openclaw', openClawRoutes);
 
-// Configuración de Socket.io (para el chat)
+// Socket.io chat
 io.on('connection', (socket) => {
   console.log('🔌 Nuevo cliente conectado al chat');
   socket.on('disconnect', () => {
@@ -152,14 +148,28 @@ io.on('connection', (socket) => {
 
 export { io };
 
-// Health check
+// Health check — actualizado
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Servidor funcionando' });
+  res.json({
+    status: 'ok',
+    message: 'IM Music API funcionando',
+    timestamp: new Date().toISOString(),
+    integraciones: {
+      gemini:     process.env.GEMINI_API_KEY ? '✅' : '❌ falta GEMINI_API_KEY',
+      wompi:      process.env.WOMPI_PUBLIC_KEY ? '✅' : '❌ falta WOMPI_PUBLIC_KEY',
+      cloudinary: (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_CLOUD_NAME !== 'pon_aqui_tu_cloud_name') ? '✅' : '⚠️ pendiente',
+      spotify:    process.env.SPOTIFY_CLIENT_ID ? '✅' : '❌ falta SPOTIFY_CLIENT_ID',
+    }
+  });
 });
 
 // Iniciar servidor y jobs
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+  console.log(`✅ IM Music API corriendo en http://localhost:${PORT}`);
+  console.log(`   Gemini:     ${process.env.GEMINI_API_KEY ? '✅ configurado' : '❌ falta GEMINI_API_KEY'}`);
+  console.log(`   Wompi:      ${process.env.WOMPI_PUBLIC_KEY ? '✅ configurado' : '❌ falta WOMPI_PUBLIC_KEY'}`);
+  console.log(`   Cloudinary: ${(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_CLOUD_NAME !== 'pon_aqui_tu_cloud_name') ? '✅ configurado' : '⚠️  pendiente — sube credenciales al .env'}`);
+  console.log(`   Spotify:    ${process.env.SPOTIFY_CLIENT_ID ? '✅ configurado' : '❌ falta SPOTIFY_CLIENT_ID'}`);
   startReleasePublisher();
   startStoreMaximizer();
 });

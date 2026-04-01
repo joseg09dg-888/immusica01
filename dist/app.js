@@ -44,7 +44,7 @@ const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const dotenv_1 = __importDefault(require("dotenv"));
-const ws_1 = require("ws"); // <-- Importar WebSocketServer
+const ws_1 = require("ws");
 const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
 const artistRoutes_1 = __importDefault(require("./routes/artistRoutes"));
 const trackRoutes_1 = __importDefault(require("./routes/trackRoutes"));
@@ -76,7 +76,6 @@ const youtubeRoutes_1 = __importDefault(require("./routes/youtubeRoutes"));
 const legacyRoutes_1 = __importDefault(require("./routes/legacyRoutes"));
 const feedbackRoutes_1 = __importDefault(require("./routes/feedbackRoutes"));
 const openClawRoutes_1 = __importDefault(require("./routes/openClawRoutes"));
-// Importar jobs automáticos
 const releasePublisher_1 = require("./jobs/releasePublisher");
 const storeMaximizerJob_1 = require("./jobs/storeMaximizerJob");
 dotenv_1.default.config();
@@ -89,16 +88,13 @@ const io = new socket_io_1.Server(server, {
     }
 });
 exports.io = io;
-// ========== NUEVO WEBSOCKET PARA OPENCLAW ==========
+// WebSocket para OpenClaw
 const wss = new ws_1.WebSocketServer({ server, path: '/gateway' });
 wss.on('connection', (ws, req) => {
     console.log('🔌 OpenClaw conectado a /gateway');
-    // Opcional: enviar un mensaje de bienvenida
     ws.send(JSON.stringify({ type: 'welcome', message: 'Conectado a IM Music Gateway' }));
     ws.on('message', (data) => {
         console.log('Mensaje de OpenClaw:', data.toString());
-        // Aquí puedes procesar los mensajes según sea necesario
-        // Por ejemplo, podrías responder con un pong o manejar comandos
     });
     ws.on('close', () => {
         console.log('OpenClaw desconectado de /gateway');
@@ -111,7 +107,7 @@ const PORT = parseInt(process.env.PORT || '3000', 10);
 app.set('trust proxy', 1);
 app.use((0, helmet_1.default)({ contentSecurityPolicy: false }));
 app.use((0, cors_1.default)());
-// Webhook de Wompi (debe ser raw)
+// Webhook de Wompi — raw body para verificación de firma
 app.post('/api/wompi/webhook', express_1.default.raw({ type: 'application/json' }), (req, res) => {
     try {
         const rawBody = req.body;
@@ -167,20 +163,34 @@ app.use('/api/youtube', youtubeRoutes_1.default);
 app.use('/api/legacy', legacyRoutes_1.default);
 app.use('/api/feedback', feedbackRoutes_1.default);
 app.use('/api/openclaw', openClawRoutes_1.default);
-// Configuración de Socket.io (para el chat)
+// Socket.io chat
 io.on('connection', (socket) => {
     console.log('🔌 Nuevo cliente conectado al chat');
     socket.on('disconnect', () => {
         console.log('🔌 Cliente desconectado del chat');
     });
 });
-// Health check
+// Health check — actualizado
 app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', message: 'Servidor funcionando' });
+    res.json({
+        status: 'ok',
+        message: 'IM Music API funcionando',
+        timestamp: new Date().toISOString(),
+        integraciones: {
+            gemini: process.env.GEMINI_API_KEY ? '✅' : '❌ falta GEMINI_API_KEY',
+            wompi: process.env.WOMPI_PUBLIC_KEY ? '✅' : '❌ falta WOMPI_PUBLIC_KEY',
+            cloudinary: (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_CLOUD_NAME !== 'pon_aqui_tu_cloud_name') ? '✅' : '⚠️ pendiente',
+            spotify: process.env.SPOTIFY_CLIENT_ID ? '✅' : '❌ falta SPOTIFY_CLIENT_ID',
+        }
+    });
 });
 // Iniciar servidor y jobs
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+    console.log(`✅ IM Music API corriendo en http://localhost:${PORT}`);
+    console.log(`   Gemini:     ${process.env.GEMINI_API_KEY ? '✅ configurado' : '❌ falta GEMINI_API_KEY'}`);
+    console.log(`   Wompi:      ${process.env.WOMPI_PUBLIC_KEY ? '✅ configurado' : '❌ falta WOMPI_PUBLIC_KEY'}`);
+    console.log(`   Cloudinary: ${(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_CLOUD_NAME !== 'pon_aqui_tu_cloud_name') ? '✅ configurado' : '⚠️  pendiente — sube credenciales al .env'}`);
+    console.log(`   Spotify:    ${process.env.SPOTIFY_CLIENT_ID ? '✅ configurado' : '❌ falta SPOTIFY_CLIENT_ID'}`);
     (0, releasePublisher_1.startReleasePublisher)();
     (0, storeMaximizerJob_1.startStoreMaximizer)();
 });
