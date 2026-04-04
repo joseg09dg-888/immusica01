@@ -12,14 +12,13 @@ export interface Track {
   status: string;
   isrc: string | null;
   upc: string | null;
-  auto_distribute: number; // 0 o 1
-  is_legacy: number;       // 0 o 1
+  auto_distribute: number;
+  is_legacy: number;
   legacy_purchased_at: string | null;
   created_at: string;
 }
 
-// Crear un nuevo track
-export const createTrack = (trackData: {
+export const createTrack = async (trackData: {
   artist_id: number;
   title: string;
   release_date?: string | null;
@@ -29,13 +28,12 @@ export const createTrack = (trackData: {
   status?: string;
   isrc?: string | null;
   upc?: string | null;
-}): number => {
-  const stmt = db.prepare(`
+}): Promise<number> => {
+  const result = await db.prepare(`
     INSERT INTO tracks (
       artist_id, title, release_date, scheduled_date, cover, audio_url, status, isrc, upc
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  const result = stmt.run(
+  `).run(
     trackData.artist_id,
     trackData.title,
     trackData.release_date || null,
@@ -49,24 +47,20 @@ export const createTrack = (trackData: {
   return result.lastInsertRowid as number;
 };
 
-// Obtener un track por ID
-export const getTrackById = (id: number): Track | undefined => {
-  return db.prepare('SELECT * FROM tracks WHERE id = ?').get(id) as Track | undefined;
+export const getTrackById = async (id: number): Promise<Track | undefined> => {
+  return db.prepare('SELECT * FROM tracks WHERE id = ?').get(id) as Promise<Track | undefined>;
 };
 
-// Obtener todos los tracks de un artista
-export const getTracksByArtist = (artistId: number): Track[] => {
-  return db.prepare('SELECT * FROM tracks WHERE artist_id = ? ORDER BY created_at DESC').all(artistId) as Track[];
+export const getTracksByArtist = async (artistId: number): Promise<Track[]> => {
+  return db.prepare('SELECT * FROM tracks WHERE artist_id = ? ORDER BY created_at DESC').all(artistId) as Promise<Track[]>;
 };
 
-// Actualizar un track
-export const updateTrack = (id: number, data: Partial<Track>): void => {
+export const updateTrack = async (id: number, data: Partial<Track>): Promise<void> => {
   const fields = Object.keys(data).map(key => `${key} = ?`).join(', ');
   const values = [...Object.values(data), id];
-  db.prepare(`UPDATE tracks SET ${fields} WHERE id = ?`).run(...values);
+  await db.prepare(`UPDATE tracks SET ${fields} WHERE id = ?`).run(...values);
 };
 
-// Eliminar un track
-export const deleteTrack = (id: number): void => {
-  db.prepare('DELETE FROM tracks WHERE id = ?').run(id);
+export const deleteTrack = async (id: number): Promise<void> => {
+  await db.prepare('DELETE FROM tracks WHERE id = ?').run(id);
 };

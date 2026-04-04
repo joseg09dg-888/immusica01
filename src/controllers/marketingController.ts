@@ -34,7 +34,7 @@ export const procesarTest = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'Crea un artista primero' });
     const artist = artists[0];
 
@@ -43,7 +43,7 @@ export const procesarTest = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'Se requieren 12 respuestas' });
     }
 
-    BrandingModel.createOrUpdateBranding(artist.id, {
+    await BrandingModel.createOrUpdateBranding(artist.id, {
       respuestas_test: JSON.stringify(respuestas)
     });
 
@@ -71,7 +71,7 @@ export const procesarTest = async (req: AuthRequest, res: Response) => {
     const jsonStr = text.substring(jsonStart, jsonEnd);
     const aiResponse = JSON.parse(jsonStr);
 
-    BrandingModel.createOrUpdateBranding(artist.id, {
+    await BrandingModel.createOrUpdateBranding(artist.id, {
       arquetipo: aiResponse.arquetipo,
       manifiesto: aiResponse.manifiesto
     });
@@ -92,11 +92,11 @@ export const generarBrandingSensorial = async (req: AuthRequest, res: Response) 
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'No hay artista' });
     const artist = artists[0];
 
-    const branding = BrandingModel.getBrandingByArtist(artist.id);
+    const branding = await BrandingModel.getBrandingByArtist(artist.id);
     if (!branding || !branding.arquetipo) {
       return res.status(400).json({ error: 'Primero completa el test de arquetipo' });
     }
@@ -134,7 +134,7 @@ export const generarBrandingSensorial = async (req: AuthRequest, res: Response) 
     const jsonStr = text.substring(jsonStart, jsonEnd);
     const aiResponse = JSON.parse(jsonStr);
 
-    BrandingModel.createOrUpdateBranding(artist.id, {
+    await BrandingModel.createOrUpdateBranding(artist.id, {
       colores: aiResponse.colores,
       olores: aiResponse.olores,
       sabores: aiResponse.sabores,
@@ -155,11 +155,11 @@ export const generarMercadoObjetivo = async (req: AuthRequest, res: Response) =>
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'No hay artista' });
     const artist = artists[0];
 
-    const branding = BrandingModel.getBrandingByArtist(artist.id);
+    const branding = await BrandingModel.getBrandingByArtist(artist.id);
     if (!branding || !branding.arquetipo) {
       return res.status(400).json({ error: 'Primero completa el branding' });
     }
@@ -197,7 +197,7 @@ export const generarMercadoObjetivo = async (req: AuthRequest, res: Response) =>
     const jsonStr = text.substring(jsonStart, jsonEnd);
     const aiResponse = JSON.parse(jsonStr);
 
-    BrandingModel.createOrUpdateBranding(artist.id, {
+    await BrandingModel.createOrUpdateBranding(artist.id, {
       mercados_prioritarios: JSON.stringify(aiResponse.mercados),
       perfil_oyente: aiResponse.perfil_oyente
     });
@@ -214,11 +214,11 @@ export const generarPlanContenidos = async (req: AuthRequest, res: Response) => 
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'No hay artista' });
     const artist = artists[0];
 
-    const branding = BrandingModel.getBrandingByArtist(artist.id);
+    const branding = await BrandingModel.getBrandingByArtist(artist.id);
     if (!branding || !branding.arquetipo) {
       return res.status(400).json({ error: 'Completa el branding primero' });
     }
@@ -287,7 +287,7 @@ export const generarPlanContenidos = async (req: AuthRequest, res: Response) => 
     const jsonStr = text.substring(jsonStart, jsonEnd);
     const aiResponse = JSON.parse(jsonStr);
 
-    BrandingModel.createOrUpdateBranding(artist.id, {
+    await BrandingModel.createOrUpdateBranding(artist.id, {
       plan_contenidos: JSON.stringify(aiResponse.plan),
       fecha_generacion_plan: new Date().toISOString()
     });
@@ -300,16 +300,16 @@ export const generarPlanContenidos = async (req: AuthRequest, res: Response) => 
   }
 };
 
-export const getMiBranding = (req: AuthRequest, res: Response) => {
+export const getMiBranding = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'No hay artista' });
     const artist = artists[0];
 
-    const branding = BrandingModel.getBrandingByArtist(artist.id);
-    
+    const branding = await BrandingModel.getBrandingByArtist(artist.id);
+
     if (branding) {
       if (branding.respuestas_test) {
         branding.respuestas_test = JSON.parse(branding.respuestas_test as string);

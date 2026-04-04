@@ -63,19 +63,17 @@ export const createComposer = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'El nombre es obligatorio' });
     }
     
-    const insert = db.prepare(`
+    const result = await db.prepare(`
       INSERT INTO composers (full_name, email, pro_affiliation, pro_number, ipi)
       VALUES (?, ?, ?, ?, ?)
-    `);
-    
-    const result = insert.run(
+    `).run(
       full_name,
       email || null,
       pro_affiliation || null,
       pro_number || null,
       ipi || null
     );
-    
+
     res.status(201).json({
       id: result.lastInsertRowid,
       message: 'Compositor creado correctamente'
@@ -90,12 +88,12 @@ export const getComposers = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
     
-    const userComposers = db.prepare(`
+    const userComposers = await db.prepare(`
       SELECT c.* FROM composers c
       WHERE c.user_id = ?
     `).all(req.user.id) as ComposerRow[];
     
-    const externalComposers = db.prepare(`
+    const externalComposers = await db.prepare(`
       SELECT DISTINCT c.* FROM composers c
       JOIN composition_splits cs ON c.id = cs.composer_id
       JOIN compositions comp ON cs.composition_id = comp.id
@@ -129,28 +127,21 @@ export const createComposition = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'El título es obligatorio' });
     }
     
-    const insertComposition = db.prepare(`
+    const result = await db.prepare(`
       INSERT INTO compositions (title, language, duration_seconds, lyrics)
       VALUES (?, ?, ?, ?)
-    `);
-    
-    const result = insertComposition.run(
+    `).run(
       title,
       language || null,
       duration_seconds || null,
       lyrics || null
     );
-    
+
     const compositionId = result.lastInsertRowid;
-    
+
     if (track_ids && Array.isArray(track_ids)) {
-      const insertTrackComp = db.prepare(`
-        INSERT INTO track_compositions (track_id, composition_id)
-        VALUES (?, ?)
-      `);
-      
       for (const trackId of track_ids) {
-        insertTrackComp.run(trackId, compositionId);
+        await db.prepare(`INSERT INTO track_compositions (track_id, composition_id) VALUES (?, ?)`).run(trackId, compositionId);
       }
     }
     
@@ -180,19 +171,11 @@ export const assignCompositionSplits = async (req: AuthRequest, res: Response) =
       return res.status(400).json({ error: 'La suma de porcentajes debe ser 100%' });
     }
     
-    db.prepare('DELETE FROM composition_splits WHERE composition_id = ?').run(compositionId);
-    
-    const insertSplit = db.prepare(`
-      INSERT INTO composition_splits (composition_id, composer_id, role, percentage)
-      VALUES (?, ?, ?, ?)
-    `);
+    await db.prepare('DELETE FROM composition_splits WHERE composition_id = ?').run(compositionId);
     
     for (const split of splits) {
-      insertSplit.run(
-        compositionId,
-        split.composer_id,
-        split.role || 'composer',
-        split.percentage
+      await db.prepare(`INSERT INTO composition_splits (composition_id, composer_id, role, percentage) VALUES (?, ?, ?, ?)`).run(
+        compositionId, split.composer_id, split.role || 'composer', split.percentage
       );
     }
     
@@ -219,7 +202,7 @@ export const registerWithPRO = async (req: AuthRequest, res: Response) => {
     }
     
     // Obtener datos de la composición y splits, con tipado explícito
-    const composition = db.prepare(`
+    const composition = await db.prepare(`
       SELECT c.*, 
       GROUP_CONCAT(cs.role || ':' || cs.percentage || ':' || comp.full_name || ':' || comp.pro_number) as composer_data
       FROM compositions c
@@ -256,7 +239,7 @@ export const registerWithPRO = async (req: AuthRequest, res: Response) => {
     
     const result = await PROIntegrationService.submitToPRO(pro_name, submissionData);
     
-    db.prepare(`
+    await db.prepare(`
       INSERT INTO composition_registrations 
       (composition_id, pro_name, registration_number, status, response_data)
       VALUES (?, ?, ?, ?, ?)
@@ -292,40 +275,22 @@ export const addPublishingRoyalty = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'Faltan campos requeridos' });
     }
     
-    const insertRoyalty = db.prepare(`
-      INSERT INTO publishing_royalties 
+    const result = await db.prepare(`
+      INSERT INTO publishing_royalties
       (composition_id, track_id, fecha, plataforma, tipo, cantidad, territorio, uso_categoria)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    
-    const result = insertRoyalty.run(
-      composition_id,
-      track_id || null,
-      fecha,
-      plataforma,
-      tipo || null,
-      cantidad,
-      territorio || null,
-      uso_categoria || null
+    `).run(
+      composition_id, track_id || null, fecha, plataforma, tipo || null, cantidad, territorio || null, uso_categoria || null
     );
-    
+
     const royaltyId = result.lastInsertRowid;
-    
-    const splits = db.prepare(`
-      SELECT * FROM composition_splits 
-      WHERE composition_id = ?
-    `).all(composition_id) as CompositionSplitRow[];
-    
+
+    const splits = await db.prepare(`SELECT * FROM composition_splits WHERE composition_id = ?`).all(composition_id) as CompositionSplitRow[];
+
     if (splits.length > 0) {
-      const insertDist = db.prepare(`
-        INSERT INTO publishing_distributions 
-        (publishing_royalty_id, composer_id, amount, percentage_applied)
-        VALUES (?, ?, ?, ?)
-      `);
-      
       for (const split of splits) {
         const amount = (cantidad * split.percentage) / 100;
-        insertDist.run(royaltyId, split.composer_id, amount, split.percentage);
+        await db.prepare(`INSERT INTO publishing_distributions (publishing_royalty_id, composer_id, amount, percentage_applied) VALUES (?, ?, ?, ?)`).run(royaltyId, split.composer_id, amount, split.percentage);
       }
     }
     
@@ -343,12 +308,12 @@ export const getPublishingSummary = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
     
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.json({ total: 0, compositions: [] });
     
     const artistId = artists[0].id;
     
-    const compositions = db.prepare(`
+    const compositions = await db.prepare(`
       SELECT DISTINCT c.*, 
       (SELECT SUM(pr.cantidad) FROM publishing_royalties pr WHERE pr.composition_id = c.id) as total_earned,
       (SELECT COUNT(*) FROM publishing_royalties pr WHERE pr.composition_id = c.id) as royalty_count
@@ -359,7 +324,7 @@ export const getPublishingSummary = async (req: AuthRequest, res: Response) => {
       ORDER BY c.created_at DESC
     `).all(artistId) as (CompositionRow & { total_earned: number | null; royalty_count: number })[];
     
-    const totals = db.prepare(`
+    const totals = await db.prepare(`
       SELECT 
         SUM(pr.cantidad) as total_publishing,
         SUM(CASE WHEN pr.tipo = 'mechanical' THEN pr.cantidad ELSE 0 END) as mechanical_total,

@@ -24,7 +24,7 @@ export const createFeedback = async (req: AuthRequest, res: Response) => {
       INSERT INTO feedback (user_id, type, title, description, status)
       VALUES (?, ?, ?, ?, 'pending')
     `);
-    const result = insert.run(req.user.id, type, title, description);
+    const result = await insert.run(req.user.id, type, title, description);
 
     res.status(201).json({
       id: result.lastInsertRowid,

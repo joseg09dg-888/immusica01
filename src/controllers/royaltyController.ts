@@ -16,9 +16,9 @@ const getParamAsString = (param: string | string[] | undefined): string => {
 // ============================================
 // FUNCIÓN AUXILIAR: Procesar splits y retenciones
 // ============================================
-const processSplitsForRoyalty = (trackId: number, cantidad: number) => {
+const processSplitsForRoyalty = async (trackId: number, cantidad: number) => {
   try {
-    const splits = db.prepare(`
+    const splits = await db.prepare(`
       SELECT * FROM splits WHERE track_id = ? AND status = "accepted"
     `).all(trackId) as any[];
 
@@ -27,7 +27,7 @@ const processSplitsForRoyalty = (trackId: number, cantidad: number) => {
     const totalSplits = splits.reduce((sum: number, s: any) => sum + s.percentage, 0);
     if (totalSplits > 0) {
       const retenido = (cantidad * totalSplits) / 100;
-      db.prepare(`
+      await db.prepare(`
         INSERT INTO royalty_withholdings (track_id, cantidad, estado)
         VALUES (?, ?, 'retenido')
       `).run(trackId, retenido);
@@ -46,7 +46,7 @@ export const getSummary = async (req: AuthRequest, res: Response) => {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
     // Obtener el artist_id del usuario actual
-    const userArtists = db.prepare(`
+    const userArtists = await db.prepare(`
       SELECT artist_id FROM user_artists WHERE user_id = ? AND role = 'owner'
     `).all(req.user.id) as { artist_id: number }[];
 
@@ -56,7 +56,7 @@ export const getSummary = async (req: AuthRequest, res: Response) => {
 
     const artistId = userArtists[0].artist_id;
 
-    const royalties = db.prepare(`
+    const royalties = await db.prepare(`
       SELECT * FROM royalties WHERE track_id IN (SELECT id FROM tracks WHERE artist_id = ?)
     `).all(artistId) as any[];
 
@@ -87,7 +87,7 @@ export const uploadRoyalties = [
       if (!req.user) return res.status(401).json({ error: 'No autorizado' });
       if (!req.file) return res.status(400).json({ error: 'No se subió ningún archivo' });
 
-      const userArtists = db.prepare(`
+      const userArtists = await db.prepare(`
         SELECT artist_id FROM user_artists WHERE user_id = ? AND role = 'owner'
       `).all(req.user.id) as { artist_id: number }[];
 
@@ -116,7 +116,7 @@ export const uploadRoyalties = [
             if (row.track_id) {
               trackId = parseInt(row.track_id, 10);
             } else if (row.track_title) {
-              const track = db.prepare(`
+              const track = await db.prepare(`
                 SELECT id FROM tracks WHERE artist_id = ? AND title = ?
               `).get(artistId, row.track_title) as { id: number } | undefined;
               if (track) {
@@ -129,7 +129,7 @@ export const uploadRoyalties = [
               continue;
             }
 
-            db.prepare(`
+            await db.prepare(`
               INSERT INTO royalties (track_id, fecha, plataforma, cantidad, estado)
               VALUES (?, ?, ?, ?, ?)
             `).run(trackId, row.fecha, row.plataforma, parseFloat(row.cantidad), row.estado || 'proyectado');
@@ -153,22 +153,22 @@ export const uploadRoyalties = [
 // ============================================
 // OBTENER TODAS LAS REGALÍAS (SOLO ADMIN)
 // ============================================
-export const getAllRoyalties = (req: AuthRequest, res: Response) => {
+export const getAllRoyalties = async (req: AuthRequest, res: Response) => {
   if (req.user?.role !== 'admin') return res.status(403).json({ error: 'Prohibido' });
-  const royalties = db.prepare('SELECT * FROM royalties').all();
+  const royalties = await db.prepare('SELECT * FROM royalties').all();
   res.json(royalties);
 };
 
 // ============================================
 // RETENCIONES
 // ============================================
-export const getWithholdingsByTrack = (req: AuthRequest, res: Response) => {
+export const getWithholdingsByTrack = async (req: AuthRequest, res: Response) => {
   const trackIdParam = getParamAsString(req.params.trackId);
   const trackId = parseInt(trackIdParam, 10);
   if (isNaN(trackId)) return res.status(400).json({ error: 'ID de track inválido' });
 
   try {
-    const withholdings = db.prepare('SELECT * FROM royalty_withholdings WHERE track_id = ?').all(trackId);
+    const withholdings = await db.prepare('SELECT * FROM royalty_withholdings WHERE track_id = ?').all(trackId);
     res.json(withholdings);
   } catch (error) {
     console.error(error);
@@ -180,14 +180,14 @@ export const getMyWithholdings = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
-    const userArtists = db.prepare(`
+    const userArtists = await db.prepare(`
       SELECT artist_id FROM user_artists WHERE user_id = ? AND role = 'owner'
     `).all(req.user.id) as { artist_id: number }[];
 
     if (userArtists.length === 0) return res.json([]);
     const artistId = userArtists[0].artist_id;
 
-    const tracks = db.prepare(`
+    const tracks = await db.prepare(`
       SELECT id FROM tracks WHERE artist_id = ?
     `).all(artistId) as { id: number }[];
 
@@ -195,7 +195,7 @@ export const getMyWithholdings = async (req: AuthRequest, res: Response) => {
     if (trackIds.length === 0) return res.json([]);
 
     const placeholders = trackIds.map(() => '?').join(',');
-    const withholdings = db.prepare(`
+    const withholdings = await db.prepare(`
       SELECT * FROM royalty_withholdings WHERE track_id IN (${placeholders})
     `).all(...trackIds);
 
@@ -206,16 +206,16 @@ export const getMyWithholdings = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const releaseWithholding = (req: AuthRequest, res: Response) => {
+export const releaseWithholding = async (req: AuthRequest, res: Response) => {
   const idParam = getParamAsString(req.params.withholdingId);
   const id = parseInt(idParam, 10);
   if (isNaN(id)) return res.status(400).json({ error: 'ID inválido' });
 
   try {
-    const withholding = db.prepare('SELECT * FROM royalty_withholdings WHERE id = ?').get(id);
+    const withholding = await db.prepare('SELECT * FROM royalty_withholdings WHERE id = ?').get(id);
     if (!withholding) return res.status(404).json({ error: 'Retención no encontrada' });
 
-    db.prepare(`
+    await db.prepare(`
       UPDATE royalty_withholdings SET estado = "liberado", released_at = ? WHERE id = ?
     `).run(new Date().toISOString(), id);
 

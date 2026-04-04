@@ -39,14 +39,14 @@ export const assignArtistToUser = async (req: AuthRequest, res: Response) => {
     }
 
     // Verificar que el usuario a asignar existe
-    const user = db.prepare('SELECT id FROM users WHERE id = ?').get(userIdNum);
+    const user = await db.prepare('SELECT id FROM users WHERE id = ?').get(userIdNum);
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
     // Validar límite para el usuario destino
     if (!canUserAddArtist(userIdNum)) {
-      const info = getUserArtistLimitInfo(userIdNum);
+      const info = await getUserArtistLimitInfo(userIdNum);
       return res.status(403).json({
         error: `El usuario destino ha alcanzado su límite de artistas (${info.current}/${info.max}).`
       });
@@ -148,16 +148,9 @@ export const createTeam = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'El nombre del equipo es obligatorio' });
     }
 
-    const insert = db.prepare(`
-      INSERT INTO teams (name, owner_id)
-      VALUES (?, ?)
-    `);
-    const result = insert.run(name, req.user.id);
+    const result = await db.prepare(`INSERT INTO teams (name, owner_id) VALUES (?, ?)`).run(name, req.user.id);
 
-    db.prepare(`
-      INSERT INTO team_members (team_id, user_id, role)
-      VALUES (?, ?, 'admin')
-    `).run(result.lastInsertRowid, req.user.id);
+    await db.prepare(`INSERT INTO team_members (team_id, user_id, role) VALUES (?, ?, 'admin')`).run(result.lastInsertRowid, req.user.id);
 
     res.status(201).json({
       id: result.lastInsertRowid,
@@ -184,7 +177,7 @@ export const addTeamMember = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'IDs inválidos' });
     }
 
-    const member = db.prepare(`
+    const member = await db.prepare(`
       SELECT role FROM team_members WHERE team_id = ? AND user_id = ?
     `).get(teamIdNum, req.user.id) as { role: string } | undefined;
 
@@ -192,7 +185,7 @@ export const addTeamMember = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ error: 'No tienes permiso para agregar miembros' });
     }
 
-    db.prepare(`
+    await db.prepare(`
       INSERT OR IGNORE INTO team_members (team_id, user_id, role)
       VALUES (?, ?, ?)
     `).run(teamIdNum, userIdNum, role || 'member');

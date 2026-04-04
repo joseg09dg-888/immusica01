@@ -70,7 +70,7 @@ export const uploadVideo = [
         return res.status(400).json({ error: 'El título es obligatorio' });
       }
 
-      const artists = ArtistModel.getArtistsByUser(req.user.id);
+      const artists = await ArtistModel.getArtistsByUser(req.user.id);
       if (artists.length === 0) return res.status(404).json({ error: 'Artista no encontrado' });
       const artistId = artists[0].id;
 
@@ -86,18 +86,10 @@ export const uploadVideo = [
 
       const videoUrl = `/uploads/videos/${req.file.filename}`;
 
-      const insert = db.prepare(`
+      const result = await db.prepare(`
         INSERT INTO videos (artist_id, track_id, title, description, video_url, tags, status)
         VALUES (?, ?, ?, ?, ?, ?, 'draft')
-      `);
-      const result = insert.run(
-        artistId,
-        track_id || null,
-        title,
-        description || null,
-        videoUrl,
-        tagsJson
-      );
+      `).run(artistId, track_id || null, title, description || null, videoUrl, tagsJson);
 
       res.status(201).json({
         id: result.lastInsertRowid,
@@ -119,11 +111,11 @@ export const getMyVideos = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.json([]);
     const artistId = artists[0].id;
 
-    const videos = db.prepare(`
+    const videos = await db.prepare(`
       SELECT v.*, t.title as track_title
       FROM videos v
       LEFT JOIN tracks t ON v.track_id = t.id
@@ -152,11 +144,11 @@ export const getVideoById = async (req: AuthRequest, res: Response) => {
 
     const { id } = req.params;
 
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'Artista no encontrado' });
     const artistId = artists[0].id;
 
-    const video = db.prepare(`
+    const video = await db.prepare(`
       SELECT v.*, t.title as track_title
       FROM videos v
       LEFT JOIN tracks t ON v.track_id = t.id
@@ -187,11 +179,11 @@ export const updateVideo = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const { title, description, track_id, tags } = req.body;
 
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'Artista no encontrado' });
     const artistId = artists[0].id;
 
-    const video = db.prepare('SELECT id FROM videos WHERE id = ? AND artist_id = ?').get(id, artistId) as any;
+    const video = await db.prepare('SELECT id FROM videos WHERE id = ? AND artist_id = ?').get(id, artistId) as any;
     if (!video) {
       return res.status(404).json({ error: 'Video no encontrado' });
     }
@@ -214,7 +206,7 @@ export const updateVideo = async (req: AuthRequest, res: Response) => {
     }
 
     params.push(id);
-    db.prepare(`UPDATE videos SET ${fields.join(', ')} WHERE id = ?`).run(...params);
+    await db.prepare(`UPDATE videos SET ${fields.join(', ')} WHERE id = ?`).run(...params);
 
     res.json({ message: 'Video actualizado correctamente' });
   } catch (error) {
@@ -232,12 +224,12 @@ export const deleteVideo = async (req: AuthRequest, res: Response) => {
 
     const { id } = req.params;
 
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'Artista no encontrado' });
     const artistId = artists[0].id;
 
     // Tipamos el resultado de la consulta
-    const video = db.prepare('SELECT video_url FROM videos WHERE id = ? AND artist_id = ?').get(id, artistId) as { video_url: string } | undefined;
+    const video = await db.prepare('SELECT video_url FROM videos WHERE id = ? AND artist_id = ?').get(id, artistId) as { video_url: string } | undefined;
     if (!video) {
       return res.status(404).json({ error: 'Video no encontrado' });
     }
@@ -249,7 +241,7 @@ export const deleteVideo = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    db.prepare('DELETE FROM videos WHERE id = ?').run(id);
+    await db.prepare('DELETE FROM videos WHERE id = ?').run(id);
     res.json({ message: 'Video eliminado correctamente' });
   } catch (error) {
     console.error(error);
@@ -267,17 +259,17 @@ export const publishVideo = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const { youtube_url, vevo_url } = req.body;
 
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'Artista no encontrado' });
     const artistId = artists[0].id;
 
-    const video = db.prepare('SELECT id FROM videos WHERE id = ? AND artist_id = ?').get(id, artistId) as any;
+    const video = await db.prepare('SELECT id FROM videos WHERE id = ? AND artist_id = ?').get(id, artistId) as any;
     if (!video) {
       return res.status(404).json({ error: 'Video no encontrado' });
     }
 
     const now = new Date().toISOString();
-    db.prepare(`
+    await db.prepare(`
       UPDATE videos
       SET status = 'published',
           youtube_url = ?,

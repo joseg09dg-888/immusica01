@@ -53,25 +53,18 @@ export const uploadToVault = [
       const { category, description } = req.body;
 
       // Obtener el artista principal del usuario
-      const artists = ArtistModel.getArtistsByUser(req.user.id);
+      const artists = await ArtistModel.getArtistsByUser(req.user.id);
       if (artists.length === 0) return res.status(404).json({ error: 'Artista no encontrado' });
       const artistId = artists[0].id;
 
       const fileUrl = `/uploads/vault/${req.file.filename}`;
 
       // Insertar en la base de datos
-      const insert = db.prepare(`
+      const result = await db.prepare(`
         INSERT INTO vault_files (artist_id, filename, file_url, file_size, mime_type, category, description)
         VALUES (?, ?, ?, ?, ?, ?, ?)
-      `);
-      const result = insert.run(
-        artistId,
-        req.file.originalname,
-        fileUrl,
-        req.file.size,
-        req.file.mimetype,
-        category || 'other',
-        description || null
+      `).run(
+        artistId, req.file.originalname, fileUrl, req.file.size, req.file.mimetype, category || 'other', description || null
       );
 
       res.status(201).json({
@@ -93,11 +86,11 @@ export const listVaultFiles = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.json([]);
     const artistId = artists[0].id;
 
-    const files = db.prepare(`
+    const files = await db.prepare(`
       SELECT * FROM vault_files
       WHERE artist_id = ?
       ORDER BY uploaded_at DESC
@@ -125,11 +118,11 @@ export const getVaultFile = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'ID inválido' });
     }
 
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'Artista no encontrado' });
     const artistId = artists[0].id;
 
-    const file = db.prepare(`
+    const file = await db.prepare(`
       SELECT * FROM vault_files
       WHERE id = ? AND artist_id = ?
     `).get(fileId, artistId) as VaultFileRow | undefined;
@@ -159,11 +152,11 @@ export const downloadVaultFile = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'ID inválido' });
     }
 
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'Artista no encontrado' });
     const artistId = artists[0].id;
 
-    const file = db.prepare(`
+    const file = await db.prepare(`
       SELECT * FROM vault_files
       WHERE id = ? AND artist_id = ?
     `).get(fileId, artistId) as VaultFileRow | undefined;
@@ -198,11 +191,11 @@ export const deleteVaultFile = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'ID inválido' });
     }
 
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'Artista no encontrado' });
     const artistId = artists[0].id;
 
-    const file = db.prepare(`
+    const file = await db.prepare(`
       SELECT * FROM vault_files
       WHERE id = ? AND artist_id = ?
     `).get(fileId, artistId) as VaultFileRow | undefined;
@@ -218,7 +211,7 @@ export const deleteVaultFile = async (req: AuthRequest, res: Response) => {
     }
 
     // Eliminar registro de la base de datos
-    db.prepare('DELETE FROM vault_files WHERE id = ?').run(fileId);
+    await db.prepare('DELETE FROM vault_files WHERE id = ?').run(fileId);
 
     res.json({ message: 'Archivo eliminado correctamente' });
   } catch (error) {

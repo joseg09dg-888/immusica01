@@ -9,32 +9,27 @@ export interface SpotifyToken {
   created_at: string;
 }
 
-export const saveSpotifyToken = (data: Omit<SpotifyToken, 'id' | 'created_at'>) => {
-  // Verificar si ya existe un token para este artista
-  const existing = db.prepare('SELECT id FROM spotify_tokens WHERE artist_id = ?').get(data.artist_id);
-  
+export const saveSpotifyToken = async (data: Omit<SpotifyToken, 'id' | 'created_at'>) => {
+  const existing = await db.prepare('SELECT id FROM spotify_tokens WHERE artist_id = ?').get(data.artist_id);
+
   if (existing) {
-    // Actualizar
-    const stmt = db.prepare(`
+    return db.prepare(`
       UPDATE spotify_tokens
       SET access_token = ?, refresh_token = ?, expires_at = ?
       WHERE artist_id = ?
-    `);
-    return stmt.run(data.access_token, data.refresh_token, data.expires_at, data.artist_id);
+    `).run(data.access_token, data.refresh_token, data.expires_at, data.artist_id);
   } else {
-    // Insertar nuevo
-    const stmt = db.prepare(`
+    return db.prepare(`
       INSERT INTO spotify_tokens (artist_id, access_token, refresh_token, expires_at)
       VALUES (?, ?, ?, ?)
-    `);
-    return stmt.run(data.artist_id, data.access_token, data.refresh_token, data.expires_at);
+    `).run(data.artist_id, data.access_token, data.refresh_token, data.expires_at);
   }
 };
 
-export const getSpotifyTokenByArtist = (artistId: number): SpotifyToken | undefined => {
-  return db.prepare('SELECT * FROM spotify_tokens WHERE artist_id = ?').get(artistId) as SpotifyToken | undefined;
+export const getSpotifyTokenByArtist = async (artistId: number): Promise<SpotifyToken | undefined> => {
+  return db.prepare('SELECT * FROM spotify_tokens WHERE artist_id = ?').get(artistId) as Promise<SpotifyToken | undefined>;
 };
 
-export const deleteSpotifyToken = (artistId: number) => {
+export const deleteSpotifyToken = async (artistId: number) => {
   return db.prepare('DELETE FROM spotify_tokens WHERE artist_id = ?').run(artistId);
 };

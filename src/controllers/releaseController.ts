@@ -23,18 +23,18 @@ export const scheduleRelease = async (req: AuthRequest, res: Response) => {
     }
 
     // Obtener artist_id del usuario
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'Artista no encontrado' });
     const artistId = artists[0].id;
 
     // Verificar que el track pertenezca al artista
-    const track = db.prepare('SELECT id, status FROM tracks WHERE id = ? AND artist_id = ?').get(trackId, artistId);
+    const track = await db.prepare('SELECT id, status FROM tracks WHERE id = ? AND artist_id = ?').get(trackId, artistId);
     if (!track) {
       return res.status(404).json({ error: 'Track no encontrado o no pertenece al artista' });
     }
 
     // Actualizar el track
-    db.prepare(`
+    await db.prepare(`
       UPDATE tracks 
       SET scheduled_date = ?, status = 'scheduled'
       WHERE id = ?
@@ -54,16 +54,16 @@ export const cancelScheduled = async (req: AuthRequest, res: Response) => {
 
     const { trackId } = req.params;
 
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'Artista no encontrado' });
     const artistId = artists[0].id;
 
-    const track = db.prepare('SELECT id, status FROM tracks WHERE id = ? AND artist_id = ?').get(trackId, artistId);
+    const track = await db.prepare('SELECT id, status FROM tracks WHERE id = ? AND artist_id = ?').get(trackId, artistId);
     if (!track) {
       return res.status(404).json({ error: 'Track no encontrado o no pertenece al artista' });
     }
 
-    db.prepare(`
+    await db.prepare(`
       UPDATE tracks 
       SET scheduled_date = NULL, status = 'draft'
       WHERE id = ?
@@ -83,7 +83,7 @@ export const getReleaseInfo = async (req: AuthRequest, res: Response) => {
 
     const { trackId } = req.params;
 
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'Artista no encontrado' });
     const artistId = artists[0].id;
 
@@ -109,7 +109,7 @@ export const getScheduledTracks = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.json([]);
     const artistId = artists[0].id;
 

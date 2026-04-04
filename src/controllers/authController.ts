@@ -50,25 +50,22 @@ export const callback = async (req: Request, res: Response) => {
 export const loginEmail = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
-    
+
     if (!email || !password) {
       return res.status(400).json({ error: 'Email y contraseña son obligatorios' });
     }
 
-    // Buscar usuario en la base de datos
-    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as any;
-    
+    const user = await db.prepare('SELECT * FROM users WHERE email = ?').get(email) as any;
+
     if (!user) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
-    // Verificar contraseña
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
-    // Generar JWT token
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       JWT_SECRET,
@@ -87,5 +84,34 @@ export const loginEmail = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error en login email:', error);
     res.status(500).json({ error: 'Error al iniciar sesión' });
+  }
+};
+
+export const register = async (req: Request, res: Response) => {
+  try {
+    const { email, password, name } = req.body;
+    if (!email || !password || !name) {
+      return res.status(400).json({ error: 'Email, contraseña y nombre son obligatorios' });
+    }
+
+    const existing = await db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+    if (existing) {
+      return res.status(409).json({ error: 'El email ya está registrado' });
+    }
+
+    const hashed = await bcrypt.hash(password, 10);
+    await db.prepare('INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, ?)').run(email, hashed, name, 'artist');
+
+    const user = await db.prepare('SELECT id, email, name, role FROM users WHERE email = ?').get(email) as any;
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.status(201).json({ token, user });
+  } catch (error) {
+    console.error('Error al registrar:', error);
+    res.status(500).json({ error: 'Error al registrar' });
   }
 };

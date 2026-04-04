@@ -142,7 +142,7 @@ export const uploadCatalog = [
       if (!req.user) return res.status(401).json({ error: 'No autorizado' });
       if (!req.file) return res.status(400).json({ error: 'No se subió ningún archivo' });
 
-      const artists = ArtistModel.getArtistsByUser(req.user.id);
+      const artists = await ArtistModel.getArtistsByUser(req.user.id);
       if (artists.length === 0) return res.status(404).json({ error: 'Artista no encontrado' });
       const artistId = artists[0].id;
 
@@ -176,7 +176,7 @@ export const uploadCatalog = [
           const audioUrl = `/uploads/audio/${audioFilename}`;
 
           // Crear track en BD usando el modelo con objeto
-          const trackId = TrackModel.createTrack({
+          const trackId = await TrackModel.createTrack({
             artist_id: artistId,
             title: metadata.common.title || entry.entryName,
             release_date: null,

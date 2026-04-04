@@ -33,21 +33,21 @@ const upload = multer({ storage });
 // LISTAR BEATS CON RANKINGS
 // ============================================
 
-export const listarBeats = (req: Request, res: Response) => {
+export const listarBeats = async (req: Request, res: Response) => {
   try {
     const { genero, orden } = req.query;
-    const beats = BeatModel.getAllBeats({ genero: genero as string, orden: orden as string });
+    const beats = await BeatModel.getAllBeats({ genero: genero as string, orden: orden as string });
 
     // Enriquecer con datos adicionales (valoraciones, compras)
-    const beatsConDetalles = beats.map((beat) => {
-      const promedio = RatingModel.getAverageRatingByBeat(beat.id);
-      const compras = PurchaseModel.getPurchasesByBeat(beat.id);
+    const beatsConDetalles = await Promise.all(beats.map(async (beat) => {
+      const promedio = await RatingModel.getAverageRatingByBeat(beat.id);
+      const compras = await PurchaseModel.getPurchasesByBeat(beat.id);
       return {
         ...beat,
         rating_promedio: promedio,
         total_compras: compras.length
       };
-    });
+    }));
 
     // Aplicar ordenamientos personalizados
     if (orden === 'mas_comprados') {
@@ -67,15 +67,15 @@ export const listarBeats = (req: Request, res: Response) => {
 // OBTENER DETALLE DE UN BEAT
 // ============================================
 
-export const verBeat = (req: Request, res: Response) => {
+export const verBeat = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id as string);
-    const beat = BeatModel.getBeatById(id);
+    const beat = await BeatModel.getBeatById(id);
     if (!beat) return res.status(404).json({ error: 'Beat no encontrado' });
 
-    const promedio = RatingModel.getAverageRatingByBeat(id);
-    const compras = PurchaseModel.getPurchasesByBeat(id);
-    const ratings = RatingModel.getRatingsByBeat(id);
+    const promedio = await RatingModel.getAverageRatingByBeat(id);
+    const compras = await PurchaseModel.getPurchasesByBeat(id);
+    const ratings = await RatingModel.getRatingsByBeat(id);
 
     res.json({
       ...beat,
@@ -99,11 +99,11 @@ export const subirBeat = [
     { name: 'full', maxCount: 1 },
     { name: 'cover', maxCount: 1 }
   ]),
-  (req: AuthRequest, res: Response) => {
+  async (req: AuthRequest, res: Response) => {
     try {
       if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
-      const artists = ArtistModel.getArtistsByUser(req.user.id);
+      const artists = await ArtistModel.getArtistsByUser(req.user.id);
       if (artists.length === 0) return res.status(404).json({ error: 'Debes ser artista para vender beats' });
       const artist = artists[0];
 
@@ -118,7 +118,7 @@ export const subirBeat = [
       const fullUrl = files['full'] ? '/uploads/full/' + files['full'][0].filename : null;
       const coverUrl = files['cover'] ? '/uploads/covers/' + files['cover'][0].filename : null;
 
-      const result = BeatModel.createBeat({
+      const result = await BeatModel.createBeat({
         productor_id: artist.id,
         titulo,
         genero,
@@ -132,7 +132,7 @@ export const subirBeat = [
         estado: 'disponible'
       });
 
-      const newBeat = BeatModel.getBeatById(result.lastInsertRowid as number);
+      const newBeat = await BeatModel.getBeatById(result.lastInsertRowid as number);
       res.status(201).json(newBeat);
     } catch (error) {
       console.error(error);
@@ -145,12 +145,12 @@ export const subirBeat = [
 // COMPRAR UN BEAT
 // ============================================
 
-export const comprarBeat = (req: AuthRequest, res: Response) => {
+export const comprarBeat = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
     const beatId = parseInt(req.params.id as string);
-    const beat = BeatModel.getBeatById(beatId);
+    const beat = await BeatModel.getBeatById(beatId);
     if (!beat) return res.status(404).json({ error: 'Beat no encontrado' });
     if (beat.estado !== 'disponible') return res.status(400).json({ error: 'Beat no disponible' });
 
@@ -164,7 +164,7 @@ export const comprarBeat = (req: AuthRequest, res: Response) => {
     const comision = Math.round(monto * 0.05);
 
     // Registrar la compra
-    const purchase = PurchaseModel.createPurchase({
+    const purchase = await PurchaseModel.createPurchase({
       beat_id: beatId,
       comprador_id: req.user.id,
       monto,
@@ -192,7 +192,7 @@ export const comprarBeat = (req: AuthRequest, res: Response) => {
 // VALORAR UN BEAT
 // ============================================
 
-export const valorarBeat = (req: AuthRequest, res: Response) => {
+export const valorarBeat = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
@@ -202,7 +202,7 @@ export const valorarBeat = (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'La puntuación debe ser entre 1 y 5' });
     }
 
-    const beat = BeatModel.getBeatById(beatId);
+    const beat = await BeatModel.getBeatById(beatId);
     if (!beat) return res.status(404).json({ error: 'Beat no encontrado' });
 
     RatingModel.createRating({
@@ -213,7 +213,7 @@ export const valorarBeat = (req: AuthRequest, res: Response) => {
     });
 
     // Devolver el nuevo promedio
-    const promedio = RatingModel.getAverageRatingByBeat(beatId);
+    const promedio = await RatingModel.getAverageRatingByBeat(beatId);
     res.json({ mensaje: 'Valoración guardada', promedio });
   } catch (error) {
     console.error(error);
@@ -225,24 +225,24 @@ export const valorarBeat = (req: AuthRequest, res: Response) => {
 // MIS BEATS (los que he subido)
 // ============================================
 
-export const misBeats = (req: AuthRequest, res: Response) => {
+export const misBeats = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'No eres artista' });
     const artist = artists[0];
 
-    const beats = BeatModel.getBeatsByProducer(artist.id);
-    const beatsConDetalles = beats.map((beat) => {
-      const promedio = RatingModel.getAverageRatingByBeat(beat.id);
-      const compras = PurchaseModel.getPurchasesByBeat(beat.id);
+    const beats = await BeatModel.getBeatsByProducer(artist.id);
+    const beatsConDetalles = await Promise.all(beats.map(async (beat) => {
+      const promedio = await RatingModel.getAverageRatingByBeat(beat.id);
+      const compras = await PurchaseModel.getPurchasesByBeat(beat.id);
       return {
         ...beat,
         rating_promedio: promedio,
         total_compras: compras.length
       };
-    });
+    }));
 
     res.json(beatsConDetalles);
   } catch (error) {
@@ -255,16 +255,16 @@ export const misBeats = (req: AuthRequest, res: Response) => {
 // MIS COMPRAS (beats que he comprado)
 // ============================================
 
-export const misCompras = (req: AuthRequest, res: Response) => {
+export const misCompras = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
-    const purchases = PurchaseModel.getPurchasesByBuyer(req.user.id);
+    const purchases = await PurchaseModel.getPurchasesByBuyer(req.user.id);
     // Enriquecer con datos del beat
-    const comprasConBeat = purchases.map((p) => {
-      const beat = BeatModel.getBeatById(p.beat_id);
+    const comprasConBeat = await Promise.all(purchases.map(async (p) => {
+      const beat = await BeatModel.getBeatById(p.beat_id);
       return { ...p, beat };
-    });
+    }));
 
     res.json(comprasConBeat);
   } catch (error) {
@@ -277,27 +277,27 @@ export const misCompras = (req: AuthRequest, res: Response) => {
 // ESTADÍSTICAS DE USUARIO (para el hot ranking)
 // ============================================
 
-export const estadisticasUsuario = (req: AuthRequest, res: Response) => {
+export const estadisticasUsuario = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
     // Estadísticas como comprador
-    const totalCompras = PurchaseModel.getTotalComprasPorComprador(req.user.id);
+    const totalCompras = await PurchaseModel.getTotalComprasPorComprador(req.user.id);
 
     // Estadísticas como vendedor (si es productor)
     let beatsSubidos = 0;
     let totalVentas = 0;
     let promedioRatingVendedor = 0;
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length > 0) {
       const artist = artists[0];
-      const beats = BeatModel.getBeatsByProducer(artist.id);
+      const beats = await BeatModel.getBeatsByProducer(artist.id);
       beatsSubidos = beats.length;
-      totalVentas = PurchaseModel.getTotalComprasPorProductor(artist.id);
-      
+      totalVentas = await PurchaseModel.getTotalComprasPorProductor(artist.id);
+
       // Calcular promedio de rating de todos sus beats
       if (beats.length > 0) {
-        const ratings = beats.map(b => RatingModel.getAverageRatingByBeat(b.id));
+        const ratings = await Promise.all(beats.map(b => RatingModel.getAverageRatingByBeat(b.id)));
         const suma = ratings.reduce((acc, r) => acc + r, 0);
         promedioRatingVendedor = suma / beats.length;
       }
@@ -319,23 +319,23 @@ export const estadisticasUsuario = (req: AuthRequest, res: Response) => {
 // RANKINGS GLOBALES (para la página principal dopamínica)
 // ============================================
 
-export const rankings = (req: Request, res: Response) => {
+export const rankings = async (req: Request, res: Response) => {
   try {
     // Beats más comprados
-    const beatsMasComprados = BeatModel.getAllBeats();
-    const beatsConCompras = beatsMasComprados.map((beat) => {
-      const compras = PurchaseModel.getPurchasesByBeat(beat.id);
+    const beatsMasComprados = await BeatModel.getAllBeats();
+    const beatsConCompras = await Promise.all(beatsMasComprados.map(async (beat) => {
+      const compras = await PurchaseModel.getPurchasesByBeat(beat.id);
       return { ...beat, total_compras: compras.length };
-    });
+    }));
     beatsConCompras.sort((a, b) => b.total_compras - a.total_compras);
     const top10MasComprados = beatsConCompras.slice(0, 10);
 
     // Beats mejor puntuados
-    const beatsMejorPuntuados = BeatModel.getAllBeats();
-    const beatsConRating = beatsMejorPuntuados.map((beat) => {
-      const promedio = RatingModel.getAverageRatingByBeat(beat.id);
+    const beatsMejorPuntuados = await BeatModel.getAllBeats();
+    const beatsConRating = await Promise.all(beatsMejorPuntuados.map(async (beat) => {
+      const promedio = await RatingModel.getAverageRatingByBeat(beat.id);
       return { ...beat, rating_promedio: promedio };
-    });
+    }));
     beatsConRating.sort((a, b) => b.rating_promedio - a.rating_promedio);
     const top10MejorPuntuados = beatsConRating.slice(0, 10);
 

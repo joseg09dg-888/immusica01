@@ -17,7 +17,7 @@ interface PlaylistRow {
 }
 
 // Obtener todas las playlists (público, con filtros opcionales)
-export const getPlaylists = (req: Request, res: Response) => {
+export const getPlaylists = async (req: Request, res: Response) => {
   try {
     const { genre, mood, limit = 50 } = req.query;
     let sql = 'SELECT * FROM playlists WHERE 1=1';
@@ -37,7 +37,7 @@ export const getPlaylists = (req: Request, res: Response) => {
     sql += ' ORDER BY verified DESC, created_at DESC LIMIT ?';
     params.push(Number(limit));
 
-    const playlists = db.prepare(sql).all(...params);
+    const playlists = await db.prepare(sql).all(...params);
     res.json(playlists);
   } catch (error) {
     console.error(error);
@@ -46,10 +46,10 @@ export const getPlaylists = (req: Request, res: Response) => {
 };
 
 // Obtener una playlist por ID
-export const getPlaylistById = (req: Request, res: Response) => {
+export const getPlaylistById = async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
-    const playlist = db.prepare('SELECT * FROM playlists WHERE id = ?').get(id);
+    const playlist = await db.prepare('SELECT * FROM playlists WHERE id = ?').get(id);
     if (!playlist) {
       return res.status(404).json({ error: 'Playlist no encontrada' });
     }
@@ -88,18 +88,11 @@ export const createPlaylist = async (req: AuthRequest, res: Response) => {
       moodTagsJson = JSON.stringify(tags);
     }
 
-    const insert = db.prepare(`
+    const result = await db.prepare(`
       INSERT INTO playlists (name, url, genre, mood_tags, contact_email, description, submitted_by)
       VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
-    const result = insert.run(
-      name,
-      url,
-      genre || null,
-      moodTagsJson,
-      contact_email || null,
-      description || null,
-      req.user.id
+    `).run(
+      name, url, genre || null, moodTagsJson, contact_email || null, description || null, req.user.id
     );
 
     res.status(201).json({
@@ -121,7 +114,7 @@ export const updatePlaylist = async (req: AuthRequest, res: Response) => {
     const { name, url, genre, mood_tags, contact_email, description, verified } = req.body;
 
     // Verificar que la playlist existe y pertenece al usuario (o es admin)
-    const playlist = db.prepare('SELECT * FROM playlists WHERE id = ?').get(id) as PlaylistRow | undefined;
+    const playlist = await db.prepare('SELECT * FROM playlists WHERE id = ?').get(id) as PlaylistRow | undefined;
     if (!playlist) {
       return res.status(404).json({ error: 'Playlist no encontrada' });
     }
@@ -154,8 +147,7 @@ export const updatePlaylist = async (req: AuthRequest, res: Response) => {
     }
 
     params.push(id);
-    const update = db.prepare(`UPDATE playlists SET ${fields.join(', ')} WHERE id = ?`);
-    update.run(...params);
+    await db.prepare(`UPDATE playlists SET ${fields.join(', ')} WHERE id = ?`).run(...params);
 
     res.json({ message: 'Playlist actualizada correctamente' });
   } catch (error) {
@@ -171,7 +163,7 @@ export const deletePlaylist = async (req: AuthRequest, res: Response) => {
 
     const { id } = req.params;
 
-    const playlist = db.prepare('SELECT * FROM playlists WHERE id = ?').get(id) as PlaylistRow | undefined;
+    const playlist = await db.prepare('SELECT * FROM playlists WHERE id = ?').get(id) as PlaylistRow | undefined;
     if (!playlist) {
       return res.status(404).json({ error: 'Playlist no encontrada' });
     }
@@ -180,7 +172,7 @@ export const deletePlaylist = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ error: 'No tienes permiso para eliminar esta playlist' });
     }
 
-    db.prepare('DELETE FROM playlists WHERE id = ?').run(id);
+    await db.prepare('DELETE FROM playlists WHERE id = ?').run(id);
     res.json({ message: 'Playlist eliminada correctamente' });
   } catch (error) {
     console.error(error);
@@ -189,7 +181,7 @@ export const deletePlaylist = async (req: AuthRequest, res: Response) => {
 };
 
 // Obtener moods disponibles (para el frontend)
-export const getMoods = (req: Request, res: Response) => {
+export const getMoods = async (req: Request, res: Response) => {
   const moods = [
     'alegre', 'triste', 'energético', 'relajado', 'romántico', 'agresivo', 'feliz', 'melancólico'
   ];

@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import * as ArtistModel from '../models/Artist';
 import * as LegalQueryModel from '../models/LegalQuery';
@@ -24,12 +24,11 @@ Debes ser empático, claro y detallado en tus respuestas.
 **IMPORTANTE:** Al final de cada respuesta, incluye una advertencia de que esto es solo orientativo y que deben consultar con un abogado real.
 `;
 
-// CHAT CONSULTIVO (LO ÚNICO QUE FUNCIONA AHORA)
 export const consultarLegal = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'Crea un artista primero' });
     const artist = artists[0];
 
@@ -57,21 +56,19 @@ export const consultarLegal = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// SUBIDA DE CONTRATOS (DESACTIVADA)
 export const analizarContrato = (req: AuthRequest, res: Response) => {
   res.status(501).json({ error: 'Funcionalidad en mantenimiento. Pronto podrás subir contratos.' });
 };
 
-// HISTORIAL
 export const getHistorial = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'Crea un artista primero' });
     const artist = artists[0];
 
-    const queries = LegalQueryModel.getQueriesByArtist(artist.id);
+    const queries = await LegalQueryModel.getQueriesByArtist(artist.id);
     res.json(queries);
   } catch (error) {
     console.error(error);

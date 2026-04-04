@@ -68,11 +68,11 @@ export const uploadLyrics = [
       }
 
       // Verificar que el track pertenece al artista
-      const artists = ArtistModel.getArtistsByUser(req.user.id);
+      const artists = await ArtistModel.getArtistsByUser(req.user.id);
       if (artists.length === 0) return res.status(404).json({ error: 'Artista no encontrado' });
       const artistId = artists[0].id;
 
-      const track = TrackModel.getTrackById(trackIdNum);
+      const track = await TrackModel.getTrackById(trackIdNum);
       if (!track || track.artist_id !== artistId) {
         return res.status(404).json({ error: 'Track no encontrado o no pertenece al artista' });
       }
@@ -85,7 +85,7 @@ export const uploadLyrics = [
       const isSynced = /\[\d{2}:\d{2}\.\d{2}\]/.test(fileContent);
 
       // Guardar en base de datos
-      const insert = db.prepare(`
+      const insert = await db.prepare(`
         INSERT INTO track_lyrics (track_id, synced_lyrics, lyrics_text, language, is_synced)
         VALUES (?, ?, ?, ?, ?)
         ON CONFLICT(track_id) DO UPDATE SET
@@ -137,17 +137,17 @@ export const uploadPlainLyrics = async (req: AuthRequest, res: Response) => {
     }
 
     // Verificar propiedad del track
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'Artista no encontrado' });
     const artistId = artists[0].id;
 
-    const track = TrackModel.getTrackById(trackIdNum);
+    const track = await TrackModel.getTrackById(trackIdNum);
     if (!track || track.artist_id !== artistId) {
       return res.status(404).json({ error: 'Track no encontrado o no pertenece al artista' });
     }
 
     // Guardar en base de datos
-    const insert = db.prepare(`
+    const insert = await db.prepare(`
       INSERT INTO track_lyrics (track_id, lyrics_text, language, is_synced)
       VALUES (?, ?, ?, 0)
       ON CONFLICT(track_id) DO UPDATE SET
@@ -174,7 +174,7 @@ export const uploadPlainLyrics = async (req: AuthRequest, res: Response) => {
 // ============================================
 // OBTENER LETRAS DE UN TRACK
 // ============================================
-export const getLyrics = (req: AuthRequest, res: Response) => {
+export const getLyrics = async (req: AuthRequest, res: Response) => {
   const { trackId } = req.params;
   const trackIdStr = Array.isArray(trackId) ? trackId[0] : trackId;
   const trackIdNum = parseInt(trackIdStr, 10);
@@ -183,7 +183,7 @@ export const getLyrics = (req: AuthRequest, res: Response) => {
   }
 
   try {
-    const lyrics = db.prepare(`
+    const lyrics = await db.prepare(`
       SELECT * FROM track_lyrics WHERE track_id = ?
     `).get(trackIdNum) as LyricsRow | undefined;
 
@@ -213,16 +213,16 @@ export const deleteLyrics = async (req: AuthRequest, res: Response) => {
     }
 
     // Verificar propiedad del track
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'Artista no encontrado' });
     const artistId = artists[0].id;
 
-    const track = TrackModel.getTrackById(trackIdNum);
+    const track = await TrackModel.getTrackById(trackIdNum);
     if (!track || track.artist_id !== artistId) {
       return res.status(404).json({ error: 'Track no encontrado o no pertenece al artista' });
     }
 
-    db.prepare('DELETE FROM track_lyrics WHERE track_id = ?').run(trackIdNum);
+    await db.prepare('DELETE FROM track_lyrics WHERE track_id = ?').run(trackIdNum);
 
     res.json({ message: 'Letras eliminadas correctamente' });
   } catch (error) {
@@ -234,7 +234,7 @@ export const deleteLyrics = async (req: AuthRequest, res: Response) => {
 // ============================================
 // EXPORTAR LETRAS PARA PLATAFORMAS (formato LRC)
 // ============================================
-export const exportLyrics = (req: AuthRequest, res: Response) => {
+export const exportLyrics = async (req: AuthRequest, res: Response) => {
   const { trackId } = req.params;
   const { format } = req.query; // lrc, txt, json
 
@@ -245,7 +245,7 @@ export const exportLyrics = (req: AuthRequest, res: Response) => {
   }
 
   try {
-    const lyrics = db.prepare(`
+    const lyrics = await db.prepare(`
       SELECT * FROM track_lyrics WHERE track_id = ?
     `).get(trackIdNum) as LyricsRow | undefined;
 

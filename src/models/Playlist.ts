@@ -12,6 +12,6 @@ export interface Playlist {
   created_at: string;
 }
 
-export const getPlaylistById = (id: number): Playlist | undefined => {
-  return db.prepare('SELECT * FROM playlists WHERE id = ?').get(id) as Playlist | undefined;
+export const getPlaylistById = async (id: number): Promise<Playlist | undefined> => {
+  return db.prepare('SELECT * FROM playlists WHERE id = ?').get(id) as Promise<Playlist | undefined>;
 };

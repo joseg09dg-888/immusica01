@@ -15,7 +15,7 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
     }
 
     // Verificar si el usuario está baneado
-    const ban = db.prepare('SELECT * FROM chat_bans WHERE user_id = ?').get(req.user.id) as any;
+    const ban = await db.prepare('SELECT * FROM chat_bans WHERE user_id = ?').get(req.user.id) as any;
     if (ban) {
       if (ban.permanently_banned) {
         return res.status(403).json({ error: 'Has sido baneado permanentemente del chat' });
@@ -27,7 +27,7 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
     }
 
     // Obtener nombre del usuario (de la tabla users)
-    const user = db.prepare('SELECT name FROM users WHERE id = ?').get(req.user.id) as any;
+    const user = await db.prepare('SELECT name FROM users WHERE id = ?').get(req.user.id) as any;
     const userName = user?.name || 'Usuario';
 
     // Moderar el mensaje con IA
@@ -38,7 +38,7 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
         INSERT INTO user_infractions (user_id, reason, message)
         VALUES (?, ?, ?)
       `);
-      insertInfraction.run(req.user.id, moderation.reason || 'Lenguaje inapropiado', message);
+      await insertInfraction.run(req.user.id, moderation.reason || 'Lenguaje inapropiado', message);
 
       // Actualizar contador de strikes y posible baneo
       await updateUserBans(req.user.id, moderation.severity || 'medium');
@@ -55,11 +55,11 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
       INSERT INTO chat_messages (user_id, user_name, message, link)
       VALUES (?, ?, ?, ?)
     `);
-    const result = insert.run(req.user.id, userName, message, link || null);
+    const result = await insert.run(req.user.id, userName, message, link || null);
     const messageId = result.lastInsertRowid;
 
     // Recuperar el mensaje recién insertado
-    const newMessage = db.prepare('SELECT * FROM chat_messages WHERE id = ?').get(messageId);
+    const newMessage = await db.prepare('SELECT * FROM chat_messages WHERE id = ?').get(messageId);
 
     // Emitir el mensaje a todos los clientes conectados
     io.emit('new-message', newMessage);
@@ -72,10 +72,10 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
 };
 
 // Obtener mensajes recientes (para cargar el chat)
-export const getRecentMessages = (req: AuthRequest, res: Response) => {
+export const getRecentMessages = async (req: AuthRequest, res: Response) => {
   try {
     const limit = parseInt(req.query.limit as string) || 50;
-    const messages = db.prepare(`
+    const messages = await db.prepare(`
       SELECT * FROM chat_messages
       ORDER BY created_at DESC
       LIMIT ?
@@ -88,10 +88,10 @@ export const getRecentMessages = (req: AuthRequest, res: Response) => {
 };
 
 // Reportar un mensaje (para moderación humana)
-export const reportMessage = (req: AuthRequest, res: Response) => {
+export const reportMessage = async (req: AuthRequest, res: Response) => {
   const { messageId } = req.params;
   try {
-    db.prepare('UPDATE chat_messages SET flagged = 1 WHERE id = ?').run(messageId);
+    await db.prepare('UPDATE chat_messages SET flagged = 1 WHERE id = ?').run(messageId);
     res.json({ success: true });
   } catch (error) {
     console.error(error);
@@ -101,13 +101,13 @@ export const reportMessage = (req: AuthRequest, res: Response) => {
 
 // Función auxiliar para actualizar baneos según strikes
 async function updateUserBans(userId: number, severity: string) {
-  let ban = db.prepare('SELECT * FROM chat_bans WHERE user_id = ?').get(userId) as any;
+  let ban = await db.prepare('SELECT * FROM chat_bans WHERE user_id = ?').get(userId) as any;
   const now = new Date();
 
   if (!ban) {
     const expires = new Date();
     expires.setDate(expires.getDate() + 7);
-    db.prepare(`
+    await db.prepare(`
       INSERT INTO chat_bans (user_id, strike_count, ban_expires_at)
       VALUES (?, 1, ?)
     `).run(userId, expires.toISOString());
@@ -130,7 +130,7 @@ async function updateUserBans(userId: number, severity: string) {
     banExpiresAt = expires.toISOString();
   }
 
-  db.prepare(`
+  await db.prepare(`
     UPDATE chat_bans
     SET strike_count = ?, permanently_banned = ?, ban_expires_at = ?, updated_at = CURRENT_TIMESTAMP
     WHERE user_id = ?

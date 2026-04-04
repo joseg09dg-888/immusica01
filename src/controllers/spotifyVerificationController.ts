@@ -28,7 +28,7 @@ export const getVerificationStatus = async (req: AuthRequest, res: Response) => 
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
     // Obtener el artista principal del usuario (asumimos que es el primero)
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) {
       return res.status(404).json({ error: 'No tienes artistas registrados' });
     }
@@ -94,13 +94,13 @@ export const verificationCallback = async (req: Request, res: Response) => {
     // Ahora necesitamos saber a qué artista de nuestra plataforma corresponde este usuario.
     // Podemos buscar por email (si coincide) o pedirle que seleccione un artista.
     // Por simplicidad, asumiremos que el email del usuario de Spotify coincide con el email de nuestra base de datos.
-    const dbUser = db.prepare('SELECT id FROM users WHERE email = ?').get(spotifyUser.email) as { id: number } | undefined;
+    const dbUser = await db.prepare('SELECT id FROM users WHERE email = ?').get(spotifyUser.email) as { id: number } | undefined;
     if (!dbUser) {
       return res.status(404).send('Usuario no encontrado en IM Music');
     }
 
     // Buscar el artista asociado a ese usuario
-    const artists = ArtistModel.getArtistsByUser(dbUser.id);
+    const artists = await ArtistModel.getArtistsByUser(dbUser.id);
     if (artists.length === 0) {
       return res.status(404).send('El usuario no tiene artistas registrados');
     }
@@ -123,7 +123,7 @@ export const verificationCallback = async (req: Request, res: Response) => {
     }
 
     // Actualizar la base de datos
-    db.prepare('UPDATE artists SET spotify_verified = ? WHERE id = ?').run(verified ? 1 : 0, artist.id);
+    await db.prepare('UPDATE artists SET spotify_verified = ? WHERE id = ?').run(verified ? 1 : 0, artist.id);
 
     // Guardar tokens para futuras consultas (opcional)
     // Podrías guardarlos en una tabla spotify_tokens

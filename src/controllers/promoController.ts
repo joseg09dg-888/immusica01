@@ -34,7 +34,7 @@ export const generatePromoCard = async (req: AuthRequest, res: Response) => {
     }
 
     // Obtener artist_id del usuario
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'Artista no encontrado' });
     const artistId = artists[0].id;
 
@@ -220,7 +220,7 @@ export const generateReel = async (req: AuthRequest, res: Response) => {
     }
 
     // Verificar que el track pertenezca al artista
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'Artista no encontrado' });
     const artistId = artists[0].id;
 

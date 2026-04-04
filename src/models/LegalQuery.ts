@@ -8,14 +8,13 @@ export interface LegalQuery {
   created_at: string;
 }
 
-export const createLegalQuery = (artistId: number, pregunta: string, respuesta: string) => {
-  const stmt = db.prepare(`
+export const createLegalQuery = async (artistId: number, pregunta: string, respuesta: string) => {
+  return db.prepare(`
     INSERT INTO legal_queries (artist_id, pregunta, respuesta)
     VALUES (?, ?, ?)
-  `);
-  return stmt.run(artistId, pregunta, respuesta);
+  `).run(artistId, pregunta, respuesta);
 };
 
-export const getQueriesByArtist = (artistId: number): LegalQuery[] => {
-  return db.prepare('SELECT * FROM legal_queries WHERE artist_id = ? ORDER BY created_at DESC').all(artistId) as LegalQuery[];
+export const getQueriesByArtist = async (artistId: number): Promise<LegalQuery[]> => {
+  return db.prepare('SELECT * FROM legal_queries WHERE artist_id = ? ORDER BY created_at DESC').all(artistId) as Promise<LegalQuery[]>;
 };

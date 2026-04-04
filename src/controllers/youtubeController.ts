@@ -18,17 +18,17 @@ export const registerInYouTube = async (req: AuthRequest, res: Response) => {
     }
 
     // Verificar que el track pertenezca al artista
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'Artista no encontrado' });
     const artistId = artists[0].id;
 
-    const track = TrackModel.getTrackById(trackId);
+    const track = await TrackModel.getTrackById(trackId);
     if (!track || track.artist_id !== artistId) {
       return res.status(404).json({ error: 'Track no encontrado o no pertenece al artista' });
     }
 
     // Verificar si ya está registrado
-    const existing = db.prepare('SELECT id FROM youtube_content_id WHERE track_id = ?').get(trackId);
+    const existing = await db.prepare('SELECT id FROM youtube_content_id WHERE track_id = ?').get(trackId);
     if (existing) {
       return res.status(400).json({ error: 'Este track ya ha sido registrado en YouTube Content ID' });
     }
@@ -38,7 +38,7 @@ export const registerInYouTube = async (req: AuthRequest, res: Response) => {
 
     // Simular registro (en un caso real, aquí se llamaría a la API de YouTube)
     const now = new Date().toISOString();
-    db.prepare(`
+    await db.prepare(`
       INSERT INTO youtube_content_id (track_id, registration_id, status, registered_at)
       VALUES (?, ?, 'registered', ?)
     `).run(trackId, registrationId, now);
@@ -70,11 +70,11 @@ export const getYouTubeStatus = async (req: AuthRequest, res: Response) => {
     }
 
     // Verificar propiedad
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'Artista no encontrado' });
     const artistId = artists[0].id;
 
-    const track = TrackModel.getTrackById(trackIdNum);
+    const track = await TrackModel.getTrackById(trackIdNum);
     if (!track || track.artist_id !== artistId) {
       return res.status(404).json({ error: 'Track no encontrado o no pertenece al artista' });
     }
@@ -101,12 +101,12 @@ export const listMyYouTubeRegistrations = async (req: AuthRequest, res: Response
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.json([]);
     const artistId = artists[0].id;
 
     // Obtener todos los tracks del artista
-    const tracks = db.prepare('SELECT id FROM tracks WHERE artist_id = ?').all(artistId) as { id: number }[];
+    const tracks = await db.prepare('SELECT id FROM tracks WHERE artist_id = ?').all(artistId) as { id: number }[];
     if (tracks.length === 0) return res.json([]);
 
     const placeholders = tracks.map(() => '?').join(',');

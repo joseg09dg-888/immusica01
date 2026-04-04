@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import { login, callback, loginEmail } from '../controllers/authController';
+import { login, callback, loginEmail, register } from '../controllers/authController';
 
 const router = Router();
 
-// Rutas de autenticación
-router.get('/login', login);
+router.get('/spotify', login);
 router.get('/callback', callback);
-router.post('/login-email', loginEmail); // Nuevo endpoint para login con email
+router.post('/login', loginEmail);
+router.post('/register', register);
 
 export default router;

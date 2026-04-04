@@ -55,18 +55,18 @@ export const getCertificationStatus = async (req: AuthRequest, res: Response) =>
       }
 
       // Verificar que el usuario tiene acceso a ese artista
-      const artists = ArtistModel.getArtistsByUser(req.user.id);
+      const artists = await ArtistModel.getArtistsByUser(req.user.id);
       if (!artists.some(a => a.id === artistId)) {
         return res.status(403).json({ error: 'No tienes acceso a este artista' });
       }
     } else {
-      const artists = ArtistModel.getArtistsByUser(req.user.id);
+      const artists = await ArtistModel.getArtistsByUser(req.user.id);
       if (artists.length === 0) return res.status(404).json({ error: 'Artista no encontrado' });
       artistId = artists[0].id;
     }
 
     // Calcular total de streams del artista (desde daily_stats)
-    const totalStreamsRow = db.prepare(`
+    const totalStreamsRow = await db.prepare(`
       SELECT SUM(streams) as totalStreams, SUM(ingresos) as totalIngresos
       FROM daily_stats ds
       JOIN tracks t ON ds.track_id = t.id
@@ -82,14 +82,14 @@ export const getCertificationStatus = async (req: AuthRequest, res: Response) =>
     for (const [type, threshold] of Object.entries(RIAA_THRESHOLDS)) {
       if (totalStreams >= threshold) {
         // Verificar si ya está registrada en la base de datos
-        const existing = db.prepare(`
+        const existing = await db.prepare(`
           SELECT * FROM riaa_certifications
           WHERE artist_id = ? AND certification_type = ?
         `).get(artistId, type) as CertificationRow | undefined;
 
         if (!existing) {
           // Registrar la certificación
-          db.prepare(`
+          await db.prepare(`
             INSERT INTO riaa_certifications (artist_id, certification_type, threshold, achieved_at)
             VALUES (?, ?, ?, ?)
           `).run(artistId, type, threshold, new Date().toISOString());
@@ -134,12 +134,12 @@ export const getCertificationHistory = async (req: AuthRequest, res: Response) =
     }
 
     // Verificar acceso
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (!artists.some(a => a.id === artistIdNum)) {
       return res.status(403).json({ error: 'No tienes acceso a este artista' });
     }
 
-    const certifications = db.prepare(`
+    const certifications = await db.prepare(`
       SELECT * FROM riaa_certifications
       WHERE artist_id = ?
       ORDER BY achieved_at DESC

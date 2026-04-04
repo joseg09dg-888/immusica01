@@ -36,18 +36,18 @@ export const submitToPlaylist = async (req: AuthRequest, res: Response) => {
     }
 
     // Obtener artist_id del usuario
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'Artista no encontrado' });
     const artistId = artists[0].id; // Asumimos que el usuario tiene al menos un artista (el principal)
 
     // Verificar que el track pertenece al artista
-    const track = TrackModel.getTrackById(trackId);
+    const track = await TrackModel.getTrackById(trackId);
     if (!track || track.artist_id !== artistId) {
       return res.status(404).json({ error: 'Track no encontrado o no pertenece al artista' });
     }
 
     // Verificar que la playlist existe y obtener su email de contacto
-    const playlist = db.prepare('SELECT id, contact_email FROM playlists WHERE id = ?').get(playlistId) as PlaylistRow | undefined;
+    const playlist = await db.prepare('SELECT id, contact_email FROM playlists WHERE id = ?').get(playlistId) as PlaylistRow | undefined;
     if (!playlist) {
       return res.status(404).json({ error: 'Playlist no encontrada' });
     }
@@ -56,11 +56,10 @@ export const submitToPlaylist = async (req: AuthRequest, res: Response) => {
     }
 
     // Registrar el envío
-    const insert = db.prepare(`
+    const result = await db.prepare(`
       INSERT INTO playlist_submissions (playlist_id, track_id, artist_id, message, contact_email, status)
       VALUES (?, ?, ?, ?, ?, 'pending')
-    `);
-    const result = insert.run(playlistId, trackId, artistId, message || null, playlist.contact_email);
+    `).run(playlistId, trackId, artistId, message || null, playlist.contact_email);
 
     // Aquí podrías integrar un servicio de email real para notificar al curador
     // Por ahora, simulamos el envío con un console.log
@@ -87,11 +86,11 @@ export const getMySubmissions = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.json([]);
     const artistId = artists[0].id;
 
-    const submissions = db.prepare(`
+    const submissions = await db.prepare(`
       SELECT s.*, p.name as playlist_name, t.title as track_title
       FROM playlist_submissions s
       JOIN playlists p ON s.playlist_id = p.id
@@ -115,11 +114,11 @@ export const getSubmissionById = async (req: AuthRequest, res: Response) => {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
     const { id } = req.params;
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'Artista no encontrado' });
     const artistId = artists[0].id;
 
-    const submission = db.prepare(`
+    const submission = await db.prepare(`
       SELECT s.*, p.name as playlist_name, t.title as track_title
       FROM playlist_submissions s
       JOIN playlists p ON s.playlist_id = p.id

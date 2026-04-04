@@ -13,8 +13,8 @@ const execAsync = promisify(exec);
 const isAiOperator = (user: any) => user && user.role === 'ai_operator';
 
 // Verificar interruptor de emergencia
-const checkEmergencyStop = (): boolean => {
-  const config = db.prepare('SELECT emergency_stop FROM ai_agent_config WHERE id = 1').get() as { emergency_stop: number } | undefined;
+const checkEmergencyStop = async (): Promise<boolean> => {
+  const config = await db.prepare('SELECT emergency_stop FROM ai_agent_config WHERE id = 1').get() as { emergency_stop: number } | undefined;
   return config?.emergency_stop === 1;
 };
 
@@ -31,14 +31,13 @@ export const receiveInboxMessage = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'source, sender y message son obligatorios' });
     }
 
-    const insert = db.prepare(`
+    const result = await db.prepare(`
       INSERT INTO ai_inbox (source, sender, subject, message, priority, status)
       VALUES (?, ?, ?, ?, ?, 'unread')
-    `);
-    const result = insert.run(source, sender, subject || null, message, priority || 1);
+    `).run(source, sender, subject || null, message, priority || 1);
 
     // Registrar acción
-    db.prepare('INSERT INTO ai_action_logs (action, details) VALUES (?, ?)').run(
+    await db.prepare('INSERT INTO ai_action_logs (action, details) VALUES (?, ?)').run(
       'inbox_message',
       `Mensaje de ${sender} desde ${source}`
     );
@@ -72,7 +71,7 @@ export const getInboxMessages = async (req: AuthRequest, res: Response) => {
     sql += ' ORDER BY priority DESC, created_at ASC LIMIT ?';
     params.push(Number(limit));
 
-    const messages = db.prepare(sql).all(...params);
+    const messages = await db.prepare(sql).all(...params);
     res.json(messages);
   } catch (error) {
     console.error(error);
@@ -90,12 +89,11 @@ export const markInboxMessageAsProcessed = async (req: AuthRequest, res: Respons
     const { id } = req.params;
     const { status, taskId } = req.body;
 
-    const update = db.prepare(`
-      UPDATE ai_inbox 
+    await db.prepare(`
+      UPDATE ai_inbox
       SET status = ?, assigned_task_id = ?, resolved_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `);
-    update.run(status || 'resolved', taskId || null, id);
+    `).run(status || 'resolved', taskId || null, id);
 
     res.json({ message: 'Mensaje actualizado' });
   } catch (error) {
@@ -118,7 +116,7 @@ export const getSystemLogs = async (req: AuthRequest, res: Response) => {
     const { lines = 100, level } = req.query;
     
     // Logs de acciones de IA
-    const actionLogs = db.prepare(`
+    const actionLogs = await db.prepare(`
       SELECT * FROM ai_action_logs 
       ORDER BY created_at DESC 
       LIMIT ?
@@ -132,9 +130,9 @@ export const getSystemLogs = async (req: AuthRequest, res: Response) => {
 
     // Estadísticas de la base de datos
     const dbStats = {
-      users: db.prepare('SELECT COUNT(*) as count FROM users').get(),
-      tracks: db.prepare('SELECT COUNT(*) as count FROM tracks').get(),
-      feedback: db.prepare('SELECT COUNT(*) as count FROM feedback').get()
+      users: await db.prepare('SELECT COUNT(*) as count FROM users').get(),
+      tracks: await db.prepare('SELECT COUNT(*) as count FROM tracks').get(),
+      feedback: await db.prepare('SELECT COUNT(*) as count FROM feedback').get()
     };
 
     res.json({
@@ -194,22 +192,21 @@ export const createGitHubBranch = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ error: 'Acceso denegado' });
     }
 
-    if (checkEmergencyStop()) {
+    if (await checkEmergencyStop()) {
       return res.status(503).json({ error: 'IA detenida por interruptor de emergencia' });
     }
 
     const { branchName, baseBranch = 'main', filePath, content, commitMessage } = req.body;
-    
+
     if (!branchName) {
       return res.status(400).json({ error: 'branchName es obligatorio' });
     }
 
     // Registrar tarea
-    const taskInsert = db.prepare(`
+    const taskResult = await db.prepare(`
       INSERT INTO ai_tasks (task_type, status, input_data, started_at)
       VALUES (?, 'in_progress', ?, ?)
-    `);
-    const taskResult = taskInsert.run(
+    `).run(
       'github_branch',
       JSON.stringify({ branchName, baseBranch, filePath, commitMessage }),
       new Date().toISOString()
@@ -221,7 +218,7 @@ export const createGitHubBranch = async (req: AuthRequest, res: Response) => {
     await new Promise(resolve => setTimeout(resolve, 2000));
 
     // Actualizar tarea como completada
-    db.prepare(`
+    await db.prepare(`
       UPDATE ai_tasks 
       SET status = 'completed', completed_at = ?, output_data = ?
       WHERE id = ?
@@ -232,7 +229,7 @@ export const createGitHubBranch = async (req: AuthRequest, res: Response) => {
     );
 
     // Registrar acción
-    db.prepare('INSERT INTO ai_action_logs (action, details) VALUES (?, ?)').run(
+    await db.prepare('INSERT INTO ai_action_logs (action, details) VALUES (?, ?)').run(
       'github_create_branch',
       `Rama ${branchName} creada desde ${baseBranch}`
     );
@@ -255,7 +252,7 @@ export const startNgrokTest = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ error: 'Acceso denegado' });
     }
 
-    if (checkEmergencyStop()) {
+    if (await checkEmergencyStop()) {
       return res.status(503).json({ error: 'IA detenida por interruptor de emergencia' });
     }
 
@@ -272,7 +269,7 @@ export const startNgrokTest = async (req: AuthRequest, res: Response) => {
       const testResult = testResponse.data;
 
       // Registrar prueba exitosa
-      db.prepare('INSERT INTO ai_action_logs (action, details) VALUES (?, ?)').run(
+      await db.prepare('INSERT INTO ai_action_logs (action, details) VALUES (?, ?)').run(
         'ngrok_test',
         JSON.stringify({ url: ngrokUrl, result: testResult })
       );
@@ -285,7 +282,7 @@ export const startNgrokTest = async (req: AuthRequest, res: Response) => {
       });
     } catch (err: any) {
       // Registrar fallo
-      db.prepare('INSERT INTO ai_action_logs (action, details) VALUES (?, ?)').run(
+      await db.prepare('INSERT INTO ai_action_logs (action, details) VALUES (?, ?)').run(
         'ngrok_test',
         `Fallo al conectar con ${ngrokUrl}: ${err.message}`
       );
@@ -330,7 +327,7 @@ export const getAgentConfig = async (req: AuthRequest, res: Response) => {
       updated_at: string;
     }
 
-    const config = db.prepare('SELECT * FROM ai_agent_config WHERE id = 1').get() as AiConfig | undefined;
+    const config = await db.prepare('SELECT * FROM ai_agent_config WHERE id = 1').get() as AiConfig | undefined;
 
     if (!config) {
       return res.status(404).json({ error: 'Configuración no encontrada' });
@@ -361,10 +358,10 @@ export const setEmergencyStop = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'stop debe ser booleano' });
     }
 
-    db.prepare('UPDATE ai_agent_config SET emergency_stop = ? WHERE id = 1').run(stop ? 1 : 0);
+    await db.prepare('UPDATE ai_agent_config SET emergency_stop = ? WHERE id = 1').run(stop ? 1 : 0);
 
     // Registrar acción
-    db.prepare('INSERT INTO ai_action_logs (action, details) VALUES (?, ?)').run(
+    await db.prepare('INSERT INTO ai_action_logs (action, details) VALUES (?, ?)').run(
       'emergency_stop',
       `Interruptor ${stop ? 'activado' : 'desactivado'} por ${req.user.email}`
     );
@@ -387,7 +384,7 @@ export const getPendingTasks = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ error: 'Acceso denegado' });
     }
 
-    const tasks = db.prepare(`
+    const tasks = await db.prepare(`
       SELECT * FROM ai_tasks 
       WHERE status IN ('pending', 'in_progress')
       ORDER BY priority DESC, created_at ASC
@@ -413,7 +410,7 @@ export const updateTaskStatus = async (req: AuthRequest, res: Response) => {
 
     const completedAt = status === 'completed' || status === 'failed' ? new Date().toISOString() : null;
 
-    db.prepare(`
+    await db.prepare(`
       UPDATE ai_tasks 
       SET status = ?, output_data = ?, error_message = ?, completed_at = ?
       WHERE id = ?
@@ -447,7 +444,7 @@ export const sendNotification = async (req: AuthRequest, res: Response) => {
     console.log(`[${channel.toUpperCase()}] Enviando a ${recipient}: ${message}`);
 
     // Registrar notificación
-    db.prepare('INSERT INTO ai_action_logs (action, details) VALUES (?, ?)').run(
+    await db.prepare('INSERT INTO ai_action_logs (action, details) VALUES (?, ?)').run(
       `notification_${channel}`,
       JSON.stringify({ recipient, message: message.substring(0, 100) })
     );

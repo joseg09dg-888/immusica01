@@ -12,26 +12,17 @@ export interface MoodPlaylist {
   created_at: string;
 }
 
-export const createMoodPlaylist = (data: Omit<MoodPlaylist, 'id' | 'created_at'>) => {
-  const stmt = db.prepare(`
+export const createMoodPlaylist = async (data: Omit<MoodPlaylist, 'id' | 'created_at'>) => {
+  return db.prepare(`
     INSERT INTO mood_playlists (artist_id, mood_description, playlist_url, playlist_id, tracks_count, valence, energy)
     VALUES (?, ?, ?, ?, ?, ?, ?)
-  `);
-  return stmt.run(
-    data.artist_id,
-    data.mood_description,
-    data.playlist_url,
-    data.playlist_id,
-    data.tracks_count,
-    data.valence,
-    data.energy
-  );
+  `).run(data.artist_id, data.mood_description, data.playlist_url, data.playlist_id, data.tracks_count, data.valence, data.energy);
 };
 
-export const getPlaylistsByArtist = (artistId: number): MoodPlaylist[] => {
-  return db.prepare('SELECT * FROM mood_playlists WHERE artist_id = ? ORDER BY created_at DESC').all(artistId) as MoodPlaylist[];
+export const getPlaylistsByArtist = async (artistId: number): Promise<MoodPlaylist[]> => {
+  return db.prepare('SELECT * FROM mood_playlists WHERE artist_id = ? ORDER BY created_at DESC').all(artistId) as Promise<MoodPlaylist[]>;
 };
 
-export const getPlaylistById = (id: number): MoodPlaylist | undefined => {
-  return db.prepare('SELECT * FROM mood_playlists WHERE id = ?').get(id) as MoodPlaylist | undefined;
+export const getPlaylistById = async (id: number): Promise<MoodPlaylist | undefined> => {
+  return db.prepare('SELECT * FROM mood_playlists WHERE id = ?').get(id) as Promise<MoodPlaylist | undefined>;
 };

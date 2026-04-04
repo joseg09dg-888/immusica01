@@ -19,7 +19,7 @@ const SPOTIFY_REDIRECT_URI = process.env.SPOTIFY_REDIRECT_URI || 'http://localho
 // ============================================
 // 1. OBTENER URL DE AUTORIZACIÓN DE SPOTIFY
 // ============================================
-export const getSpotifyAuthUrl = (req: AuthRequest, res: Response) => {
+export const getSpotifyAuthUrl = async (req: AuthRequest, res: Response) => {
   if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
   const scope = 'playlist-modify-private playlist-modify-public user-read-private user-read-email';
@@ -95,7 +95,7 @@ export const generateMoodPlaylist = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'No hay artista asociado' });
     const artist = artists[0];
 
@@ -249,11 +249,11 @@ export const generateMoodPlaylist = async (req: AuthRequest, res: Response) => {
 // ============================================
 // 4. OBTENER HISTORIAL DE PLAYLISTS DEL ARTISTA
 // ============================================
-export const getMyPlaylists = (req: AuthRequest, res: Response) => {
+export const getMyPlaylists = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'No hay artista asociado' });
     const artist = artists[0];
 
@@ -272,7 +272,7 @@ export const checkSpotifyConnection = async (req: AuthRequest, res: Response) =>
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'No hay artista asociado' });
     const artist = artists[0];
 

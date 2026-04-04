@@ -53,12 +53,12 @@ export const createLandingPage = async (req: AuthRequest, res: Response) => {
     }
 
     // Obtener artist_id del usuario
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'Artista no encontrado' });
     const artistId = artists[0].id;
 
     // Verificar que el track pertenece al artista
-    const track = db.prepare('SELECT id FROM tracks WHERE id = ? AND artist_id = ?').get(track_id, artistId) as { id: number } | undefined;
+    const track = await db.prepare('SELECT id FROM tracks WHERE id = ? AND artist_id = ?').get(track_id, artistId) as { id: number } | undefined;
     if (!track) {
       return res.status(404).json({ error: 'Track no encontrado o no pertenece al artista' });
     }
@@ -67,18 +67,17 @@ export const createLandingPage = async (req: AuthRequest, res: Response) => {
     let slug = generateSlug(title);
     let counter = 1;
     let uniqueSlug = slug;
-    while (db.prepare('SELECT id FROM landing_pages WHERE slug = ?').get(uniqueSlug)) {
+    while (await db.prepare('SELECT id FROM landing_pages WHERE slug = ?').get(uniqueSlug)) {
       uniqueSlug = `${slug}-${counter}`;
       counter++;
     }
 
     // Insertar landing page
-    const insert = db.prepare(`
-      INSERT INTO landing_pages 
+    const result = await db.prepare(`
+      INSERT INTO landing_pages
       (track_id, artist_id, slug, title, description, cover_url, spotify_url, apple_music_url, youtube_url, other_url, config)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    const result = insert.run(
+    `).run(
       track_id,
       artistId,
       uniqueSlug,
@@ -105,11 +104,11 @@ export const createLandingPage = async (req: AuthRequest, res: Response) => {
 };
 
 // Obtener una landing page por slug (público)
-export const getLandingPage = (req: Request, res: Response) => {
+export const getLandingPage = async (req: Request, res: Response) => {
   const { slug } = req.params;
 
   try {
-    const page = db.prepare(`
+    const page = await db.prepare(`
       SELECT lp.*, t.title as track_title, t.cover as track_cover, t.audio_url
       FROM landing_pages lp
       JOIN tracks t ON lp.track_id = t.id
@@ -133,7 +132,7 @@ export const getLandingPage = (req: Request, res: Response) => {
 };
 
 // Capturar lead (email) de un fan
-export const captureLead = (req: Request, res: Response) => {
+export const captureLead = async (req: Request, res: Response) => {
   const { slug } = req.params;
   const { email, name } = req.body;
 
@@ -143,13 +142,13 @@ export const captureLead = (req: Request, res: Response) => {
 
   try {
     // Obtener el ID de la landing page
-    const page = db.prepare('SELECT id FROM landing_pages WHERE slug = ?').get(slug) as PageIdRow | undefined;
+    const page = await db.prepare('SELECT id FROM landing_pages WHERE slug = ?').get(slug) as PageIdRow | undefined;
     if (!page) {
       return res.status(404).json({ error: 'Landing page no encontrada' });
     }
 
     // Insertar lead (si ya existe, ON CONFLICT lo ignora)
-    const insert = db.prepare(`
+    const insert = await db.prepare(`
       INSERT OR IGNORE INTO leads (landing_page_id, email, name)
       VALUES (?, ?, ?)
     `);
@@ -167,11 +166,11 @@ export const getMyLandingPages = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.json([]);
     const artistId = artists[0].id;
 
-    const pages = db.prepare(`
+    const pages = await db.prepare(`
       SELECT lp.*, t.title as track_title,
       (SELECT COUNT(*) FROM leads WHERE landing_page_id = lp.id) as leads_count
       FROM landing_pages lp
@@ -194,17 +193,17 @@ export const deleteLandingPage = async (req: AuthRequest, res: Response) => {
 
     const { id } = req.params;
 
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'Artista no encontrado' });
     const artistId = artists[0].id;
 
     // Verificar que la página pertenezca al artista
-    const page = db.prepare('SELECT id FROM landing_pages WHERE id = ? AND artist_id = ?').get(id, artistId) as { id: number } | undefined;
+    const page = await db.prepare('SELECT id FROM landing_pages WHERE id = ? AND artist_id = ?').get(id, artistId) as { id: number } | undefined;
     if (!page) {
       return res.status(404).json({ error: 'Landing page no encontrada o no pertenece al artista' });
     }
 
-    db.prepare('DELETE FROM landing_pages WHERE id = ?').run(id);
+    await db.prepare('DELETE FROM landing_pages WHERE id = ?').run(id);
     res.json({ message: 'Landing page eliminada correctamente' });
   } catch (error) {
     console.error(error);

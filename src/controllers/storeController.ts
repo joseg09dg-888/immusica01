@@ -21,17 +21,17 @@ export const activateAutoDistribute = async (req: AuthRequest, res: Response) =>
     }
 
     // Verificar propiedad del track
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'Artista no encontrado' });
     const artistId = artists[0].id;
 
-    const track = TrackModel.getTrackById(trackIdNum);
+    const track = await TrackModel.getTrackById(trackIdNum);
     if (!track || track.artist_id !== artistId) {
       return res.status(404).json({ error: 'Track no encontrado o no pertenece al artista' });
     }
 
     // Activar distribución automática (marcar en la tabla tracks)
-    db.prepare('UPDATE tracks SET auto_distribute = 1 WHERE id = ?').run(trackIdNum);
+    await db.prepare('UPDATE tracks SET auto_distribute = 1 WHERE id = ?').run(trackIdNum);
 
     res.json({ message: 'Distribución automática activada para este track' });
   } catch (error) {
@@ -55,16 +55,16 @@ export const deactivateAutoDistribute = async (req: AuthRequest, res: Response) 
     }
 
     // Verificar propiedad
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'Artista no encontrado' });
     const artistId = artists[0].id;
 
-    const track = TrackModel.getTrackById(trackIdNum);
+    const track = await TrackModel.getTrackById(trackIdNum);
     if (!track || track.artist_id !== artistId) {
       return res.status(404).json({ error: 'Track no encontrado o no pertenece al artista' });
     }
 
-    db.prepare('UPDATE tracks SET auto_distribute = 0 WHERE id = ?').run(trackIdNum);
+    await db.prepare('UPDATE tracks SET auto_distribute = 0 WHERE id = ?').run(trackIdNum);
 
     res.json({ message: 'Distribución automática desactivada' });
   } catch (error) {
@@ -88,11 +88,11 @@ export const getDistributions = async (req: AuthRequest, res: Response) => {
     }
 
     // Verificar propiedad
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'Artista no encontrado' });
     const artistId = artists[0].id;
 
-    const track = TrackModel.getTrackById(trackIdNum);
+    const track = await TrackModel.getTrackById(trackIdNum);
     if (!track || track.artist_id !== artistId) {
       return res.status(404).json({ error: 'Track no encontrado o no pertenece al artista' });
     }
@@ -125,17 +125,17 @@ export const forceDistribute = async (req: AuthRequest, res: Response) => {
     }
 
     // Verificar propiedad
-    const artists = ArtistModel.getArtistsByUser(req.user.id);
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'Artista no encontrado' });
     const artistId = artists[0].id;
 
-    const track = TrackModel.getTrackById(trackIdNum);
+    const track = await TrackModel.getTrackById(trackIdNum);
     if (!track || track.artist_id !== artistId) {
       return res.status(404).json({ error: 'Track no encontrado o no pertenece al artista' });
     }
 
     // Simular distribución a todas las tiendas no enviadas aún
-    const existing = db.prepare('SELECT store_name FROM store_distributions WHERE track_id = ?').all(trackIdNum) as { store_name: string }[];
+    const existing = await db.prepare('SELECT store_name FROM store_distributions WHERE track_id = ?').all(trackIdNum) as { store_name: string }[];
     const existingStores = new Set(existing.map(e => e.store_name));
 
     const insert = db.prepare(`
