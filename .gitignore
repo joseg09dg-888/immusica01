@@ -1,2 +1,10 @@
-.env 
-music_platform.db 
+.env
+music_platform.db
+node_modules/
+dist/
+.claude/
+*.png
+*.jpg
+*.jpeg
+sceageus/
+im-music front/%USERPROFILE%/
