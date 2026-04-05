@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => {
       hmr: process.env.DISABLE_HMR !== 'true',
       proxy: {
         '/api': {
-          target: 'https://fascinating-particulate-teodora.ngrok-free.dev',
+          target: 'http://localhost:3000',
           changeOrigin: true,
           secure: false,
         }
