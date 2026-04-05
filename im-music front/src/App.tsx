@@ -503,9 +503,17 @@ function LoginPage({ onLogin, onBack }: { onLogin: (u: any) => void; onBack: () 
   const inputStyle: React.CSSProperties = { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '14px 16px', color: '#fff', fontFamily: "'Space Grotesk', sans-serif", fontSize: '14px', outline: 'none', width: '100%', boxSizing: 'border-box', transition: 'border-color 0.2s' };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#020202', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-      <div style={{ position: 'fixed', inset: 0, backgroundImage: `linear-gradient(rgba(94,23,235,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(94,23,235,0.035) 1px, transparent 1px)`, backgroundSize: '56px 56px', pointerEvents: 'none' }} />
-      <div style={{ position: 'fixed', top: '-200px', left: '50%', transform: 'translateX(-50%)', width: '800px', height: '600px', background: `radial-gradient(ellipse, rgba(94,23,235,0.1) 0%, transparent 65%)`, pointerEvents: 'none' }} />
+    <div style={{ minHeight: '100vh', background: '#020202', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', position: 'relative', overflow: 'hidden' }}>
+      {/* Dither wave background */}
+      <Dither
+        waveColor={[0.25, 0.06, 0.6]}
+        colorNum={4} pixelSize={3}
+        waveAmplitude={0.25} waveFrequency={2.5} waveSpeed={0.03}
+        enableMouseInteraction mouseRadius={0.25}
+        style={{ position: 'fixed', opacity: 0.6 }}
+      />
+      <div style={{ position: 'fixed', inset: 0, backgroundImage: `linear-gradient(rgba(94,23,235,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(94,23,235,0.04) 1px, transparent 1px)`, backgroundSize: '56px 56px', pointerEvents: 'none' }} />
+      <div style={{ position: 'fixed', top: '-200px', left: '50%', transform: 'translateX(-50%)', width: '800px', height: '600px', background: `radial-gradient(ellipse, rgba(94,23,235,0.15) 0%, transparent 65%)`, pointerEvents: 'none' }} />
 
       <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}
         style={{ width: '100%', maxWidth: '420px', position: 'relative', zIndex: 1 }}>
