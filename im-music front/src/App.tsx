@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  LayoutDashboard, Music, TrendingUp, DollarSign, ShieldCheck, Settings,
-  Plus, Search, Bell, User as UserIcon, ChevronRight, BarChart3, Globe,
-  Zap, FileText, CreditCard, Sparkles, Play, ShoppingBag, Menu, X,
-  MessageCircle, Lock, Video, Mic, Award, Link2, Store, Split,
+  LayoutDashboard, Music, TrendingUp, DollarSign, Settings,
+  Plus, Search, Bell, User as UserIcon, BarChart3, Globe,
+  Zap, CreditCard, Sparkles, Play, ShoppingBag, Menu,
+  MessageCircle, Lock, Video, Mic, Award, Link2, Store,
   Upload, Image, Scale, Lightbulb, ChevronDown, Send, Trash2,
   LogOut, BookOpen, Package, Users, Radio, Star, Check
 } from 'lucide-react';
@@ -25,6 +25,10 @@ async function apiFetch(path: string, opts: RequestInit = {}) {
   if (!res.ok) throw new Error(data.error || 'Error');
   return data;
 }
+
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const P = '#5E17EB';
+const PL = '#7B3FFF';
 
 // ─── Auth Page ────────────────────────────────────────────────────────────────
 function AuthPage({ onLogin }: { onLogin: (u: any) => void }) {
@@ -48,44 +52,79 @@ function AuthPage({ onLogin }: { onLogin: (u: any) => void }) {
   };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4">
-      <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Music size={32} className="text-white" />
+    <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+      {/* Grid background */}
+      <div style={{ position: 'fixed', inset: 0, backgroundImage: `linear-gradient(rgba(94,23,235,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(94,23,235,0.06) 1px, transparent 1px)`, backgroundSize: '48px 48px', pointerEvents: 'none' }} />
+      <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+        style={{ width: '100%', maxWidth: '440px', position: 'relative' }}>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <div style={{ width: '64px', height: '64px', background: `linear-gradient(135deg, ${P}, ${PL})`, borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: `0 0 40px rgba(94,23,235,0.4)` }}>
+            <Music size={28} color="#fff" />
           </div>
-          <h1 className="text-3xl font-bold text-white">IM Music</h1>
-          <p className="text-white/40 mt-1">Plataforma de distribución musical</p>
+          <h1 style={{ fontFamily: "'Anton', sans-serif", fontSize: '36px', letterSpacing: '0.02em', color: '#fff', margin: 0 }}>IM MUSIC</h1>
+          <p style={{ color: 'rgba(255,255,255,0.35)', marginTop: '4px', fontSize: '14px' }}>Plataforma de distribución musical</p>
         </div>
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8">
-          <div className="flex gap-2 mb-6">
+        <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '32px', backdropFilter: 'blur(24px)' }}>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px' }}>
             {(['login', 'register'] as const).map(t => (
-              <button key={t} onClick={() => setTab(t)}
-                className={`flex-1 py-2 rounded-lg font-medium transition-all ${tab === t ? 'bg-purple-600 text-white' : 'text-white/40 hover:text-white'}`}>
+              <button key={t} onClick={() => setTab(t)} style={{
+                flex: 1, padding: '10px', borderRadius: '10px', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600,
+                fontSize: '13px', border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+                background: tab === t ? P : 'transparent',
+                color: tab === t ? '#fff' : 'rgba(255,255,255,0.4)'
+              }}>
                 {t === 'login' ? 'Iniciar sesión' : 'Registrarse'}
               </button>
             ))}
           </div>
-          <form onSubmit={submit} className="space-y-4">
+          <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {tab === 'register' && (
               <input value={name} onChange={e => setName(e.target.value)} placeholder="Nombre artístico"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus:border-purple-500" />
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '14px 16px', color: '#fff', fontFamily: "'Space Grotesk', sans-serif", fontSize: '14px', outline: 'none', width: '100%', boxSizing: 'border-box' }} />
             )}
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" required
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus:border-purple-500" />
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '14px 16px', color: '#fff', fontFamily: "'Space Grotesk', sans-serif", fontSize: '14px', outline: 'none', width: '100%', boxSizing: 'border-box' }} />
             <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Contraseña" required
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus:border-purple-500" />
-            {error && <p className="text-red-400 text-sm">{error}</p>}
-            <button type="submit" disabled={loading}
-              className="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl transition-all disabled:opacity-50">
-              {loading ? 'Cargando...' : tab === 'login' ? 'Entrar' : 'Crear cuenta'}
-            </button>
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '14px 16px', color: '#fff', fontFamily: "'Space Grotesk', sans-serif", fontSize: '14px', outline: 'none', width: '100%', boxSizing: 'border-box' }} />
+            {error && <p style={{ color: '#f87171', fontSize: '13px', margin: 0 }}>{error}</p>}
+            <Btn3D disabled={loading} type="submit">{loading ? 'Cargando...' : tab === 'login' ? 'ENTRAR' : 'CREAR CUENTA'}</Btn3D>
           </form>
         </div>
       </motion.div>
     </div>
   );
+}
+
+// ─── 3D Button ────────────────────────────────────────────────────────────────
+function Btn3D({ children, onClick, disabled = false, type = 'button', variant = 'primary', small = false }: {
+  children: React.ReactNode; onClick?: () => void; disabled?: boolean;
+  type?: 'button' | 'submit'; variant?: 'primary' | 'ghost' | 'danger'; small?: boolean;
+}) {
+  const [pressed, setPressed] = useState(false);
+  const bg = variant === 'danger' ? '#7f1d1d' : variant === 'ghost' ? 'rgba(255,255,255,0.06)' : P;
+  const shadow = variant === 'primary' ? `0 ${pressed ? '2px' : '6px'} 0 rgba(45,11,107,1), 0 0 ${pressed ? '20px' : '40px'} rgba(94,23,235,0.4)` : `0 ${pressed ? '2px' : '4px'} 0 rgba(0,0,0,0.5)`;
+  return (
+    <button type={type} onClick={onClick} disabled={disabled}
+      onMouseDown={() => setPressed(true)} onMouseUp={() => setPressed(false)} onMouseLeave={() => setPressed(false)}
+      style={{
+        background: bg, color: '#fff', border: variant === 'ghost' ? '1px solid rgba(255,255,255,0.12)' : 'none',
+        borderRadius: '12px', padding: small ? '8px 16px' : '14px 28px',
+        fontFamily: "'Anton', sans-serif", letterSpacing: '0.1em', textTransform: 'uppercase',
+        fontSize: small ? '11px' : '13px', cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.5 : 1, display: 'inline-flex', alignItems: 'center', gap: '8px',
+        transform: `translateY(${pressed ? '3px' : '0'})`,
+        boxShadow: shadow,
+        transition: 'transform 0.08s cubic-bezier(0.3,0.7,0.4,1), box-shadow 0.08s ease, background 0.15s',
+        width: type === 'submit' ? '100%' : undefined,
+        justifyContent: type === 'submit' ? 'center' : undefined,
+      }}>
+      {children}
+    </button>
+  );
+}
+
+function GhostBtn({ children, onClick, small = false }: { children: React.ReactNode; onClick?: () => void; small?: boolean }) {
+  return <Btn3D variant="ghost" onClick={onClick} small={small}>{children}</Btn3D>;
 }
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
@@ -118,70 +157,85 @@ const MODULES = [
   { id: 'settings', label: 'Ajustes', icon: Settings, group: 'Gestión' },
 ];
 
+const SIDEBAR_W = 256;
+
 function Sidebar({ active, onNav, user, onLogout, open, onClose }: {
   active: string; onNav: (id: string) => void; user: any;
   onLogout: () => void; open: boolean; onClose: () => void;
 }) {
   const groups = [...new Set(MODULES.map(m => m.group))];
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
-
-  const toggleGroup = (g: string) => {
-    setCollapsed(prev => {
-      const next = new Set(prev);
-      next.has(g) ? next.delete(g) : next.add(g);
-      return next;
-    });
-  };
+  const toggle = (g: string) => setCollapsed(prev => { const n = new Set(prev); n.has(g) ? n.delete(g) : n.add(g); return n; });
 
   return (
     <>
-      {open && <div className="fixed inset-0 bg-black/60 z-20 lg:hidden" onClick={onClose} />}
-      <aside className={`fixed top-0 left-0 h-full w-64 bg-zinc-950 border-r border-white/5 z-30 flex flex-col transition-transform duration-300
-        ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
-        <div className="p-5 border-b border-white/5">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-purple-600 rounded-xl flex items-center justify-center">
-              <Music size={18} className="text-white" />
-            </div>
-            <span className="font-bold text-white text-lg">IM Music</span>
+      {open && <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 20 }} />}
+      <aside style={{
+        position: 'fixed', top: 0, left: 0, height: '100%', width: `${SIDEBAR_W}px`,
+        background: '#0a0a0a', borderRight: '1px solid rgba(255,255,255,0.05)',
+        zIndex: 30, display: 'flex', flexDirection: 'column',
+        transform: open ? 'translateX(0)' : undefined,
+        transition: 'transform 0.3s ease',
+      }}>
+        {/* Logo */}
+        <div style={{ padding: '20px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ width: '36px', height: '36px', background: `linear-gradient(135deg, ${P}, ${PL})`, borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 20px rgba(94,23,235,0.3)` }}>
+            <Music size={16} color="#fff" />
           </div>
+          <span style={{ fontFamily: "'Anton', sans-serif", fontSize: '18px', color: '#fff', letterSpacing: '0.05em' }}>IM MUSIC</span>
         </div>
-        <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+
+        {/* Nav */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 8px' }}>
           {groups.map(group => {
             const items = MODULES.filter(m => m.group === group);
             const isCollapsed = collapsed.has(group);
             return (
               <div key={group}>
-                <button onClick={() => toggleGroup(group)}
-                  className="w-full flex items-center justify-between px-3 py-1.5 text-white/30 text-xs font-semibold uppercase tracking-widest hover:text-white/50 transition-colors">
+                <button onClick={() => toggle(group)} style={{
+                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer',
+                  color: 'rgba(255,255,255,0.25)', fontSize: '9px', fontFamily: "'Space Grotesk', sans-serif",
+                  fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', marginTop: '8px'
+                }}>
                   <span>{group}</span>
-                  <ChevronDown size={12} className={`transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
+                  <ChevronDown size={10} style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.2s' }} />
                 </button>
-                {!isCollapsed && items.map(m => (
-                  <button key={m.id} onClick={() => { onNav(m.id); onClose(); }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm
-                      ${active === m.id ? 'bg-purple-600/20 text-purple-400 font-semibold' : 'text-white/40 hover:text-white hover:bg-white/5'}`}>
-                    <m.icon size={16} />
-                    <span>{m.label}</span>
-                    {active === m.id && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-purple-400" />}
-                  </button>
-                ))}
+                {!isCollapsed && items.map(m => {
+                  const isActive = active === m.id;
+                  return (
+                    <button key={m.id} onClick={() => { onNav(m.id); onClose(); }} style={{
+                      width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+                      padding: '9px 12px', borderRadius: '10px', border: 'none', cursor: 'pointer',
+                      background: isActive ? `rgba(94,23,235,0.18)` : 'transparent',
+                      color: isActive ? PL : 'rgba(255,255,255,0.38)',
+                      fontSize: '12px', fontFamily: "'Space Grotesk', sans-serif", fontWeight: isActive ? 600 : 400,
+                      transition: 'all 0.15s', textAlign: 'left',
+                      borderLeft: isActive ? `2px solid ${P}` : '2px solid transparent',
+                    }}>
+                      <m.icon size={14} />
+                      <span>{m.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             );
           })}
         </div>
-        <div className="p-4 border-t border-white/5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 bg-purple-600/30 rounded-full flex items-center justify-center">
-              <UserIcon size={14} className="text-purple-400" />
+
+        {/* User footer */}
+        <div style={{ padding: '12px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', padding: '8px' }}>
+            <div style={{ width: '32px', height: '32px', background: `rgba(94,23,235,0.25)`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <UserIcon size={14} color={PL} />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-white text-sm font-medium truncate">{user?.name || user?.email}</p>
-              <p className="text-white/30 text-xs capitalize">{user?.role || 'artist'}</p>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ color: '#fff', fontSize: '12px', fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.name || user?.email}</p>
+              <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', margin: 0, textTransform: 'capitalize' }}>{user?.role || 'artist'}</p>
             </div>
           </div>
-          <button onClick={onLogout} className="w-full flex items-center gap-2 px-3 py-2 text-white/40 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all text-sm">
-            <LogOut size={14} /> Cerrar sesión
+          <button onClick={onLogout} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontFamily: "'Space Grotesk', sans-serif", borderRadius: '8px', transition: 'all 0.15s' }}>
+            <LogOut size={13} /> Cerrar sesión
           </button>
         </div>
       </aside>
@@ -189,12 +243,12 @@ function Sidebar({ active, onNav, user, onLogout, open, onClose }: {
   );
 }
 
-// ─── Page Shell ───────────────────────────────────────────────────────────────
+// ─── Layout ───────────────────────────────────────────────────────────────────
 function PageShell({ title, children, action }: { title: string; children: React.ReactNode; action?: React.ReactNode }) {
   return (
-    <div className="p-6 lg:p-8 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold text-white">{title}</h1>
+    <div style={{ padding: '32px', maxWidth: '1100px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
+        <h1 style={{ fontFamily: "'Anton', sans-serif", fontSize: '28px', color: '#fff', letterSpacing: '0.02em', margin: 0 }}>{title}</h1>
         {action}
       </div>
       {children}
@@ -202,28 +256,55 @@ function PageShell({ title, children, action }: { title: string; children: React
   );
 }
 
-function Card({ children, className = '', style, ...rest }: React.HTMLAttributes<HTMLDivElement> & { children: React.ReactNode }) {
+function Card({ children, style = {}, glow = false }: { children: React.ReactNode; style?: React.CSSProperties; glow?: boolean }) {
+  const [hover, setHover] = useState(false);
   return (
-    <div className={`bg-white/5 border border-white/10 rounded-2xl p-6 ${className}`} style={style} {...rest}>
+    <div onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{
+        background: 'rgba(255,255,255,0.04)', border: `1px solid ${hover || glow ? 'rgba(94,23,235,0.35)' : 'rgba(255,255,255,0.07)'}`,
+        borderRadius: '20px', padding: '24px', transition: 'all 0.25s ease',
+        boxShadow: hover ? `0 0 40px rgba(94,23,235,0.12), 0 8px 32px rgba(0,0,0,0.3)` : 'none',
+        transform: hover ? 'translateY(-2px)' : 'none',
+        ...style
+      }}>
       {children}
     </div>
   );
 }
 
-function Btn({ children, onClick, variant = 'primary', disabled = false, className = '' }: {
-  children: React.ReactNode; onClick?: () => void; variant?: 'primary' | 'ghost' | 'danger';
-  disabled?: boolean; className?: string;
-}) {
-  const styles = {
-    primary: 'bg-purple-600 hover:bg-purple-500 text-white',
-    ghost: 'bg-white/5 hover:bg-white/10 text-white border border-white/10',
-    danger: 'bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-600/20',
-  };
+function StatCard({ label, value, icon: Icon, color = P }: { label: string; value: string | number; icon: any; color?: string; key?: React.Key }) {
+  const [hover, setHover] = useState(false);
   return (
-    <button onClick={onClick} disabled={disabled}
-      className={`px-4 py-2 rounded-xl font-medium transition-all disabled:opacity-40 flex items-center gap-2 text-sm ${styles[variant]} ${className}`}>
-      {children}
-    </button>
+    <div onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{
+        background: 'rgba(255,255,255,0.04)', border: `1px solid ${hover ? 'rgba(94,23,235,0.4)' : 'rgba(255,255,255,0.07)'}`,
+        borderRadius: '20px', padding: '24px', transition: 'all 0.25s ease',
+        boxShadow: hover ? `0 0 40px rgba(94,23,235,0.15), 0 0 0 1px rgba(94,23,235,0.2)` : 'none',
+        transform: hover ? 'translateY(-4px) scale(1.01)' : 'none',
+      }}>
+      <div style={{ width: '40px', height: '40px', background: `rgba(94,23,235,0.15)`, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px', border: '1px solid rgba(94,23,235,0.2)' }}>
+        <Icon size={18} color={PL} />
+      </div>
+      <p style={{ fontFamily: "'Anton', sans-serif", fontSize: '26px', color: '#fff', margin: '0 0 4px', letterSpacing: '0.02em' }}>{value}</p>
+      <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px', margin: 0, fontFamily: "'Space Grotesk', sans-serif" }}>{label}</p>
+    </div>
+  );
+}
+
+// ─── Purple Marquee Strip ─────────────────────────────────────────────────────
+const MARQUEE_ITEMS = ['DISTRIBUCIÓN GLOBAL', 'REGALÍAS EN TIEMPO REAL', 'IA MUSICAL', 'MARKETING INTELIGENTE', 'SPLITS AUTOMÁTICOS', 'STORE MAXIMIZER', 'PUBLISHING'];
+function MarqueeStrip() {
+  const items = [...MARQUEE_ITEMS, ...MARQUEE_ITEMS];
+  return (
+    <div style={{ background: P, padding: '10px 0', overflow: 'hidden', borderTop: '1px solid rgba(255,255,255,0.1)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+      <div style={{ display: 'flex', gap: '0', animation: 'marqueeScroll 20s linear infinite', width: 'max-content' }}>
+        {items.map((item, i) => (
+          <span key={i} style={{ fontFamily: "'Anton', sans-serif", fontSize: '12px', letterSpacing: '0.2em', color: '#fff', padding: '0 32px', whiteSpace: 'nowrap' }}>
+            {item} <span style={{ color: 'rgba(255,255,255,0.4)' }}>✦</span>
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -231,63 +312,59 @@ function Btn({ children, onClick, variant = 'primary', disabled = false, classNa
 function DashboardPage() {
   const [stats, setStats] = useState<any>(null);
   const [tracks, setTracks] = useState<any[]>([]);
-
   useEffect(() => {
     apiFetch('/royalties/summary').then(setStats).catch(() => {});
-    apiFetch('/tracks').then(d => setTracks(d.slice(0, 5))).catch(() => {});
+    apiFetch('/tracks').then(d => setTracks(Array.isArray(d) ? d.slice(0, 5) : [])).catch(() => {});
   }, []);
 
   const cards = [
-    { label: 'Ingresos totales', value: stats ? `$${(stats.totalRevenue || 0).toFixed(2)}` : '—', icon: DollarSign },
+    { label: 'Ingresos totales', value: stats ? `$${Number(stats.totalRevenue || 0).toFixed(2)}` : '—', icon: DollarSign },
     { label: 'Tracks', value: tracks.length || '—', icon: Music },
     { label: 'Plataformas', value: stats ? Object.keys(stats.byPlatform || {}).length : '—', icon: Globe },
-    { label: 'Streams', value: stats ? (stats.totalStreams || 0).toLocaleString() : '—', icon: TrendingUp },
+    { label: 'Streams', value: stats ? Number(stats.totalStreams || 0).toLocaleString() : '—', icon: TrendingUp },
   ];
 
   return (
-    <PageShell title="Dashboard">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {cards.map(c => (
-          <Card key={c.label}>
-            <c.icon size={20} className="text-purple-400 mb-3" />
-            <p className="text-2xl font-bold text-white">{c.value}</p>
-            <p className="text-white/40 text-sm mt-1">{c.label}</p>
-          </Card>
-        ))}
-      </div>
-      <div className="grid lg:grid-cols-2 gap-6">
-        <Card>
-          <h3 className="text-white font-semibold mb-4">Últimos tracks</h3>
-          {tracks.length === 0 && <p className="text-white/30 text-sm">Sin tracks aún</p>}
-          <div className="space-y-3">
+    <>
+      <MarqueeStrip />
+      <PageShell title="Dashboard">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
+          {cards.map(c => <StatCard key={c.label} label={c.label} value={c.value} icon={c.icon} />)}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <Card>
+            <h3 style={{ fontFamily: "'Anton', sans-serif", fontSize: '16px', color: '#fff', letterSpacing: '0.05em', marginBottom: '16px', marginTop: 0 }}>ÚLTIMOS TRACKS</h3>
+            {tracks.length === 0 && <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '13px' }}>Sin tracks aún</p>}
             {tracks.map(t => (
-              <div key={t.id} className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-purple-600/20 rounded-lg flex items-center justify-center">
-                  <Music size={14} className="text-purple-400" />
+              <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                <div style={{ width: '36px', height: '36px', background: 'rgba(94,23,235,0.15)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Music size={14} color={PL} />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-white text-sm font-medium truncate">{t.title}</p>
-                  <p className="text-white/30 text-xs capitalize">{t.status}</p>
+                <div>
+                  <p style={{ color: '#fff', fontSize: '13px', fontWeight: 600, margin: 0 }}>{t.title}</p>
+                  <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', margin: 0 }}>{t.status}</p>
                 </div>
               </div>
             ))}
-          </div>
-        </Card>
-        <Card>
-          <h3 className="text-white font-semibold mb-4">Plataformas</h3>
-          {stats?.byPlatform && Object.entries(stats.byPlatform).slice(0, 5).map(([p, v]: any) => (
-            <div key={p} className="flex items-center gap-3 mb-3">
-              <span className="text-white/60 text-sm w-24 truncate capitalize">{p}</span>
-              <div className="flex-1 bg-white/5 rounded-full h-2">
-                <div className="bg-purple-500 h-2 rounded-full" style={{ width: `${Math.min(100, (v / (stats.totalRevenue || 1)) * 100)}%` }} />
+          </Card>
+          <Card>
+            <h3 style={{ fontFamily: "'Anton', sans-serif", fontSize: '16px', color: '#fff', letterSpacing: '0.05em', marginBottom: '16px', marginTop: 0 }}>PLATAFORMAS</h3>
+            {stats?.byPlatform && Object.entries(stats.byPlatform).slice(0, 5).map(([p, v]: any) => (
+              <div key={p} style={{ marginBottom: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', textTransform: 'capitalize' }}>{p}</span>
+                  <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>${Number(v).toFixed(2)}</span>
+                </div>
+                <div style={{ height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '100px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', background: `linear-gradient(90deg, ${P}, ${PL})`, borderRadius: '100px', width: `${Math.min(100, (v / (stats.totalRevenue || 1)) * 100)}%` }} />
+                </div>
               </div>
-              <span className="text-white/40 text-xs">${Number(v).toFixed(2)}</span>
-            </div>
-          ))}
-          {!stats?.byPlatform && <p className="text-white/30 text-sm">Sin datos</p>}
-        </Card>
-      </div>
-    </PageShell>
+            ))}
+            {!stats?.byPlatform && <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '13px' }}>Sin datos</p>}
+          </Card>
+        </div>
+      </PageShell>
+    </>
   );
 }
 
@@ -298,65 +375,47 @@ function CatalogPage() {
   const [title, setTitle] = useState('');
   const [genre, setGenre] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const load = () => apiFetch('/tracks').then(setTracks).catch(() => {});
+  const load = () => apiFetch('/tracks').then(d => setTracks(Array.isArray(d) ? d : [])).catch(() => {});
   useEffect(() => { load(); }, []);
 
   const create = async () => {
-    if (!title) return;
-    setLoading(true);
-    try {
-      await apiFetch('/tracks', { method: 'POST', body: JSON.stringify({ title, genre }) });
-      setTitle(''); setGenre(''); setShowForm(false); load();
-    } catch {}
-    setLoading(false);
+    if (!title) return; setLoading(true);
+    try { await apiFetch('/tracks', { method: 'POST', body: JSON.stringify({ title, genre }) }); setTitle(''); setGenre(''); setShowForm(false); load(); }
+    catch {} setLoading(false);
   };
+  const del = async (id: number) => { if (!confirm('¿Eliminar?')) return; await apiFetch(`/tracks/${id}`, { method: 'DELETE' }).catch(() => {}); load(); };
 
-  const del = async (id: number) => {
-    if (!confirm('¿Eliminar track?')) return;
-    await apiFetch(`/tracks/${id}`, { method: 'DELETE' }).catch(() => {});
-    load();
-  };
-
-  const statusColor: Record<string, string> = { draft: 'bg-zinc-600', published: 'bg-green-600', scheduled: 'bg-blue-600' };
+  const statusColors: Record<string, string> = { draft: '#52525b', published: '#16a34a', scheduled: '#1d4ed8' };
 
   return (
-    <PageShell title="Catálogo" action={
-      <Btn onClick={() => setShowForm(!showForm)}><Plus size={16} /> Nuevo track</Btn>
-    }>
+    <PageShell title="Catálogo" action={<Btn3D small onClick={() => setShowForm(!showForm)}><Plus size={14} /> Nuevo track</Btn3D>}>
       {showForm && (
-        <Card className="mb-6">
-          <div className="flex gap-3 flex-wrap">
-            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Título del track"
-              className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white placeholder-white/30 outline-none focus:border-purple-500 min-w-48" />
-            <input value={genre} onChange={e => setGenre(e.target.value)} placeholder="Género"
-              className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white placeholder-white/30 outline-none focus:border-purple-500 min-w-32" />
-            <Btn onClick={create} disabled={loading}>{loading ? 'Creando...' : 'Crear'}</Btn>
-            <Btn variant="ghost" onClick={() => setShowForm(false)}>Cancelar</Btn>
+        <Card style={{ marginBottom: '20px' }}>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Título del track" style={{ flex: 1, minWidth: '160px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 14px', color: '#fff', fontFamily: "'Space Grotesk',sans-serif", fontSize: '13px', outline: 'none' }} />
+            <input value={genre} onChange={e => setGenre(e.target.value)} placeholder="Género" style={{ width: '120px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 14px', color: '#fff', fontFamily: "'Space Grotesk',sans-serif", fontSize: '13px', outline: 'none' }} />
+            <Btn3D small onClick={create} disabled={loading}>{loading ? 'Creando...' : 'Crear'}</Btn3D>
+            <GhostBtn small onClick={() => setShowForm(false)}>Cancelar</GhostBtn>
           </div>
         </Card>
       )}
       <Card>
-        {tracks.length === 0 && <p className="text-white/30 text-center py-8">Sin tracks. ¡Sube tu primer tema!</p>}
-        <div className="divide-y divide-white/5">
-          {tracks.map(t => (
-            <div key={t.id} className="flex items-center gap-4 py-4">
-              <div className="w-10 h-10 bg-purple-600/20 rounded-xl flex items-center justify-center">
-                <Music size={18} className="text-purple-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-white font-medium truncate">{t.title}</p>
-                <p className="text-white/40 text-sm">{t.genre || 'Sin género'}</p>
-              </div>
-              <span className={`px-2 py-1 rounded text-xs text-white font-medium ${statusColor[t.status] || 'bg-zinc-600'}`}>
-                {t.status}
-              </span>
-              <button onClick={() => del(t.id)} className="text-white/20 hover:text-red-400 transition-colors">
-                <Trash2 size={16} />
-              </button>
+        {tracks.length === 0 && <p style={{ color: 'rgba(255,255,255,0.25)', textAlign: 'center', padding: '32px 0', fontFamily: "'Space Grotesk',sans-serif" }}>Sin tracks. ¡Sube tu primer tema!</p>}
+        {tracks.map(t => (
+          <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '14px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+            <div style={{ width: '40px', height: '40px', background: 'rgba(94,23,235,0.15)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Music size={16} color={PL} />
             </div>
-          ))}
-        </div>
+            <div style={{ flex: 1 }}>
+              <p style={{ color: '#fff', fontSize: '14px', fontWeight: 600, margin: 0 }}>{t.title}</p>
+              <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px', margin: 0 }}>{t.genre || 'Sin género'}</p>
+            </div>
+            <span style={{ background: statusColors[t.status] || '#52525b', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t.status}</span>
+            <button onClick={() => del(t.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)', padding: '4px', borderRadius: '6px', transition: 'color 0.15s' }}>
+              <Trash2 size={15} />
+            </button>
+          </div>
+        ))}
       </Card>
     </PageShell>
   );
@@ -366,45 +425,39 @@ function CatalogPage() {
 function RoyaltiesPage() {
   const [summary, setSummary] = useState<any>(null);
   const [monthly, setMonthly] = useState<any[]>([]);
-
   useEffect(() => {
     apiFetch('/royalties/summary').then(setSummary).catch(() => {});
     apiFetch('/royalties/monthly').then(setMonthly).catch(() => {});
   }, []);
-
   return (
     <PageShell title="Regalías">
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px' }}>
         {[
-          { label: 'Total ingresos', value: summary ? `$${(summary.totalRevenue || 0).toFixed(2)}` : '—' },
-          { label: 'Total streams', value: summary ? (summary.totalStreams || 0).toLocaleString() : '—' },
-          { label: 'Plataformas', value: summary ? Object.keys(summary.byPlatform || {}).length : '—' },
-        ].map(c => (
-          <Card key={c.label}>
-            <p className="text-2xl font-bold text-white">{c.value}</p>
-            <p className="text-white/40 text-sm mt-1">{c.label}</p>
-          </Card>
-        ))}
+          { label: 'Total ingresos', value: summary ? `$${Number(summary.totalRevenue || 0).toFixed(2)}` : '—', icon: DollarSign },
+          { label: 'Total streams', value: summary ? Number(summary.totalStreams || 0).toLocaleString() : '—', icon: TrendingUp },
+          { label: 'Plataformas', value: summary ? Object.keys(summary.byPlatform || {}).length : '—', icon: Globe },
+        ].map(c => <StatCard key={c.label} label={c.label} value={c.value} icon={c.icon} />)}
       </div>
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
         <Card>
-          <h3 className="text-white font-semibold mb-4">Por plataforma</h3>
+          <h3 style={{ fontFamily: "'Anton', sans-serif", fontSize: '16px', color: '#fff', letterSpacing: '0.05em', marginBottom: '16px', marginTop: 0 }}>POR PLATAFORMA</h3>
           {summary?.byPlatform && Object.entries(summary.byPlatform).map(([p, v]: any) => (
-            <div key={p} className="flex justify-between items-center py-2 border-b border-white/5">
-              <span className="text-white/60 capitalize">{p}</span>
-              <span className="text-white font-medium">${Number(v).toFixed(2)}</span>
+            <div key={p} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+              <span style={{ color: 'rgba(255,255,255,0.6)', textTransform: 'capitalize', fontSize: '13px' }}>{p}</span>
+              <span style={{ color: '#fff', fontWeight: 600, fontSize: '13px' }}>${Number(v).toFixed(2)}</span>
             </div>
           ))}
+          {!summary?.byPlatform && <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '13px' }}>Sin datos</p>}
         </Card>
         <Card>
-          <h3 className="text-white font-semibold mb-4">Historial mensual</h3>
+          <h3 style={{ fontFamily: "'Anton', sans-serif", fontSize: '16px', color: '#fff', letterSpacing: '0.05em', marginBottom: '16px', marginTop: 0 }}>HISTORIAL MENSUAL</h3>
           {monthly.slice(0, 8).map((m: any) => (
-            <div key={m.month} className="flex justify-between items-center py-2 border-b border-white/5">
-              <span className="text-white/60">{m.month}</span>
-              <span className="text-white font-medium">${Number(m.revenue || 0).toFixed(2)}</span>
+            <div key={m.month} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+              <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>{m.month}</span>
+              <span style={{ color: '#fff', fontWeight: 600, fontSize: '13px' }}>${Number(m.revenue || 0).toFixed(2)}</span>
             </div>
           ))}
-          {monthly.length === 0 && <p className="text-white/30 text-sm">Sin datos mensuales</p>}
+          {monthly.length === 0 && <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '13px' }}>Sin datos mensuales</p>}
         </Card>
       </div>
     </PageShell>
@@ -419,13 +472,11 @@ function AIChatPage() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
   const send = async () => {
     if (!input.trim() || loading) return;
-    const msg = input.trim();
-    setInput('');
+    const msg = input.trim(); setInput('');
     setMessages(prev => [...prev, { role: 'user', content: msg }]);
     setLoading(true);
     try {
@@ -439,35 +490,30 @@ function AIChatPage() {
 
   return (
     <PageShell title="IA Chat">
-      <Card className="flex flex-col" style={{ height: '60vh' }}>
-        <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+      <Card style={{ display: 'flex', flexDirection: 'column', height: '520px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '4px' }}>
           {messages.map((m, i) => (
-            <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-lg px-4 py-3 rounded-2xl text-sm leading-relaxed
-                ${m.role === 'user' ? 'bg-purple-600 text-white' : 'bg-white/10 text-white/80'}`}>
-                {m.content}
-              </div>
+            <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
+              <div style={{
+                maxWidth: '70%', padding: '12px 16px', borderRadius: '16px', fontSize: '13px', lineHeight: '1.6',
+                background: m.role === 'user' ? `linear-gradient(135deg, ${P}, ${PL})` : 'rgba(255,255,255,0.07)',
+                color: '#fff', border: m.role === 'user' ? 'none' : '1px solid rgba(255,255,255,0.08)',
+              }}>{m.content}</div>
             </div>
           ))}
           {loading && (
-            <div className="flex justify-start">
-              <div className="bg-white/10 px-4 py-3 rounded-2xl">
-                <div className="flex gap-1">
-                  {[0, 1, 2].map(i => (
-                    <div key={i} className="w-2 h-2 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
-                  ))}
-                </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+              <div style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.08)', padding: '12px 16px', borderRadius: '16px', display: 'flex', gap: '5px', alignItems: 'center' }}>
+                {[0, 1, 2].map(i => <div key={i} style={{ width: '7px', height: '7px', background: PL, borderRadius: '50%', animation: `bounce 1.2s ease-in-out ${i * 0.15}s infinite` }} />)}
               </div>
             </div>
           )}
           <div ref={bottomRef} />
         </div>
-        <div className="flex gap-3 mt-4 pt-4 border-t border-white/10">
-          <input value={input} onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && send()}
-            placeholder="Escribe tu pregunta..."
-            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 outline-none focus:border-purple-500" />
-          <Btn onClick={send} disabled={loading || !input.trim()}><Send size={16} /></Btn>
+        <div style={{ display: 'flex', gap: '12px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()} placeholder="Escribe tu pregunta..."
+            style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '12px 16px', color: '#fff', fontFamily: "'Space Grotesk',sans-serif", fontSize: '13px', outline: 'none' }} />
+          <Btn3D small onClick={send} disabled={loading || !input.trim()}><Send size={14} /></Btn3D>
         </div>
       </Card>
     </PageShell>
@@ -480,160 +526,35 @@ function MarketingPage() {
   const [loading, setLoading] = useState(false);
   const [genre, setGenre] = useState('');
   const [mood, setMood] = useState('');
-
-  const load = () => {
-    apiFetch('/marketing/mi-branding').then(setArchetype).catch(() => {});
-  };
-  useEffect(() => { load(); }, []);
-
+  useEffect(() => { apiFetch('/marketing/mi-branding').then(setArchetype).catch(() => {}); }, []);
   const runTest = async () => {
-    if (!genre) return;
-    setLoading(true);
-    try {
-      const data = await apiFetch('/marketing/test', { method: 'POST', body: JSON.stringify({ genre, mood }) });
-      setArchetype(data);
-    } catch {}
-    setLoading(false);
+    if (!genre) return; setLoading(true);
+    try { const data = await apiFetch('/marketing/test', { method: 'POST', body: JSON.stringify({ genre, mood }) }); setArchetype(data); }
+    catch {} setLoading(false);
   };
-
   return (
     <PageShell title="Marketing IA">
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
         <Card>
-          <h3 className="text-white font-semibold mb-4">Test de Arquetipo</h3>
-          <div className="space-y-3 mb-4">
+          <h3 style={{ fontFamily: "'Anton', sans-serif", fontSize: '16px', color: '#fff', letterSpacing: '0.05em', marginBottom: '16px', marginTop: 0 }}>TEST DE ARQUETIPO</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
             <input value={genre} onChange={e => setGenre(e.target.value)} placeholder="Género musical (ej: reggaeton, pop)"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 outline-none focus:border-purple-500" />
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '12px 14px', color: '#fff', fontFamily: "'Space Grotesk',sans-serif", fontSize: '13px', outline: 'none' }} />
             <input value={mood} onChange={e => setMood(e.target.value)} placeholder="Mood (ej: energético, melancólico)"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 outline-none focus:border-purple-500" />
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '12px 14px', color: '#fff', fontFamily: "'Space Grotesk',sans-serif", fontSize: '13px', outline: 'none' }} />
           </div>
-          <Btn onClick={runTest} disabled={loading || !genre}>
-            {loading ? 'Analizando...' : <><Sparkles size={16} /> Analizar arquetipo</>}
-          </Btn>
+          <Btn3D small onClick={runTest} disabled={loading || !genre}>{loading ? 'Analizando...' : <><Sparkles size={13} /> Analizar arquetipo</>}</Btn3D>
         </Card>
-        <Card>
-          <h3 className="text-white font-semibold mb-4">Tu Branding</h3>
-          {archetype ? (
-            <div className="space-y-3">
-              {archetype.archetype && <div><span className="text-white/40 text-sm">Arquetipo</span><p className="text-white font-medium">{archetype.archetype}</p></div>}
-              {archetype.personality && <div><span className="text-white/40 text-sm">Personalidad</span><p className="text-white/70 text-sm">{archetype.personality}</p></div>}
-              {archetype.colors && <div><span className="text-white/40 text-sm">Colores</span><p className="text-white/70 text-sm">{Array.isArray(archetype.colors) ? archetype.colors.join(', ') : archetype.colors}</p></div>}
+        <Card glow={!!archetype?.archetype}>
+          <h3 style={{ fontFamily: "'Anton', sans-serif", fontSize: '16px', color: '#fff', letterSpacing: '0.05em', marginBottom: '16px', marginTop: 0 }}>TU BRANDING</h3>
+          {archetype?.archetype ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div><span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Arquetipo</span><p style={{ color: '#fff', fontWeight: 700, margin: '4px 0 0', fontSize: '18px', fontFamily: "'Anton', sans-serif", letterSpacing: '0.05em' }}>{archetype.archetype}</p></div>
+              {archetype.personality && <div><span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Personalidad</span><p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', margin: '4px 0 0' }}>{archetype.personality}</p></div>}
             </div>
-          ) : <p className="text-white/30 text-sm">Realiza el test para ver tu arquetipo</p>}
+          ) : <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '13px' }}>Realiza el test para ver tu arquetipo</p>}
         </Card>
       </div>
-    </PageShell>
-  );
-}
-
-// ─── Marketplace ──────────────────────────────────────────────────────────────
-function MarketplacePage() {
-  const [beats, setBeats] = useState<any[]>([]);
-  const [search, setSearch] = useState('');
-
-  useEffect(() => {
-    apiFetch('/marketplace/beats').then(d => setBeats(Array.isArray(d) ? d : d.beats || [])).catch(() => {});
-  }, []);
-
-  const filtered = beats.filter(b => b.title?.toLowerCase().includes(search.toLowerCase()));
-
-  return (
-    <PageShell title="Marketplace">
-      <div className="mb-6">
-        <div className="relative">
-          <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar beats..."
-            className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-white/30 outline-none focus:border-purple-500" />
-        </div>
-      </div>
-      {filtered.length === 0 && <Card><p className="text-white/30 text-center py-8">Sin beats disponibles</p></Card>}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtered.map((b: any) => (
-          <Card key={b.id} className="hover:border-purple-500/30 transition-colors cursor-pointer">
-            <div className="w-full h-32 bg-gradient-to-br from-purple-600/20 to-pink-600/20 rounded-xl mb-4 flex items-center justify-center">
-              <Play size={32} className="text-white/30" />
-            </div>
-            <p className="text-white font-semibold">{b.title}</p>
-            <p className="text-white/40 text-sm">{b.genre}</p>
-            <p className="text-purple-400 font-bold mt-2">${b.price || '0'}</p>
-          </Card>
-        ))}
-      </div>
-    </PageShell>
-  );
-}
-
-// ─── Community Chat ───────────────────────────────────────────────────────────
-function CommunityPage() {
-  const [messages, setMessages] = useState<any[]>([]);
-  const [input, setInput] = useState('');
-  const bottomRef = useRef<HTMLDivElement>(null);
-
-  const load = () => apiFetch('/chat/recent').then(d => setMessages(Array.isArray(d) ? d : [])).catch(() => {});
-  useEffect(() => { load(); const t = setInterval(load, 5000); return () => clearInterval(t); }, []);
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
-
-  const send = async () => {
-    if (!input.trim()) return;
-    const msg = input.trim(); setInput('');
-    await apiFetch('/chat/send', { method: 'POST', body: JSON.stringify({ message: msg }) }).catch(() => {});
-    load();
-  };
-
-  return (
-    <PageShell title="Comunidad">
-      <Card className="flex flex-col" style={{ height: '60vh' }}>
-        <div className="flex-1 overflow-y-auto space-y-3 pr-2">
-          {messages.map((m: any, i) => (
-            <div key={i} className="flex gap-3">
-              <div className="w-7 h-7 bg-purple-600/30 rounded-full flex items-center justify-center flex-shrink-0">
-                <UserIcon size={12} className="text-purple-400" />
-              </div>
-              <div>
-                <span className="text-purple-400 text-xs font-medium">{m.user_name || m.username || 'Usuario'} </span>
-                <span className="text-white/30 text-xs">{m.created_at ? new Date(m.created_at).toLocaleTimeString() : ''}</span>
-                <p className="text-white/70 text-sm mt-0.5">{m.message}</p>
-              </div>
-            </div>
-          ))}
-          {messages.length === 0 && <p className="text-white/30 text-sm text-center py-8">Sé el primero en escribir...</p>}
-          <div ref={bottomRef} />
-        </div>
-        <div className="flex gap-3 mt-4 pt-4 border-t border-white/10">
-          <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()}
-            placeholder="Escribe un mensaje..."
-            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 outline-none focus:border-purple-500" />
-          <Btn onClick={send} disabled={!input.trim()}><Send size={16} /></Btn>
-        </div>
-      </Card>
-    </PageShell>
-  );
-}
-
-// ─── Vault ────────────────────────────────────────────────────────────────────
-function VaultPage() {
-  const [files, setFiles] = useState<any[]>([]);
-  useEffect(() => {
-    apiFetch('/vault/files').then(d => setFiles(Array.isArray(d) ? d : [])).catch(() => {});
-  }, []);
-
-  return (
-    <PageShell title="Vault">
-      <Card>
-        {files.length === 0 && <p className="text-white/30 text-center py-8">Sin archivos en el vault</p>}
-        <div className="divide-y divide-white/5">
-          {files.map((f: any) => (
-            <div key={f.id} className="flex items-center gap-4 py-4">
-              <Lock size={20} className="text-purple-400 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-white font-medium truncate">{f.file_name || f.filename}</p>
-                <p className="text-white/40 text-sm">{f.file_type || f.type}</p>
-              </div>
-              <span className="text-white/30 text-xs">{f.created_at ? new Date(f.created_at).toLocaleDateString() : ''}</span>
-            </div>
-          ))}
-        </div>
-      </Card>
     </PageShell>
   );
 }
@@ -642,60 +563,35 @@ function VaultPage() {
 function SplitsPage() {
   const [splits, setSplits] = useState<any[]>([]);
   const [tracks, setTracks] = useState<any[]>([]);
-  const [trackId, setTrackId] = useState('');
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [pct, setPct] = useState('');
-  const [showForm, setShowForm] = useState(false);
-
-  const load = () => {
-    apiFetch('/splits').then(d => setSplits(Array.isArray(d) ? d : [])).catch(() => {});
-    apiFetch('/tracks').then(setTracks).catch(() => {});
-  };
+  const [show, setShow] = useState(false);
+  const [trackId, setTrackId] = useState(''); const [name, setName] = useState(''); const [email, setEmail] = useState(''); const [pct, setPct] = useState('');
+  const load = () => { apiFetch('/splits').then(d => setSplits(Array.isArray(d) ? d : [])).catch(() => {}); apiFetch('/tracks').then(setTracks).catch(() => {}); };
   useEffect(() => { load(); }, []);
-
-  const add = async () => {
-    await apiFetch('/splits', { method: 'POST', body: JSON.stringify({ track_id: trackId, collaborator_name: name, collaborator_email: email, percentage: pct }) }).catch(() => {});
-    setShowForm(false); setName(''); setEmail(''); setPct(''); load();
-  };
-
+  const add = async () => { await apiFetch('/splits', { method: 'POST', body: JSON.stringify({ track_id: trackId, collaborator_name: name, collaborator_email: email, percentage: pct }) }).catch(() => {}); setShow(false); setName(''); setEmail(''); setPct(''); load(); };
+  const inputStyle: React.CSSProperties = { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '10px 14px', color: '#fff', fontFamily: "'Space Grotesk',sans-serif", fontSize: '13px', outline: 'none', boxSizing: 'border-box' };
   return (
-    <PageShell title="Splits" action={<Btn onClick={() => setShowForm(!showForm)}><Plus size={16} /> Nuevo split</Btn>}>
-      {showForm && (
-        <Card className="mb-6">
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            <select value={trackId} onChange={e => setTrackId(e.target.value)}
-              className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-purple-500 col-span-2">
-              <option value="">Seleccionar track</option>
-              {tracks.map((t: any) => <option key={t.id} value={t.id}>{t.title}</option>)}
-            </select>
-            <input value={name} onChange={e => setName(e.target.value)} placeholder="Nombre colaborador"
-              className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 outline-none focus:border-purple-500" />
-            <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email"
-              className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 outline-none focus:border-purple-500" />
-            <input value={pct} onChange={e => setPct(e.target.value)} placeholder="% (ej: 30)"
-              className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 outline-none focus:border-purple-500" />
-          </div>
-          <div className="flex gap-2">
-            <Btn onClick={add}>Agregar</Btn>
-            <Btn variant="ghost" onClick={() => setShowForm(false)}>Cancelar</Btn>
-          </div>
-        </Card>
-      )}
-      <Card>
-        {splits.length === 0 && <p className="text-white/30 text-center py-8">Sin splits configurados</p>}
-        <div className="divide-y divide-white/5">
-          {splits.map((s: any) => (
-            <div key={s.id} className="flex items-center gap-4 py-4">
-              <Users size={18} className="text-purple-400" />
-              <div className="flex-1">
-                <p className="text-white font-medium">{s.collaborator_name}</p>
-                <p className="text-white/40 text-sm">{s.collaborator_email}</p>
-              </div>
-              <span className="text-purple-400 font-bold">{s.percentage}%</span>
-            </div>
-          ))}
+    <PageShell title="Splits" action={<Btn3D small onClick={() => setShow(!show)}><Plus size={14} /> Nuevo split</Btn3D>}>
+      {show && <Card style={{ marginBottom: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+          <select value={trackId} onChange={e => setTrackId(e.target.value)} style={{ ...inputStyle, gridColumn: '1/-1' }}>
+            <option value="">Seleccionar track</option>
+            {tracks.map((t: any) => <option key={t.id} value={t.id}>{t.title}</option>)}
+          </select>
+          <input value={name} onChange={e => setName(e.target.value)} placeholder="Nombre colaborador" style={inputStyle} />
+          <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" style={inputStyle} />
+          <input value={pct} onChange={e => setPct(e.target.value)} placeholder="% (ej: 30)" style={inputStyle} />
         </div>
+        <div style={{ display: 'flex', gap: '8px' }}><Btn3D small onClick={add}>Agregar</Btn3D><GhostBtn small onClick={() => setShow(false)}>Cancelar</GhostBtn></div>
+      </Card>}
+      <Card>
+        {splits.length === 0 && <p style={{ color: 'rgba(255,255,255,0.25)', textAlign: 'center', padding: '32px 0', fontFamily: "'Space Grotesk',sans-serif" }}>Sin splits configurados</p>}
+        {splits.map((s: any) => (
+          <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+            <Users size={16} color={PL} />
+            <div style={{ flex: 1 }}><p style={{ color: '#fff', fontSize: '13px', fontWeight: 600, margin: 0 }}>{s.collaborator_name || s.artist_name}</p><p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', margin: 0 }}>{s.collaborator_email || s.email}</p></div>
+            <span style={{ color: PL, fontWeight: 700, fontSize: '16px', fontFamily: "'Anton', sans-serif" }}>{s.percentage}%</span>
+          </div>
+        ))}
       </Card>
     </PageShell>
   );
@@ -703,98 +599,46 @@ function SplitsPage() {
 
 // ─── Legal ────────────────────────────────────────────────────────────────────
 function LegalPage() {
-  const [query, setQuery] = useState('');
-  const [response, setResponse] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const ask = async () => {
-    if (!query.trim()) return;
-    setLoading(true); setResponse('');
-    try {
-      const data = await apiFetch('/legal-agent/consulta', { method: 'POST', body: JSON.stringify({ consulta: query }) });
-      setResponse(data.respuesta || data.response || JSON.stringify(data));
-    } catch (err: any) { setResponse(`Error: ${err.message}`); }
-    setLoading(false);
-  };
-
+  const [query, setQuery] = useState(''); const [response, setResponse] = useState(''); const [loading, setLoading] = useState(false);
+  const ask = async () => { if (!query.trim()) return; setLoading(true); setResponse(''); try { const d = await apiFetch('/legal-agent/consulta', { method: 'POST', body: JSON.stringify({ consulta: query }) }); setResponse(d.respuesta || d.response || JSON.stringify(d)); } catch (e: any) { setResponse(`Error: ${e.message}`); } setLoading(false); };
   return (
     <PageShell title="Legal IA">
-      <Card className="mb-6">
-        <h3 className="text-white font-semibold mb-3">Consulta Legal</h3>
-        <textarea value={query} onChange={e => setQuery(e.target.value)} rows={3} placeholder="Escribe tu consulta legal (contratos, derechos, licencias...)"
-          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus:border-purple-500 resize-none mb-3" />
-        <Btn onClick={ask} disabled={loading || !query.trim()}>
-          {loading ? 'Consultando...' : <><Scale size={16} /> Consultar</>}
-        </Btn>
+      <Card style={{ marginBottom: '20px' }}>
+        <h3 style={{ fontFamily: "'Anton', sans-serif", fontSize: '16px', color: '#fff', letterSpacing: '0.05em', marginBottom: '12px', marginTop: 0 }}>CONSULTA LEGAL</h3>
+        <textarea value={query} onChange={e => setQuery(e.target.value)} rows={3} placeholder="Escribe tu consulta legal..."
+          style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '12px 16px', color: '#fff', fontFamily: "'Space Grotesk',sans-serif", fontSize: '13px', outline: 'none', resize: 'none', marginBottom: '12px', boxSizing: 'border-box' }} />
+        <Btn3D small onClick={ask} disabled={loading || !query.trim()}>{loading ? 'Consultando...' : <><Scale size={13} /> Consultar</>}</Btn3D>
       </Card>
-      {response && (
-        <Card>
-          <h3 className="text-white font-semibold mb-3">Respuesta</h3>
-          <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">{response}</p>
-        </Card>
-      )}
+      {response && <Card glow><h3 style={{ fontFamily: "'Anton', sans-serif", fontSize: '16px', color: '#fff', letterSpacing: '0.05em', marginBottom: '12px', marginTop: 0 }}>RESPUESTA</h3><p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', lineHeight: '1.7', whiteSpace: 'pre-wrap', margin: 0 }}>{response}</p></Card>}
     </PageShell>
   );
 }
 
 // ─── Financing ────────────────────────────────────────────────────────────────
 function FinancingPage() {
-  const [eligibility, setEligibility] = useState<any>(null);
-  useEffect(() => {
-    apiFetch('/financing/eligibility').then(setEligibility).catch(() => {});
-  }, []);
-
+  const [el, setEl] = useState<any>(null);
+  useEffect(() => { apiFetch('/financing/eligibility').then(setEl).catch(() => {}); }, []);
   return (
     <PageShell title="Financiamiento">
-      <div className="grid lg:grid-cols-2 gap-6">
-        <Card>
-          <CreditCard size={24} className="text-purple-400 mb-4" />
-          <h3 className="text-white font-semibold mb-2">Elegibilidad</h3>
-          {eligibility ? (
-            <div className="space-y-2">
-              <div className={`flex items-center gap-2 ${eligibility.eligible ? 'text-green-400' : 'text-red-400'}`}>
-                <Check size={16} />
-                <span>{eligibility.eligible ? 'Eres elegible' : 'No elegible aún'}</span>
-              </div>
-              {eligibility.reason && <p className="text-white/40 text-sm">{eligibility.reason}</p>}
-              {eligibility.amount && <p className="text-white font-bold text-xl">${eligibility.amount}</p>}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+        <Card glow={el?.eligible}>
+          <CreditCard size={24} color={PL} style={{ marginBottom: '16px' }} />
+          <h3 style={{ fontFamily: "'Anton', sans-serif", fontSize: '16px', color: '#fff', letterSpacing: '0.05em', marginBottom: '12px', marginTop: 0 }}>ELEGIBILIDAD</h3>
+          {el ? <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: el.eligible ? '#4ade80' : '#f87171', marginBottom: '8px' }}>
+              <Check size={16} /><span style={{ fontWeight: 600 }}>{el.eligible ? 'Eres elegible' : 'No elegible aún'}</span>
             </div>
-          ) : <p className="text-white/30 text-sm">Verificando elegibilidad...</p>}
+            {el.reason && <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', margin: 0 }}>{el.reason}</p>}
+          </div> : <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '13px' }}>Verificando...</p>}
         </Card>
         <Card>
-          <Lightbulb size={24} className="text-yellow-400 mb-4" />
-          <h3 className="text-white font-semibold mb-2">Cómo funciona</h3>
-          <ul className="space-y-2 text-white/50 text-sm">
-            <li>• Anticipo sobre regalías futuras</li>
-            <li>• Sin intereses adicionales</li>
-            <li>• Se descuenta automáticamente de tus ganancias</li>
-            <li>• Mínimo 3 meses de historial requerido</li>
+          <Lightbulb size={24} color="#fbbf24" style={{ marginBottom: '16px' }} />
+          <h3 style={{ fontFamily: "'Anton', sans-serif", fontSize: '16px', color: '#fff', letterSpacing: '0.05em', marginBottom: '12px', marginTop: 0 }}>CÓMO FUNCIONA</h3>
+          <ul style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', lineHeight: '1.8', paddingLeft: '16px', margin: 0 }}>
+            <li>Anticipo sobre regalías futuras</li><li>Sin intereses adicionales</li>
+            <li>Descuento automático de ganancias</li><li>Mínimo 3 meses de historial</li>
           </ul>
         </Card>
-      </div>
-    </PageShell>
-  );
-}
-
-// ─── Playlists ────────────────────────────────────────────────────────────────
-function PlaylistsPage() {
-  const [playlists, setPlaylists] = useState<any[]>([]);
-  useEffect(() => {
-    apiFetch('/playlists').then(d => setPlaylists(Array.isArray(d) ? d : [])).catch(() => {});
-  }, []);
-
-  return (
-    <PageShell title="Playlists">
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {playlists.map((p: any) => (
-          <Card key={p.id} className="hover:border-purple-500/30 transition-colors">
-            <Play size={20} className="text-purple-400 mb-3" />
-            <p className="text-white font-semibold">{p.name}</p>
-            {p.genre && <p className="text-white/40 text-sm mt-1">{p.genre}</p>}
-            {p.contact_email && <p className="text-purple-400 text-xs mt-2">{p.contact_email}</p>}
-          </Card>
-        ))}
-        {playlists.length === 0 && <Card><p className="text-white/30 text-center py-8">Sin playlists</p></Card>}
       </div>
     </PageShell>
   );
@@ -804,34 +648,22 @@ function PlaylistsPage() {
 function SettingsPage({ user }: { user: any }) {
   return (
     <PageShell title="Ajustes">
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
         <Card>
-          <h3 className="text-white font-semibold mb-4">Perfil</h3>
-          <div className="space-y-3">
-            <div>
-              <label className="text-white/40 text-xs">Nombre</label>
-              <p className="text-white">{user?.name || '—'}</p>
+          <h3 style={{ fontFamily: "'Anton', sans-serif", fontSize: '16px', color: '#fff', letterSpacing: '0.05em', marginBottom: '16px', marginTop: 0 }}>PERFIL</h3>
+          {[{ label: 'Nombre', value: user?.name }, { label: 'Email', value: user?.email }, { label: 'Rol', value: user?.role }, { label: 'Plan', value: user?.subscription_plan || 'free' }].map(f => (
+            <div key={f.label} style={{ marginBottom: '12px' }}>
+              <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.15em' }}>{f.label}</span>
+              <p style={{ color: '#fff', fontSize: '14px', margin: '3px 0 0', fontWeight: 500 }}>{f.value || '—'}</p>
             </div>
-            <div>
-              <label className="text-white/40 text-xs">Email</label>
-              <p className="text-white">{user?.email || '—'}</p>
-            </div>
-            <div>
-              <label className="text-white/40 text-xs">Rol</label>
-              <p className="text-white capitalize">{user?.role || 'artist'}</p>
-            </div>
-            <div>
-              <label className="text-white/40 text-xs">Plan</label>
-              <p className="text-purple-400 font-semibold capitalize">{user?.subscription_plan || 'free'}</p>
-            </div>
-          </div>
+          ))}
         </Card>
         <Card>
-          <h3 className="text-white font-semibold mb-4">Integraciones</h3>
+          <h3 style={{ fontFamily: "'Anton', sans-serif", fontSize: '16px', color: '#fff', letterSpacing: '0.05em', marginBottom: '16px', marginTop: 0 }}>INTEGRACIONES</h3>
           {['Spotify', 'Apple Music', 'YouTube Music', 'TikTok'].map(s => (
-            <div key={s} className="flex items-center justify-between py-3 border-b border-white/5">
-              <span className="text-white/60">{s}</span>
-              <span className="text-white/20 text-xs">No conectado</span>
+            <div key={s} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+              <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>{s}</span>
+              <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '11px' }}>No conectado</span>
             </div>
           ))}
         </Card>
@@ -846,10 +678,12 @@ function GenericPage({ moduleId }: { moduleId: string }) {
   const Icon = mod?.icon || Zap;
   return (
     <PageShell title={mod?.label || moduleId}>
-      <Card className="text-center py-16">
-        <Icon size={48} className="text-white/10 mx-auto mb-4" />
-        <h2 className="text-white/40 text-lg font-medium">Módulo en construcción</h2>
-        <p className="text-white/20 text-sm mt-2">Este módulo estará disponible próximamente</p>
+      <Card style={{ textAlign: 'center', padding: '64px 24px' }}>
+        <div style={{ width: '64px', height: '64px', background: 'rgba(94,23,235,0.1)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+          <Icon size={28} color="rgba(255,255,255,0.15)" />
+        </div>
+        <h2 style={{ fontFamily: "'Anton', sans-serif", fontSize: '20px', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.05em', margin: '0 0 8px' }}>MÓDULO EN CONSTRUCCIÓN</h2>
+        <p style={{ color: 'rgba(255,255,255,0.15)', fontSize: '13px', margin: 0 }}>Disponible próximamente</p>
       </Card>
     </PageShell>
   );
@@ -862,16 +696,14 @@ export default function App() {
       const t = localStorage.getItem('im_token');
       if (!t) return null;
       const payload = JSON.parse(atob(t.split('.')[1]));
+      if (payload.exp && payload.exp * 1000 < Date.now()) { localStorage.removeItem('im_token'); return null; }
       return payload;
     } catch { return null; }
   });
   const [activePage, setActivePage] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const logout = () => {
-    localStorage.removeItem('im_token');
-    setUser(null);
-  };
+  const logout = () => { localStorage.removeItem('im_token'); setUser(null); };
 
   if (!user) return <AuthPage onLogin={u => setUser(u)} />;
 
@@ -882,53 +714,57 @@ export default function App() {
       case 'royalties': return <RoyaltiesPage />;
       case 'ai-chat': return <AIChatPage />;
       case 'marketing': return <MarketingPage />;
-      case 'marketplace': return <MarketplacePage />;
-      case 'community': return <CommunityPage />;
-      case 'vault': return <VaultPage />;
       case 'splits': return <SplitsPage />;
       case 'legal': return <LegalPage />;
       case 'financing': return <FinancingPage />;
-      case 'playlists': return <PlaylistsPage />;
       case 'settings': return <SettingsPage user={user} />;
       default: return <GenericPage moduleId={activePage} />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-zinc-900 text-white">
-      <Sidebar
-        active={activePage}
-        onNav={setActivePage}
-        user={user}
-        onLogout={logout}
-        open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
-      <div className="lg:ml-64">
-        {/* Mobile header */}
-        <div className="lg:hidden flex items-center justify-between p-4 bg-zinc-950 border-b border-white/5">
-          <button onClick={() => setSidebarOpen(true)} className="text-white/60 hover:text-white">
-            <Menu size={24} />
+    <div style={{ minHeight: '100vh', background: '#050505' }}>
+      {/* Purple grid background */}
+      <div style={{ position: 'fixed', inset: 0, backgroundImage: `linear-gradient(rgba(94,23,235,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(94,23,235,0.04) 1px, transparent 1px)`, backgroundSize: '48px 48px', pointerEvents: 'none', zIndex: 0 }} />
+      {/* Ambient glow */}
+      <div style={{ position: 'fixed', top: '-200px', left: '-200px', width: '600px', height: '600px', background: `radial-gradient(circle, rgba(94,23,235,0.07) 0%, transparent 70%)`, pointerEvents: 'none', zIndex: 0 }} />
+
+      <Sidebar active={activePage} onNav={setActivePage} user={user} onLogout={logout} open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+      {/* Main content — offset by sidebar width */}
+      <div style={{ marginLeft: `${SIDEBAR_W}px`, position: 'relative', zIndex: 1 }}>
+        {/* Top bar */}
+        <div style={{ position: 'sticky', top: 0, background: 'rgba(5,5,5,0.9)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '12px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 10 }}>
+          {/* Mobile menu button */}
+          <button onClick={() => setSidebarOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.5)', display: 'none' }}>
+            <Menu size={22} />
           </button>
-          <span className="text-white font-bold">IM Music</span>
-          <Bell size={20} className="text-white/30" />
-        </div>
-        {/* Desktop topbar */}
-        <div className="hidden lg:flex items-center justify-between px-8 py-4 border-b border-white/5">
           <div />
-          <div className="flex items-center gap-4">
-            <Bell size={18} className="text-white/30 cursor-pointer hover:text-white transition-colors" />
-            <div className="w-8 h-8 bg-purple-600/30 rounded-full flex items-center justify-center">
-              <UserIcon size={14} className="text-purple-400" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <Bell size={18} color="rgba(255,255,255,0.3)" style={{ cursor: 'pointer' }} />
+            <div style={{ width: '32px', height: '32px', background: `rgba(94,23,235,0.2)`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid rgba(94,23,235,0.3)` }}>
+              <UserIcon size={14} color={PL} />
             </div>
           </div>
         </div>
+
         <AnimatePresence mode="wait">
-          <motion.main key={activePage} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+          <motion.main key={activePage} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} transition={{ duration: 0.15 }}>
             {renderPage()}
           </motion.main>
         </AnimatePresence>
       </div>
+
+      {/* Marquee keyframe */}
+      <style>{`
+        @keyframes marqueeScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+        * { box-sizing: border-box; }
+        ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: #000; } ::-webkit-scrollbar-thumb { background: ${P}; border-radius: 4px; }
+        input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.2); }
+        select { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); color: #fff; }
+        select option { background: #1a1a1a; }
+      `}</style>
     </div>
   );
 }
