@@ -3,8 +3,11 @@ import Aurora from './components/Aurora';
 import Dither from './components/Dither';
 import Magnet from './components/Magnet';
 import SpotlightCard from './components/SpotlightCard';
-import SplitText from './components/SplitText';
 import Particles from './components/Particles';
+import LetterGlitch from './components/LetterGlitch';
+import Ballpit from './components/Ballpit';
+import BlurText from './components/BlurText';
+import RotatingText from './components/RotatingText';
 import {
   LayoutDashboard, Music, TrendingUp, DollarSign, Settings,
   Plus, Bell, User as UserIcon, BarChart3, Globe,
@@ -245,9 +248,17 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
           speed={0.5}
           style={{ top: '0%', height: '100%', opacity: 0.35, mixBlendMode: 'screen' as any }}
         />
+        {/* LetterGlitch overlay — purple cyber chars */}
+        <LetterGlitch
+          glitchColors={['#5E17EB', '#7B3FFF', '#C084FC']}
+          glitchSpeed={45}
+          outerVignette
+          smooth
+          style={{ opacity: 0.18 }}
+        />
         {/* Particles layer */}
         <Particles
-          particleCount={100}
+          particleCount={80}
           particleSpread={8}
           speed={0.04}
           particleColors={['#5E17EB', '#9B59B6', '#C084FC', '#ffffff']}
@@ -255,7 +266,7 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
           particleHoverFactor={0.5}
           alphaParticles
           particleBaseSize={60}
-          style={{ pointerEvents: 'auto', opacity: 0.6 }}
+          style={{ pointerEvents: 'auto', opacity: 0.5 }}
         />
         {/* Ambient glow */}
         <div style={{ position: 'absolute', top: '10%', left: '-100px', width: '500px', height: '500px', background: `radial-gradient(circle, rgba(94,23,235,0.12) 0%, transparent 65%)`, pointerEvents: 'none' }} />
@@ -269,14 +280,29 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
               <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: PL }}>Plataforma activa — 50K+ artistas</span>
             </div>
 
-            <h1 style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(48px, 5.5vw, 80px)', lineHeight: 1.0, margin: '0 0 24px', letterSpacing: '-0.01em' }}>
-              <SplitText text="DISTRIBUYE." style={{ display: 'block', color: '#fff' }} charDelay={40} />
-              <SplitText text="MONETIZA." delay={400}
-                style={{ display: 'block', background: `linear-gradient(135deg, ${P}, ${PL}, #C084FC)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
-                charDelay={40}
+            <h1 style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(48px, 5.5vw, 80px)', lineHeight: 1.0, margin: '0 0 8px', letterSpacing: '-0.01em' }}>
+              <BlurText text="DISTRIBUYE." animateBy="characters" delay={60} stepDuration={0.5}
+                style={{ fontFamily: "'Anton', sans-serif", fontSize: 'inherit', lineHeight: 1.0, color: '#fff', letterSpacing: '-0.01em', display: 'block' }}
               />
-              <SplitText text="DOMINA." delay={800} style={{ display: 'block', color: '#fff' }} charDelay={40} />
+              <BlurText text="MONETIZA." animateBy="characters" delay={60} stepDuration={0.5}
+                style={{ fontFamily: "'Anton', sans-serif", fontSize: 'inherit', lineHeight: 1.0, letterSpacing: '-0.01em', display: 'block', background: `linear-gradient(135deg, ${P}, ${PL}, #C084FC)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
+              />
+              <BlurText text="DOMINA." animateBy="characters" delay={60} stepDuration={0.5}
+                style={{ fontFamily: "'Anton', sans-serif", fontSize: 'inherit', lineHeight: 1.0, color: '#fff', letterSpacing: '-0.01em', display: 'block' }}
+              />
             </h1>
+            {/* Rotating tagline */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', fontFamily: "'Space Grotesk', sans-serif", fontSize: '14px', fontWeight: 600, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.08em' }}>
+              <span style={{ color: PL }}>▸</span>
+              <RotatingText
+                texts={['DISTRIBUCIÓN EN 150+ PLATAFORMAS', 'REGALÍAS EN TIEMPO REAL', 'MARKETING CON IA', 'SPLITS AUTOMÁTICOS', 'PUBLISHING & REGISTRO']}
+                rotationInterval={2500}
+                splitBy="words"
+                staggerDuration={0.04}
+                staggerFrom="first"
+                style={{ color: 'rgba(255,255,255,0.7)', fontFamily: "'Space Grotesk', sans-serif", fontSize: '13px', letterSpacing: '0.06em' }}
+              />
+            </div>
 
             <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '18px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, margin: '0 0 40px', maxWidth: '460px' }}>
               La plataforma todo-en-uno para artistas independientes. Distribución en 150+ tiendas, regalías en tiempo real, marketing con IA y herramientas de crecimiento profesional.
@@ -308,19 +334,24 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
             </div>
           </div>
 
-          {/* Right: 3D cube */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', animation: 'floatUp 6s ease-in-out infinite' }}>
-            <RotatingCube />
-            {/* Orbiting tags */}
+          {/* Right: Ballpit — purple physics spheres */}
+          <div style={{ position: 'relative', width: '100%', height: '480px', borderRadius: '24px', overflow: 'hidden', border: '1px solid rgba(94,23,235,0.2)', boxShadow: `0 0 80px rgba(94,23,235,0.2), inset 0 0 40px rgba(94,23,235,0.05)` }}>
+            <Ballpit
+              colors={['#5E17EB', '#7B3FFF', '#9B59B6', '#C084FC', '#3a0ca3', '#ffffff']}
+              count={80}
+              gravity={0.3}
+              followCursor
+            />
+            {/* Overlay tag badges */}
             {[
-              { label: '150+ Plataformas', top: '12%', left: '-8%', icon: Globe },
-              { label: 'IA Integrada', top: '20%', right: '-5%', icon: Zap },
-              { label: 'Pagos Seguros', bottom: '20%', right: '-8%', icon: Shield },
-              { label: 'Analytics Pro', bottom: '15%', left: '-5%', icon: BarChart3 },
+              { label: '150+ Plataformas', top: '8%', left: '6%', icon: Globe },
+              { label: 'IA Integrada', top: '8%', right: '6%', icon: Zap },
+              { label: 'Pagos Seguros', bottom: '8%', right: '6%', icon: Shield },
+              { label: 'Analytics Pro', bottom: '8%', left: '6%', icon: BarChart3 },
             ].map((tag, i) => (
-              <div key={i} style={{ position: 'absolute', ...({ top: tag.top, left: tag.left, right: tag.right, bottom: tag.bottom } as any), background: 'rgba(10,10,10,0.9)', border: '1px solid rgba(94,23,235,0.35)', borderRadius: '10px', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: '7px', backdropFilter: 'blur(12px)', animation: `floatUp ${5 + i}s ease-in-out ${i * 0.8}s infinite`, boxShadow: `0 0 20px rgba(94,23,235,0.15)` }}>
+              <div key={i} style={{ position: 'absolute', ...({ top: tag.top, left: tag.left, right: tag.right, bottom: tag.bottom } as any), background: 'rgba(5,5,5,0.85)', border: '1px solid rgba(94,23,235,0.4)', borderRadius: '10px', padding: '7px 12px', display: 'flex', alignItems: 'center', gap: '7px', backdropFilter: 'blur(16px)', boxShadow: `0 0 16px rgba(94,23,235,0.2)`, zIndex: 2 }}>
                 <tag.icon size={13} color={PL} />
-                <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', fontWeight: 600, color: 'rgba(255,255,255,0.8)', whiteSpace: 'nowrap' }}>{tag.label}</span>
+                <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.9)', whiteSpace: 'nowrap', letterSpacing: '0.05em' }}>{tag.label}</span>
               </div>
             ))}
           </div>
