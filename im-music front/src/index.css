@@ -563,3 +563,39 @@ body::after {
 @media(min-width:1024px){.lg\:grid-cols-2{grid-template-columns:repeat(2,1fr)}.lg\:grid-cols-3{grid-template-columns:repeat(3,1fr)}.lg\:grid-cols-4{grid-template-columns:repeat(4,1fr)}.lg\:block{display:block!important}.lg\:hidden{display:none!important}.lg\:flex{display:flex!important}}
 
 section { scroll-margin-top: 80px; }
+
+/* ── SpotlightCard ── */
+.spotlight-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  background: rgba(15,15,15,0.9);
+  border: 1px solid rgba(94,23,235,0.2);
+  transition: border-color 0.3s ease, transform 0.3s ease;
+}
+.spotlight-card:hover {
+  border-color: rgba(94,23,235,0.5);
+  transform: translateY(-4px);
+}
+.spotlight-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    400px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    var(--spotlight-color, rgba(94,23,235,0.2)),
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 16px;
+}
+.spotlight-card:hover::before {
+  opacity: 1;
+}
+.spotlight-card > * {
+  position: relative;
+  z-index: 1;
+}

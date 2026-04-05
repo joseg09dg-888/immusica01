@@ -40,6 +40,7 @@
     "music-metadata": "^11.12.3",
     "node-fetch": "^3.3.2",
     "pdf-parse": "^2.4.5",
+    "pg": "^8.20.0",
     "qs": "^6.15.0",
     "querystring": "^0.2.1",
     "sharp": "^0.34.5",
@@ -49,6 +50,7 @@
     "ws": "^8.19.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@types/adm-zip": "^0.5.7",
     "@types/axios": "^0.9.36",
     "@types/bcryptjs": "^2.4.6",
@@ -61,10 +63,12 @@
     "@types/node": "^25.5.0",
     "@types/node-fetch": "^2.6.13",
     "@types/pdf-parse": "^1.1.5",
+    "@types/pg": "^8.20.0",
     "@types/qs": "^6.15.0",
     "@types/socket.io": "^3.0.1",
     "@types/spotify-web-api-node": "^5.0.11",
     "nodemon": "^3.1.14",
+    "playwright": "^1.59.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }
