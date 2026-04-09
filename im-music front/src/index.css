@@ -599,3 +599,96 @@ section { scroll-margin-top: 80px; }
   position: relative;
   z-index: 1;
 }
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE — Mobile first additions
+   ═══════════════════════════════════════════ */
+
+/* ── Mobile (≤ 768px) ── */
+@media (max-width: 768px) {
+  /* Landing hero: single column */
+  .landing-hero-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .landing-ballpit-panel {
+    display: none !important;
+  }
+  .landing-hero-text h1 {
+    font-size: clamp(40px, 12vw, 64px) !important;
+  }
+  /* Stats bar: 2x2 grid */
+  .landing-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 32px !important;
+  }
+  .landing-stats-grid > div {
+    border-right: none !important;
+    border-bottom: 1px solid rgba(94,23,235,0.2);
+    padding-bottom: 24px;
+  }
+  /* Services: single column */
+  .landing-services-grid {
+    grid-template-columns: 1fr !important;
+  }
+  /* Why us: 2x2 grid */
+  .landing-why-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+  /* Testimonials: single column */
+  .landing-testimonials-grid {
+    grid-template-columns: 1fr !important;
+  }
+  /* Pricing: single column */
+  .landing-pricing-grid {
+    grid-template-columns: 1fr !important;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+  /* Footer: single column */
+  .landing-footer-grid {
+    grid-template-columns: 1fr !important;
+    gap: 32px !important;
+  }
+  /* Nav: hide nav links, keep logo + button */
+  .landing-nav-links {
+    display: none !important;
+  }
+  /* Section padding */
+  .landing-section-pad {
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+  /* Hero padding */
+  .landing-hero-pad {
+    padding: 80px 20px 40px !important;
+  }
+}
+
+/* ── Tablet (769px – 1024px) ── */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .landing-hero-grid {
+    gap: 32px !important;
+  }
+  .landing-services-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .landing-why-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .landing-testimonials-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .landing-footer-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 32px !important;
+  }
+  .landing-section-pad {
+    padding-left: 32px !important;
+    padding-right: 32px !important;
+  }
+}
+
+/* ── Hide scrollbar in artist carousel ── */
+.artist-carousel::-webkit-scrollbar { display: none; }
+.artist-carousel { -ms-overflow-style: none; scrollbar-width: none; }

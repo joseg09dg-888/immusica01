@@ -14,202 +14,392 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// ─── Database ────────────────────────────────────────────────────────────────
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false },
+  max: 10,
+  idleTimeoutMillis: 30000,
 });
 
-const JWT_SECRET = process.env.JWT_SECRET || "secret-dev-key";
+// ─── JWT Secret validation ───────────────────────────────────────────────────
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET || JWT_SECRET.length < 32) {
+  console.error("❌ JWT_SECRET must be set and at least 32 characters");
+  process.exit(1);
+}
+
+// ─── Sanitize input helper ───────────────────────────────────────────────────
+function sanitize(val: unknown): string {
+  if (typeof val !== "string") return "";
+  return val.trim().replace(/[<>'"]/g, "").slice(0, 1000);
+}
+
+function sanitizeEmail(val: unknown): string {
+  if (typeof val !== "string") return "";
+  return val.trim().toLowerCase().slice(0, 254);
+}
+
+// ─── Auth middleware ──────────────────────────────────────────────────────────
+function requireAuth(req: any, res: any, next: any) {
+  const auth = req.headers.authorization;
+  if (!auth?.startsWith("Bearer ")) return res.status(401).json({ error: "No autorizado" });
+  try {
+    const payload = jwt.verify(auth.slice(7), JWT_SECRET!) as any;
+    req.user = payload;
+    next();
+  } catch {
+    res.status(401).json({ error: "Token inválido o expirado" });
+  }
+}
+
+// ─── Request logger ──────────────────────────────────────────────────────────
+function logger(req: any, _res: any, next: any) {
+  const ts = new Date().toISOString();
+  console.log(`[${ts}] ${req.method} ${req.path}`);
+  next();
+}
 
 async function startServer() {
   const app = express();
-  const PORT = 3001;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3001;
 
   app.set("trust proxy", 1);
-  app.use(helmet({ contentSecurityPolicy: false }));
 
-  const limiter = rateLimit({
+  // ─── Security headers (Helmet) ────────────────────────────────────────────
+  app.use(helmet({
+    contentSecurityPolicy: false, // Vite dev needs this off
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    hsts: { maxAge: 31536000, includeSubDomains: true },
+    noSniff: true,
+    xssFilter: true,
+    referrerPolicy: { policy: "same-origin" },
+  }));
+
+  // ─── CORS ────────────────────────────────────────────────────────────────
+  const ALLOWED_ORIGINS = [
+    "http://localhost:3001",
+    "http://localhost:5173",
+    process.env.APP_URL,
+  ].filter(Boolean);
+
+  app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+      if (origin) res.setHeader("Access-Control-Allow-Origin", origin);
+    }
+    res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
+    res.setHeader("Access-Control-Max-Age", "86400");
+    if (req.method === "OPTIONS") return res.sendStatus(204);
+    next();
+  });
+
+  // ─── Rate limiting ────────────────────────────────────────────────────────
+  // Global limit
+  app.use("/api", rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 1000,
-    message: { error: "Too many requests" },
+    max: 500,
+    message: { error: "Demasiadas solicitudes. Intenta en 15 minutos." },
     standardHeaders: true,
     legacyHeaders: false,
     validate: { xForwardedForHeader: false },
-  });
-  app.use("/api", limiter);
-  app.use(express.json());
+  }));
 
-  // ─── Auth ────────────────────────────────────────────────────────────────────
+  // Strict auth limit
+  app.use("/api/auth", rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 20,
+    message: { error: "Demasiados intentos de autenticación. Intenta en 15 minutos." },
+    standardHeaders: true,
+    legacyHeaders: false,
+    validate: { xForwardedForHeader: false },
+    skipSuccessfulRequests: true,
+  }));
+
+  app.use(express.json({ limit: "2mb" }));
+  app.use(logger);
+
+  // ─── Health ───────────────────────────────────────────────────────────────
+  app.get("/api/health", (_req, res) => {
+    res.json({ status: "ok", time: new Date().toISOString(), version: "2.0.0" });
+  });
+
+  // ─── Auth ─────────────────────────────────────────────────────────────────
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const { email, password, name } = req.body;
+      const email = sanitizeEmail(req.body.email);
+      const password = sanitize(req.body.password);
+      const name = sanitize(req.body.name);
+
       if (!email || !password || !name)
         return res.status(400).json({ error: "Email, contraseña y nombre son obligatorios" });
+      if (password.length < 8)
+        return res.status(400).json({ error: "La contraseña debe tener al menos 8 caracteres" });
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+        return res.status(400).json({ error: "Email inválido" });
+
       const existing = await pool.query("SELECT id FROM users WHERE email=$1", [email]);
       if (existing.rows.length > 0)
         return res.status(409).json({ error: "El email ya está registrado" });
-      const hashed = await bcrypt.hash(password, 10);
+
+      const hashed = await bcrypt.hash(password, 12);
       const inserted = await pool.query(
         "INSERT INTO users (email, password, name, role) VALUES ($1,$2,$3,'artist') RETURNING id, email, name, role",
         [email, hashed, name]
       );
       const user = inserted.rows[0];
-      const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
+      const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET!, { expiresIn: "7d" });
       res.status(201).json({ token, user });
     } catch (e: any) {
       console.error("register error:", e.message);
-      res.status(500).json({ error: "Error al registrar" });
+      res.status(500).json({ error: "Error al registrar. Intenta más tarde." });
     }
   });
 
   app.post("/api/auth/login", async (req, res) => {
     try {
-      const { email, password } = req.body;
+      const email = sanitizeEmail(req.body.email);
+      const password = sanitize(req.body.password);
+
       if (!email || !password)
         return res.status(400).json({ error: "Email y contraseña son obligatorios" });
-      const result = await pool.query("SELECT * FROM users WHERE email=$1", [email]);
+
+      const result = await pool.query(
+        "SELECT id, email, name, role, password FROM users WHERE email=$1",
+        [email]
+      );
       const user = result.rows[0];
-      if (!user) return res.status(401).json({ error: "Credenciales inválidas" });
-      const valid = await bcrypt.compare(password, user.password);
-      if (!valid) return res.status(401).json({ error: "Credenciales inválidas" });
-      const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
+      // Always compare to avoid timing attacks
+      const dummyHash = "$2b$12$invalidhashtopreventtimingattacks000000000000000000000000";
+      const valid = user ? await bcrypt.compare(password, user.password) : await bcrypt.compare(password, dummyHash);
+
+      if (!user || !valid) return res.status(401).json({ error: "Credenciales inválidas" });
+
+      const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET!, { expiresIn: "7d" });
       res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
     } catch (e: any) {
       console.error("login error:", e.message);
-      res.status(500).json({ error: "Error al iniciar sesión" });
+      res.status(500).json({ error: "Error al iniciar sesión. Intenta más tarde." });
     }
   });
 
-  // ─── Other API routes ─────────────────────────────────────────────────────────
-  app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", time: new Date().toISOString() });
-  });
-
-  app.get("/api/tracks", async (req, res) => {
+  // ─── Tracks (protected) ───────────────────────────────────────────────────
+  app.get("/api/tracks", requireAuth, async (req: any, res) => {
     try {
-      const r = await pool.query("SELECT * FROM tracks ORDER BY id DESC LIMIT 50");
+      const r = await pool.query(
+        "SELECT * FROM tracks WHERE artist_id=$1 ORDER BY id DESC LIMIT 50",
+        [req.user.id]
+      );
       res.json(r.rows);
     } catch { res.json([]); }
   });
 
-  app.post("/api/tracks", async (req, res) => {
-    const { artist_id, title, genre, release_date } = req.body;
+  app.post("/api/tracks", requireAuth, async (req: any, res) => {
+    const title = sanitize(req.body.title);
+    const genre = sanitize(req.body.genre);
+    const release_date = sanitize(req.body.release_date);
+
+    if (!title) return res.status(400).json({ error: "El título es obligatorio" });
+
     try {
       const r = await pool.query(
         "INSERT INTO tracks (artist_id, title, genre, release_date, status) VALUES ($1,$2,$3,$4,'draft') RETURNING *",
-        [artist_id || 1, title, genre || null, release_date || new Date().toISOString().split("T")[0]]
+        [req.user.id, title, genre || null, release_date || new Date().toISOString().split("T")[0]]
       );
       res.status(201).json(r.rows[0]);
-    } catch (e: any) { res.status(500).json({ error: e.message }); }
+    } catch (e: any) {
+      console.error("track create error:", e.message);
+      res.status(500).json({ error: "Error al crear el track" });
+    }
   });
 
-  app.delete("/api/tracks/:id", async (req, res) => {
+  app.delete("/api/tracks/:id", requireAuth, async (req: any, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: "ID inválido" });
     try {
-      await pool.query("DELETE FROM tracks WHERE id=$1", [req.params.id]);
-      res.json({ message: "Track eliminado" });
-    } catch (e: any) { res.status(500).json({ error: e.message }); }
+      await pool.query("DELETE FROM tracks WHERE id=$1 AND artist_id=$2", [id, req.user.id]);
+      res.json({ success: true, message: "Track eliminado" });
+    } catch (e: any) {
+      res.status(500).json({ error: "Error al eliminar el track" });
+    }
   });
 
-  app.get("/api/royalties/summary", async (req, res) => {
+  // ─── Royalties (protected) ────────────────────────────────────────────────
+  app.get("/api/royalties/summary", requireAuth, async (_req, res) => {
     try {
-      const total = await pool.query("SELECT COALESCE(SUM(cantidad),0) as total, COALESCE(SUM(cantidad),0) as totalRevenue FROM royalties");
-      const byPlatform = await pool.query("SELECT plataforma, SUM(cantidad) as revenue FROM royalties GROUP BY plataforma");
-      const streams = await pool.query("SELECT COALESCE(SUM(streams),0) as total FROM daily_stats");
+      const total = await pool.query(
+        "SELECT COALESCE(SUM(amount),0) as total_revenue FROM royalties"
+      );
+      const byPlatform = await pool.query(
+        "SELECT platform, SUM(amount) as revenue FROM royalties GROUP BY platform ORDER BY revenue DESC"
+      );
+      const streams = await pool.query(
+        "SELECT COALESCE(SUM(streams),0) as total FROM daily_stats"
+      );
       const byPlatformObj: Record<string, number> = {};
-      byPlatform.rows.forEach((r: any) => { byPlatformObj[r.plataforma] = Number(r.revenue); });
+      byPlatform.rows.forEach((r: any) => { byPlatformObj[r.platform] = Number(r.revenue); });
       res.json({
-        totalRevenue: Number(total.rows[0]?.totalRevenue) || 0,
+        totalRevenue: Number(total.rows[0]?.total_revenue) || 0,
         totalStreams: Number(streams.rows[0]?.total) || 0,
-        byPlatform: byPlatformObj
+        byPlatform: byPlatformObj,
       });
-    } catch { res.json({ totalRevenue: 0, totalStreams: 0, byPlatform: {} }); }
+    } catch (e: any) {
+      console.error("royalties/summary error:", e.message);
+      res.json({ totalRevenue: 0, totalStreams: 0, byPlatform: {} });
+    }
   });
 
-  app.get("/api/royalties/monthly", async (req, res) => {
+  app.get("/api/royalties/monthly", requireAuth, async (_req, res) => {
     try {
       const r = await pool.query(
-        "SELECT TO_CHAR(created_at, 'YYYY-MM') as month, SUM(cantidad) as revenue FROM royalties GROUP BY month ORDER BY month DESC LIMIT 12"
+        "SELECT TO_CHAR(created_at,'YYYY-MM') as month, SUM(amount) as revenue FROM royalties GROUP BY month ORDER BY month DESC LIMIT 12"
       );
       res.json(r.rows);
     } catch { res.json([]); }
   });
 
-  app.get("/api/splits", async (req, res) => {
+  // ─── Splits (protected) ───────────────────────────────────────────────────
+  app.get("/api/splits", requireAuth, async (req: any, res) => {
     try {
-      const r = await pool.query("SELECT * FROM splits ORDER BY created_at DESC");
+      const r = await pool.query(
+        "SELECT * FROM splits WHERE track_id IN (SELECT id FROM tracks WHERE artist_id=$1) ORDER BY created_at DESC",
+        [req.user.id]
+      );
       res.json(r.rows);
     } catch { res.json([]); }
   });
 
-  app.post("/api/splits", async (req, res) => {
-    const { track_id, collaborator_name, collaborator_email, percentage } = req.body;
+  app.post("/api/splits", requireAuth, async (req: any, res) => {
+    const track_id = parseInt(req.body.track_id);
+    const collaborator_name = sanitize(req.body.collaborator_name);
+    const collaborator_email = sanitizeEmail(req.body.collaborator_email);
+    const percentage = parseFloat(req.body.percentage);
+
+    if (!collaborator_name || !collaborator_email)
+      return res.status(400).json({ error: "Nombre y email del colaborador son obligatorios" });
+    if (isNaN(percentage) || percentage <= 0 || percentage > 100)
+      return res.status(400).json({ error: "El porcentaje debe estar entre 0.01 y 100" });
+
     try {
       const r = await pool.query(
         "INSERT INTO splits (track_id, artist_name, email, percentage) VALUES ($1,$2,$3,$4) RETURNING *",
-        [track_id || 1, collaborator_name, collaborator_email, percentage]
+        [track_id || null, collaborator_name, collaborator_email, percentage]
       );
       res.status(201).json(r.rows[0]);
-    } catch (e: any) { res.status(500).json({ error: e.message }); }
+    } catch (e: any) {
+      res.status(500).json({ error: "Error al crear el split" });
+    }
   });
 
-  app.get("/api/playlists", async (req, res) => {
+  // ─── Other protected routes ───────────────────────────────────────────────
+  app.get("/api/playlists", requireAuth, async (_req, res) => {
     try {
       const r = await pool.query("SELECT * FROM playlists ORDER BY created_at DESC LIMIT 50");
       res.json(r.rows);
     } catch { res.json([]); }
   });
 
-  app.get("/api/vault/files", async (req, res) => {
+  app.get("/api/vault/files", requireAuth, async (req: any, res) => {
     try {
-      const r = await pool.query("SELECT * FROM vault_files ORDER BY uploaded_at DESC");
+      const r = await pool.query(
+        "SELECT * FROM vault_files WHERE user_id=$1 ORDER BY uploaded_at DESC",
+        [req.user.id]
+      );
       res.json(r.rows);
     } catch { res.json([]); }
   });
 
-  app.get("/api/marketing/mi-branding", async (req, res) => {
-    res.json({ archetype: null });
+  app.get("/api/marketing/mi-branding", requireAuth, async (req: any, res) => {
+    try {
+      const r = await pool.query("SELECT * FROM user_branding WHERE user_id=$1 LIMIT 1", [req.user.id]);
+      res.json(r.rows[0] || { archetype: null });
+    } catch { res.json({ archetype: null }); }
   });
 
-  app.post("/api/marketing/test", async (req, res) => {
-    const { genre, mood } = req.body;
+  app.post("/api/marketing/test", requireAuth, async (req, res) => {
+    const genre = sanitize(req.body.genre);
+    const mood = sanitize(req.body.mood);
     const archetypes: Record<string, any> = {
       reggaeton: { archetype: "El Rebelde", personality: "Energético, auténtico, provocador", colors: ["#FF4500", "#1A1A1A", "#FFD700"] },
       pop: { archetype: "El Héroe", personality: "Inspirador, accesible, emotivo", colors: ["#5E17EB", "#F2EDE5", "#FF69B4"] },
       trap: { archetype: "El Forajido", personality: "Misterioso, audaz, transgresor", colors: ["#000000", "#C0C0C0", "#8B0000"] },
+      "r&b": { archetype: "El Amante", personality: "Sensual, emotivo, sofisticado", colors: ["#8B0057", "#1A1A1A", "#C0A080"] },
+      indie: { archetype: "El Explorador", personality: "Curioso, auténtico, alternativo", colors: ["#2D5016", "#F5E6D3", "#4A90D9"] },
     };
     const key = genre?.toLowerCase() || "pop";
-    const result = archetypes[key] || archetypes.pop;
+    const result = { ...(archetypes[key] || archetypes.pop) };
     if (mood) result.mood = mood;
     res.json(result);
   });
 
-  app.get("/api/financing/eligibility", async (req, res) => {
-    res.json({ eligible: false, reason: "Se requiere mínimo 3 meses de historial de regalías" });
+  app.get("/api/financing/eligibility", requireAuth, async (req: any, res) => {
+    try {
+      const count = await pool.query(
+        "SELECT COUNT(*) as months FROM royalties WHERE created_at > NOW() - INTERVAL '3 months' AND artist_id=$1",
+        [req.user.id]
+      );
+      const months = parseInt(count.rows[0]?.months || 0);
+      res.json({
+        eligible: months >= 3,
+        reason: months >= 3
+          ? "Calificas para financiamiento basado en regalías"
+          : "Se requiere mínimo 3 meses de historial de regalías",
+      });
+    } catch {
+      res.json({ eligible: false, reason: "Error al verificar elegibilidad" });
+    }
   });
 
-  app.get("/api/chat/recent", async (req, res) => {
-    res.json([]);
+  app.get("/api/chat/recent", requireAuth, async (req: any, res) => {
+    try {
+      const r = await pool.query(
+        "SELECT * FROM chat_messages WHERE user_id=$1 ORDER BY created_at DESC LIMIT 50",
+        [req.user.id]
+      );
+      res.json(r.rows);
+    } catch { res.json([]); }
   });
 
-  app.post("/api/chat/send", async (req, res) => {
-    res.json({ message: "Mensaje enviado" });
+  app.post("/api/chat/send", requireAuth, async (req: any, res) => {
+    const message = sanitize(req.body.message);
+    if (!message) return res.status(400).json({ error: "Mensaje vacío" });
+    res.json({ success: true, message: "Mensaje recibido" });
   });
 
-  app.get("/api/marketplace/beats", async (req, res) => {
-    res.json([]);
+  app.get("/api/marketplace/beats", requireAuth, async (_req, res) => {
+    try {
+      const r = await pool.query("SELECT * FROM marketplace_items ORDER BY created_at DESC LIMIT 50");
+      res.json(r.rows);
+    } catch { res.json([]); }
   });
 
-  app.post("/api/ai/chat", async (req, res) => {
-    const { message } = req.body;
-    res.json({ response: `Recibí tu mensaje: "${message}". El chat IA está listo cuando configures la API key de Gemini.` });
+  app.post("/api/ai/chat", requireAuth, async (req: any, res) => {
+    const message = sanitize(req.body.message);
+    if (!message) return res.status(400).json({ error: "Mensaje vacío" });
+
+    // If Gemini API key is configured, use it; otherwise return placeholder
+    if (process.env.GEMINI_API_KEY) {
+      // TODO: integrate Gemini API
+      res.json({ response: `IA: Tu consulta "${message.slice(0, 50)}..." está siendo procesada.` });
+    } else {
+      res.json({ response: `Recibí tu mensaje. El chat IA estará disponible pronto.` });
+    }
   });
 
-  app.post("/api/legal-agent/consulta", async (req, res) => {
-    const { consulta } = req.body;
-    res.json({ respuesta: `Consulta recibida: "${consulta}". El agente legal IA está listo cuando configures la integración.` });
+  app.post("/api/legal-agent/consulta", requireAuth, async (req: any, res) => {
+    const consulta = sanitize(req.body.consulta);
+    if (!consulta) return res.status(400).json({ error: "Consulta vacía" });
+    res.json({ respuesta: `Consulta registrada. El agente legal IA está en configuración.` });
   });
 
-  // ─── Vite middleware ──────────────────────────────────────────────────────────
+  // ─── 404 handler for unmatched API routes ────────────────────────────────
+  app.use("/api/*", (_req, res) => {
+    res.status(404).json({ error: "Ruta no encontrada" });
+  });
+
+  // ─── Vite middleware ──────────────────────────────────────────────────────
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       configFile: path.join(__dirname, "vite.config.ts"),
@@ -225,8 +415,12 @@ async function startServer() {
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`✅ IM MUSIC Frontend corriendo en http://localhost:${PORT}`);
+    console.log(`✅ IM MUSIC running on http://localhost:${PORT}`);
+    console.log(`   NODE_ENV: ${process.env.NODE_ENV || "development"}`);
   });
 }
 
-startServer();
+startServer().catch(e => {
+  console.error("Fatal startup error:", e);
+  process.exit(1);
+});

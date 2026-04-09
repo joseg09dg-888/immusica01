@@ -8,6 +8,9 @@ import LetterGlitch from './components/LetterGlitch';
 import Ballpit from './components/Ballpit';
 import BlurText from './components/BlurText';
 import RotatingText from './components/RotatingText';
+import ShinyText from './components/ShinyText';
+import CountUp from './components/CountUp';
+import TiltCard from './components/TiltCard';
 import {
   LayoutDashboard, Music, TrendingUp, DollarSign, Settings,
   Plus, Bell, User as UserIcon, BarChart3, Globe,
@@ -166,36 +169,81 @@ const STATS = [
   { value: '98%', label: 'Satisfacción', num: 98, suffix: '%' },
 ];
 
+const ARTISTS = [
+  { name: 'Luna Vera', genre: 'R&B / Soul', streams: '4.2M', img: '🎤', color: '#7B3FFF' },
+  { name: 'Niko Beats', genre: 'Trap / Hip-Hop', streams: '11.8M', img: '🎧', color: '#5E17EB' },
+  { name: 'Mía Solar', genre: 'Pop Urbano', streams: '6.5M', img: '🌟', color: '#C084FC' },
+  { name: 'El Productor', genre: 'Reggaeton', streams: '22.1M', img: '🎹', color: '#7B3FFF' },
+  { name: 'Seren Flow', genre: 'Indie / Alt', streams: '3.9M', img: '🎸', color: '#5E17EB' },
+  { name: 'Dara K', genre: 'Electrónica', streams: '8.7M', img: '🎵', color: '#C084FC' },
+];
+
 function LandingPage({ onEnter }: { onEnter: () => void }) {
   const [scrolled, setScrolled] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [cursorPos, setCursorPos] = useState({ x: -100, y: -100 });
+  const [ringPos, setRingPos] = useState({ x: -100, y: -100 });
+  const ringRef = useRef<{ x: number; y: number }>({ x: -100, y: -100 });
+  const rafRef = useRef<number>(0);
+
   useEffect(() => {
-    const h = () => setScrolled(window.scrollY > 50);
-    window.addEventListener('scroll', h);
-    return () => window.removeEventListener('scroll', h);
+    const onScroll = () => {
+      setScrolled(window.scrollY > 50);
+      const doc = document.documentElement;
+      const prog = window.scrollY / (doc.scrollHeight - doc.clientHeight);
+      setScrollProgress(Math.min(prog, 1));
+    };
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      setCursorPos({ x: e.clientX, y: e.clientY });
+    };
+    window.addEventListener('mousemove', onMove);
+    return () => window.removeEventListener('mousemove', onMove);
+  }, []);
+
+  // Ring lags behind cursor
+  useEffect(() => {
+    let target = { x: -100, y: -100 };
+    const onMove = (e: MouseEvent) => { target = { x: e.clientX, y: e.clientY }; };
+    window.addEventListener('mousemove', onMove);
+    const loop = () => {
+      ringRef.current.x += (target.x - ringRef.current.x) * 0.12;
+      ringRef.current.y += (target.y - ringRef.current.y) * 0.12;
+      setRingPos({ x: ringRef.current.x, y: ringRef.current.y });
+      rafRef.current = requestAnimationFrame(loop);
+    };
+    rafRef.current = requestAnimationFrame(loop);
+    return () => { cancelAnimationFrame(rafRef.current); window.removeEventListener('mousemove', onMove); };
   }, []);
 
   return (
-    <div style={{ minHeight: '100vh', background: '#020202', color: '#fff', overflowX: 'hidden' }}>
+    <div style={{ minHeight: '100vh', background: '#020202', color: '#fff', overflowX: 'hidden', cursor: 'none' }}>
       {/* Global styles */}
       <style>{`
-        @keyframes rotateCube { 0%{transform:rotateX(-20deg) rotateY(0deg)} 100%{transform:rotateX(-20deg) rotateY(360deg)} }
         @keyframes marquee { from{transform:translateX(0)} to{transform:translateX(-50%)} }
         @keyframes marqueeRev { from{transform:translateX(-50%)} to{transform:translateX(0)} }
-        @keyframes floatUp { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
         @keyframes fadeIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-        * { box-sizing: border-box; }
+        @keyframes cardFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+        @keyframes glowPulse { 0%,100%{opacity:0.4} 50%{opacity:0.9} }
+        * { box-sizing: border-box; cursor: none !important; }
         html { scroll-behavior: smooth; }
-        ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-track{background:#000} ::-webkit-scrollbar-thumb{background:${P};border-radius:4px}
-        input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.2)}
-        select{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:#fff}
-        select option{background:#1a1a1a}
-        @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
-        @keyframes marqueeScroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+        ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-track{background:#000} ::-webkit-scrollbar-thumb{background:${P};border-radius:3px}
       `}</style>
 
+      {/* ── CUSTOM CURSOR ── */}
+      <div style={{ position: 'fixed', left: cursorPos.x - 4, top: cursorPos.y - 4, width: '8px', height: '8px', background: '#fff', borderRadius: '50%', pointerEvents: 'none', zIndex: 99999, transition: 'transform 0.1s ease', mixBlendMode: 'difference' }} />
+      <div style={{ position: 'fixed', left: ringPos.x - 18, top: ringPos.y - 18, width: '36px', height: '36px', border: `1.5px solid rgba(94,23,235,0.8)`, borderRadius: '50%', pointerEvents: 'none', zIndex: 99998, transition: 'opacity 0.2s ease' }} />
+
+      {/* ── SCROLL PROGRESS BAR ── */}
+      <div style={{ position: 'fixed', top: 0, left: 0, height: '3px', background: `linear-gradient(90deg, ${P}, ${PL}, #C084FC)`, width: `${scrollProgress * 100}%`, zIndex: 9999, transition: 'width 0.1s linear', boxShadow: `0 0 8px rgba(94,23,235,0.8)` }} />
+
       {/* Purple grid */}
-      <div style={{ position: 'fixed', inset: 0, backgroundImage: `linear-gradient(rgba(94,23,235,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(94,23,235,0.035) 1px, transparent 1px)`, backgroundSize: '56px 56px', pointerEvents: 'none', zIndex: 0 }} />
+      <div style={{ position: 'fixed', inset: 0, backgroundImage: `linear-gradient(rgba(94,23,235,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(94,23,235,0.03) 1px, transparent 1px)`, backgroundSize: '56px 56px', pointerEvents: 'none', zIndex: 0 }} />
 
       {/* ── NAVBAR ── */}
       <nav style={{
@@ -272,7 +320,7 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
         <div style={{ position: 'absolute', top: '10%', left: '-100px', width: '500px', height: '500px', background: `radial-gradient(circle, rgba(94,23,235,0.12) 0%, transparent 65%)`, pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', top: '30%', right: '-50px', width: '400px', height: '400px', background: `radial-gradient(circle, rgba(123,63,255,0.08) 0%, transparent 65%)`, pointerEvents: 'none' }} />
 
-        <div style={{ maxWidth: '1300px', margin: '0 auto', width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '64px', alignItems: 'center' }}>
+        <div className="landing-hero-grid" style={{ maxWidth: '1300px', margin: '0 auto', width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '64px', alignItems: 'center' }}>
           {/* Left: text */}
           <div style={{ animation: 'fadeIn 0.8s ease forwards' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(94,23,235,0.12)', border: '1px solid rgba(94,23,235,0.3)', borderRadius: '100px', padding: '6px 16px', marginBottom: '32px' }}>
@@ -335,7 +383,7 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
           </div>
 
           {/* Right: Ballpit — purple physics spheres */}
-          <div style={{ position: 'relative', width: '100%', height: '480px', borderRadius: '24px', overflow: 'hidden', border: '1px solid rgba(94,23,235,0.2)', boxShadow: `0 0 80px rgba(94,23,235,0.2), inset 0 0 40px rgba(94,23,235,0.05)` }}>
+          <div className="landing-ballpit-panel" style={{ position: 'relative', width: '100%', height: '480px', borderRadius: '24px', overflow: 'hidden', border: '1px solid rgba(94,23,235,0.2)', boxShadow: `0 0 80px rgba(94,23,235,0.2), inset 0 0 40px rgba(94,23,235,0.05)` }}>
             <Ballpit
               colors={['#5E17EB', '#7B3FFF', '#9B59B6', '#C084FC', '#3a0ca3', '#ffffff']}
               count={80}
@@ -364,6 +412,27 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
         <div style={{ marginTop: '2px' }}><Marquee reverse /></div>
       </div>
 
+      {/* ── STATS BAR ── */}
+      <section style={{ background: `linear-gradient(135deg, rgba(94,23,235,0.15) 0%, rgba(45,11,107,0.2) 100%)`, borderTop: '1px solid rgba(94,23,235,0.2)', borderBottom: '1px solid rgba(94,23,235,0.2)', padding: '64px 48px', position: 'relative', zIndex: 1, overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '600px', height: '300px', background: `radial-gradient(ellipse, rgba(94,23,235,0.12) 0%, transparent 70%)`, pointerEvents: 'none' }} />
+        <div className="landing-stats-grid" style={{ maxWidth: '1100px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0', position: 'relative' }}>
+          {[
+            { end: 150, suffix: '+', label: 'Plataformas globales', icon: Globe },
+            { end: 50, suffix: 'K+', label: 'Artistas activos', icon: Users },
+            { end: 2, suffix: 'M+', prefix: '$', label: 'En regalías pagadas', icon: DollarSign },
+            { end: 98, suffix: '%', label: 'Tasa de satisfacción', icon: Star },
+          ].map((stat, i) => (
+            <div key={i} style={{ textAlign: 'center', padding: '0 24px', borderRight: i < 3 ? '1px solid rgba(94,23,235,0.2)' : 'none' }}>
+              <stat.icon size={20} color={PL} style={{ marginBottom: '12px' }} />
+              <div style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(40px, 4vw, 60px)', color: '#fff', letterSpacing: '-0.02em', lineHeight: 1, marginBottom: '8px' }}>
+                {stat.prefix || ''}<CountUp end={stat.end} suffix={stat.suffix} duration={2000} />
+              </div>
+              <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{stat.label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* ── SERVICES ── */}
       <section id="servicios" style={{ padding: '120px 48px', position: 'relative', zIndex: 1 }}>
         <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
@@ -374,9 +443,104 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
               <span style={{ background: `linear-gradient(135deg, ${P}, ${PL})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>EN UNA PLATAFORMA</span>
             </h2>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
+          <div className="landing-services-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
             {SERVICES.map((s, i) => (
               <ServiceCard key={i} {...s} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── POR QUÉ NOSOTROS ── */}
+      <section style={{ padding: '80px 48px', position: 'relative', zIndex: 1 }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '64px' }}>
+            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', color: PL, display: 'block', marginBottom: '16px' }}>NUESTRA VENTAJA</span>
+            <h2 style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(32px, 3.5vw, 52px)', color: '#fff', margin: 0, letterSpacing: '0.01em' }}>
+              POR QUÉ <span style={{ background: `linear-gradient(135deg, ${P}, ${PL})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>IM MUSIC</span>
+            </h2>
+          </div>
+          <div className="landing-why-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
+            {[
+              { icon: Zap, title: 'Velocidad', desc: 'Lanza en menos de 24h. Sin burocracia, sin esperas. Tu música llega rápido.' },
+              { icon: DollarSign, title: 'Más ingresos', desc: '0% comisión en todas las regalías. 100% de tus ganancias, siempre.' },
+              { icon: Sparkles, title: 'IA de primera', desc: 'Herramientas de IA entrenadas específicamente para la industria musical.' },
+              { icon: Shield, title: 'Seguridad total', desc: 'Contratos digitales, splits automatizados, pagos verificados y seguros.' },
+            ].map((d, i) => (
+              <div key={i} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '20px', padding: '32px 24px', transition: 'all 0.3s ease' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(94,23,235,0.08)'; (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(94,23,235,0.3)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.02)'; (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.06)'; }}
+              >
+                <div style={{ width: '44px', height: '44px', background: `rgba(94,23,235,0.15)`, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', border: '1px solid rgba(94,23,235,0.25)' }}>
+                  <d.icon size={20} color={PL} />
+                </div>
+                <h3 style={{ fontFamily: "'Anton', sans-serif", fontSize: '20px', color: '#fff', margin: '0 0 10px', letterSpacing: '0.03em' }}>{d.title}</h3>
+                <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.4)', lineHeight: 1.7, margin: 0 }}>{d.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── ARTISTS CAROUSEL ── */}
+      <section id="artistas" style={{ padding: '100px 0', position: 'relative', zIndex: 1, overflow: 'hidden' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 48px', marginBottom: '48px' }}>
+          <div style={{ textAlign: 'center' }}>
+            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', color: PL, display: 'block', marginBottom: '16px' }}>ARTISTAS QUE CONFÍAN</span>
+            <h2 style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(32px, 3.5vw, 52px)', color: '#fff', margin: 0, letterSpacing: '0.01em' }}>
+              HISTORIAS DE <span style={{ background: `linear-gradient(135deg, ${P}, ${PL})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>ÉXITO</span>
+            </h2>
+          </div>
+        </div>
+        <div className="artist-carousel" style={{ display: 'flex', gap: '20px', padding: '16px 48px 32px', overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' as any }}>
+          {ARTISTS.map((artist, i) => (
+            <div key={i} style={{ flexShrink: 0, width: '220px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '20px', padding: '28px 20px', textAlign: 'center', transition: 'all 0.3s ease', cursor: 'default' }}
+              onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = 'translateY(-8px)'; el.style.borderColor = artist.color + '60'; el.style.boxShadow = `0 20px 40px rgba(0,0,0,0.4), 0 0 30px ${artist.color}25`; }}
+              onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = 'translateY(0)'; el.style.borderColor = 'rgba(255,255,255,0.08)'; el.style.boxShadow = 'none'; }}
+            >
+              <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: `linear-gradient(135deg, ${artist.color}40, ${artist.color}20)`, border: `2px solid ${artist.color}60`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', margin: '0 auto 16px' }}>
+                {artist.img}
+              </div>
+              <h4 style={{ fontFamily: "'Anton', sans-serif", fontSize: '16px', color: '#fff', margin: '0 0 4px', letterSpacing: '0.03em' }}>{artist.name}</h4>
+              <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.35)', margin: '0 0 16px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{artist.genre}</p>
+              <div style={{ background: `${artist.color}15`, border: `1px solid ${artist.color}30`, borderRadius: '100px', padding: '4px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <Headphones size={11} color={artist.color} />
+                <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '12px', fontWeight: 700, color: artist.color }}>{artist.streams} streams</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── TESTIMONIALS ── */}
+      <section style={{ padding: '80px 48px', position: 'relative', zIndex: 1, background: 'rgba(0,0,0,0.4)' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '56px' }}>
+            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', color: PL, display: 'block', marginBottom: '16px' }}>TESTIMONIOS</span>
+            <h2 style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(30px, 3vw, 48px)', color: '#fff', margin: 0 }}>LO QUE DICEN LOS ARTISTAS</h2>
+          </div>
+          <div className="landing-testimonials-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
+            {[
+              { quote: '"IM Music cambió todo para mí. Mis regalías llegaron a tiempo por primera vez en mi carrera."', name: 'Luna Vera', role: 'R&B Artist', stars: 5 },
+              { quote: '"El split automático con mi productor funciona perfecto. Cero drama, cero confusion, puro dinero."', name: 'Niko Beats', role: 'Trap Producer', stars: 5 },
+              { quote: '"El marketing con IA me generó una estrategia que triplicó mis seguidores en 3 meses."', name: 'Mía Solar', role: 'Pop Artist', stars: 5 },
+            ].map((t, i) => (
+              <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '20px', padding: '32px', position: 'relative' }}>
+                <div style={{ position: 'absolute', top: '20px', right: '24px', display: 'flex', gap: '3px' }}>
+                  {Array.from({ length: t.stars }).map((_, si) => <Star key={si} size={12} color="#fbbf24" fill="#fbbf24" />)}
+                </div>
+                <div style={{ fontSize: '40px', color: P, lineHeight: 1, marginBottom: '16px', fontFamily: 'Georgia, serif' }}>"</div>
+                <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '15px', color: 'rgba(255,255,255,0.7)', lineHeight: 1.7, margin: '0 0 24px', fontStyle: 'italic' }}>{t.quote.slice(1, -1)}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: `linear-gradient(135deg, ${P}, ${PL})`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <UserIcon size={16} color="#fff" />
+                  </div>
+                  <div>
+                    <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '14px', fontWeight: 700, color: '#fff', margin: 0 }}>{t.name}</p>
+                    <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.35)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t.role}</p>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
         </div>
@@ -387,9 +551,10 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '72px' }}>
             <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', color: PL, display: 'block', marginBottom: '16px' }}>PLANES Y PRECIOS</span>
-            <h2 style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(36px, 4vw, 56px)', color: '#fff', margin: 0, letterSpacing: '0.01em' }}>ELIGE TU PLAN</h2>
+            <h2 style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(36px, 4vw, 56px)', color: '#fff', margin: '0 0 12px', letterSpacing: '0.01em' }}>ELIGE TU PLAN</h2>
+            <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '16px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>Sin compromisos. Cambia de plan cuando quieras.</p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', alignItems: 'center' }}>
+          <div className="landing-pricing-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', alignItems: 'center' }}>
             {PLANS.map((plan, i) => (
               <PlanCard key={i} plan={plan} onSelect={onEnter} />
             ))}
@@ -399,33 +564,94 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
 
       {/* ── CTA FINAL ── */}
       <section style={{ padding: '120px 48px', position: 'relative', zIndex: 1, textAlign: 'center' }}>
-        <div style={{ maxWidth: '700px', margin: '0 auto' }}>
-          <div style={{ width: '80px', height: '80px', background: `linear-gradient(135deg, ${P}, ${PL})`, borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 32px', boxShadow: `0 0 60px rgba(94,23,235,0.5)` }}>
-            <Music size={36} color="#fff" />
+        {/* Glow backdrop */}
+        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '800px', height: '400px', background: `radial-gradient(ellipse, rgba(94,23,235,0.15) 0%, transparent 70%)`, pointerEvents: 'none' }} />
+        <div style={{ maxWidth: '700px', margin: '0 auto', position: 'relative' }}>
+          <div style={{ width: '88px', height: '88px', background: `linear-gradient(135deg, ${P}, ${PL})`, borderRadius: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 32px', boxShadow: `0 0 80px rgba(94,23,235,0.6), 0 20px 40px rgba(94,23,235,0.3)` }}>
+            <Music size={40} color="#fff" />
           </div>
-          <h2 style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(40px, 5vw, 68px)', color: '#fff', margin: '0 0 20px', letterSpacing: '0.01em' }}>
+          <h2 style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(44px, 5.5vw, 72px)', color: '#fff', margin: '0 0 20px', letterSpacing: '0.01em', lineHeight: 1.05 }}>
             EMPIEZA HOY.<br />
-            <span style={{ background: `linear-gradient(135deg, ${P}, ${PL})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>ES GRATIS.</span>
+            <ShinyText text="ES GRATIS." color={`rgba(255,255,255,0.5)`} shineColor="#fff" speed={1.5} spread={100}
+              style={{ fontFamily: "'Anton', sans-serif", fontSize: 'inherit', letterSpacing: '0.01em' }} />
           </h2>
-          <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '18px', color: 'rgba(255,255,255,0.45)', margin: '0 0 48px' }}>Sin tarjeta de crédito. Sin contratos. Cancela cuando quieras.</p>
-          <Magnet padding={60} magnetStrength={2}>
-            <Btn3D onClick={onEnter}>
-              CREAR CUENTA GRATIS <ArrowRight size={16} />
-            </Btn3D>
-          </Magnet>
+          <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '18px', color: 'rgba(255,255,255,0.4)', margin: '0 0 48px', lineHeight: 1.7 }}>Sin tarjeta de crédito. Sin contratos. Cancela cuando quieras.</p>
+          <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
+            <Magnet padding={60} magnetStrength={2}>
+              <Btn3D onClick={onEnter}>
+                CREAR CUENTA GRATIS <ArrowRight size={16} />
+              </Btn3D>
+            </Magnet>
+            <Magnet padding={60} magnetStrength={3}>
+              <Btn3D variant="ghost" onClick={onEnter}>
+                Ver demo <Play size={14} />
+              </Btn3D>
+            </Magnet>
+          </div>
+          <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.2)', marginTop: '24px', letterSpacing: '0.05em' }}>
+            50,000+ artistas ya confían en IM Music · Distribución activa en 150+ plataformas
+          </p>
         </div>
       </section>
 
-      {/* ── FOOTER ── */}
-      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '40px 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', zIndex: 1 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: '24px', height: '24px', background: P, borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Music size={12} color="#fff" /></div>
-          <span style={{ fontFamily: "'Anton', sans-serif", fontSize: '14px', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.4)' }}>IM MUSIC © 2026</span>
-        </div>
-        <div style={{ display: 'flex', gap: '32px' }}>
-          {['Privacidad', 'Términos', 'Contacto'].map(l => (
-            <span key={l} style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.25)', cursor: 'pointer', letterSpacing: '0.05em' }}>{l}</span>
-          ))}
+      {/* ── FOOTER (4 columns) ── */}
+      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '64px 48px 32px', position: 'relative', zIndex: 1 }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <div className="landing-footer-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '48px', marginBottom: '48px' }}>
+            {/* Brand */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                <div style={{ width: '32px', height: '32px', background: `linear-gradient(135deg, ${P}, ${PL})`, borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 16px rgba(94,23,235,0.4)` }}>
+                  <Music size={15} color="#fff" />
+                </div>
+                <span style={{ fontFamily: "'Anton', sans-serif", fontSize: '20px', letterSpacing: '0.05em' }}>IM MUSIC</span>
+              </div>
+              <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.35)', lineHeight: 1.7, maxWidth: '280px', margin: '0 0 20px' }}>
+                La plataforma todo-en-uno para artistas independientes que quieren controlar su carrera musical.
+              </p>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {['SP', 'AP', 'YT', 'TK'].map(p => (
+                  <div key={p} style={{ width: '32px', height: '32px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ fontFamily: "'Anton', sans-serif", fontSize: '9px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.05em' }}>{p}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Producto */}
+            <div>
+              <h4 style={{ fontFamily: "'Anton', sans-serif", fontSize: '13px', color: '#fff', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '20px' }}>Producto</h4>
+              {['Distribución', 'Regalías', 'Marketing IA', 'Publishing', 'Analytics'].map(l => (
+                <div key={l} style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.35)', marginBottom: '10px', cursor: 'pointer', transition: 'color 0.2s' }}
+                  onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
+                  onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.35)')}>{l}</div>
+              ))}
+            </div>
+            {/* Soporte */}
+            <div>
+              <h4 style={{ fontFamily: "'Anton', sans-serif", fontSize: '13px', color: '#fff', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '20px' }}>Soporte</h4>
+              {['Centro de ayuda', 'Contacto', 'Status', 'Blog', 'Tutoriales'].map(l => (
+                <div key={l} style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.35)', marginBottom: '10px', cursor: 'pointer', transition: 'color 0.2s' }}
+                  onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
+                  onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.35)')}>{l}</div>
+              ))}
+            </div>
+            {/* Legal */}
+            <div>
+              <h4 style={{ fontFamily: "'Anton', sans-serif", fontSize: '13px', color: '#fff', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '20px' }}>Legal</h4>
+              {['Privacidad', 'Términos de uso', 'Cookies', 'DMCA', 'Licencias'].map(l => (
+                <div key={l} style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.35)', marginBottom: '10px', cursor: 'pointer', transition: 'color 0.2s' }}
+                  onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
+                  onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.35)')}>{l}</div>
+              ))}
+            </div>
+          </div>
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.05em' }}>© 2026 IM Music. Todos los derechos reservados.</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ width: '6px', height: '6px', background: '#22c55e', borderRadius: '50%', animation: 'pulse 2s ease-in-out infinite' }} />
+              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.08em' }}>Todos los sistemas operativos</span>
+            </div>
+          </div>
         </div>
       </footer>
     </div>
