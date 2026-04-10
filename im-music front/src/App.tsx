@@ -1,5 +1,30 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import Dither from './components/Dither';
+import CSSLightPillar from './components/CSSLightPillar';
+
+// Lazy-loaded heavy WebGL components
+const LightPillar = lazy(() =>
+  new Promise<{ default: React.ComponentType<any> }>(resolve =>
+    setTimeout(() => import('./components/LightPillar').then(resolve), 300)
+  )
+);
+const CircularGallery = lazy(() => import('./components/CircularGallery'));
+
+// ─── Error Boundary ───────────────────────────────────────────────────────────
+class WebGLErrorBoundary extends React.Component<
+  { children: React.ReactNode; fallback: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode; fallback: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  componentDidCatch(error: Error) { console.warn('[WebGL component error]', error.message); }
+  render() {
+    return this.state.hasError ? this.props.fallback : this.props.children;
+  }
+}
 import Magnet from './components/Magnet';
 import SpotlightCard from './components/SpotlightCard';
 import BlurText from './components/BlurText';
@@ -276,10 +301,29 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
 
       {/* ── HERO ── */}
       <section style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', padding: '100px 72px 80px', position: 'relative', zIndex: 1, overflow: 'hidden', background: '#000' }}>
-        {/* CSS blob backgrounds — no WebGL */}
-        <div style={{ position: 'absolute', top: '-10%', left: '-5%', width: '700px', height: '700px', background: 'radial-gradient(circle, rgba(94,23,235,0.22) 0%, rgba(94,23,235,0.06) 45%, transparent 70%)', borderRadius: '50%', filter: 'blur(60px)', pointerEvents: 'none', animation: 'blobFloat 14s ease-in-out infinite' }} />
-        <div style={{ position: 'absolute', bottom: '-15%', right: '5%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(123,63,255,0.18) 0%, rgba(94,23,235,0.05) 45%, transparent 70%)', borderRadius: '50%', filter: 'blur(80px)', pointerEvents: 'none', animation: 'blobFloat2 18s ease-in-out infinite' }} />
-        <div style={{ position: 'absolute', top: '40%', left: '40%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(192,132,252,0.08) 0%, transparent 65%)', borderRadius: '50%', filter: 'blur(40px)', pointerEvents: 'none' }} />
+        {/* CSS animated background — always visible immediately */}
+        <CSSLightPillar />
+        {/* LightPillar WebGL background — lazy loaded, replaces CSS version if WebGL works */}
+        <WebGLErrorBoundary fallback={null}>
+          <Suspense fallback={null}>
+            <LightPillar
+              topColor="#5E17EB"
+              bottomColor="#7B3FFF"
+              intensity={1}
+              rotationSpeed={0.3}
+              glowAmount={0.002}
+              pillarWidth={3}
+              pillarHeight={0.4}
+              noiseIntensity={0.5}
+              pillarRotation={25}
+              interactive={false}
+              mixBlendMode="screen"
+              quality="high"
+            />
+          </Suspense>
+        </WebGLErrorBoundary>
+        {/* Subtle dark overlay so text stays readable */}
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)', pointerEvents: 'none' }} />
 
         <div style={{ maxWidth: '1340px', margin: '0 auto', width: '100%', display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '80px', alignItems: 'center' }}>
           {/* Left: text */}
@@ -437,20 +481,35 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
       </section>
 
       {/* ── SERVICES ── */}
-      <section id="servicios" style={{ padding: '120px 48px', position: 'relative', zIndex: 1 }}>
-        <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '72px' }}>
-            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', color: PL, display: 'block', marginBottom: '16px' }}>LO QUE OFRECEMOS</span>
-            <h2 style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(36px, 4vw, 60px)', color: '#fff', margin: 0, letterSpacing: '0.01em' }}>
-              TODO LO QUE NECESITAS<br />
-              <span style={{ background: `linear-gradient(135deg, ${P}, ${PL})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>EN UNA PLATAFORMA</span>
-            </h2>
-          </div>
-          <div className="landing-services-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
-            {SERVICES.map((s, i) => (
-              <ServiceCard key={i} {...s} />
-            ))}
-          </div>
+      <section id="servicios" style={{ padding: '120px 0', position: 'relative', zIndex: 1 }}>
+        <div style={{ textAlign: 'center', marginBottom: '72px', padding: '0 48px' }}>
+          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', color: PL, display: 'block', marginBottom: '16px' }}>LO QUE OFRECEMOS</span>
+          <h2 style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(36px, 4vw, 60px)', color: '#fff', margin: 0, letterSpacing: '0.01em' }}>
+            TODO LO QUE NECESITAS<br />
+            <span style={{ background: `linear-gradient(135deg, ${P}, ${PL})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>EN UNA PLATAFORMA</span>
+          </h2>
+        </div>
+        {/* CircularGallery — interactive scrollable service showcase */}
+        <div style={{ width: '100%', height: '500px', background: '#0a0a0a' }}>
+          <WebGLErrorBoundary fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'rgba(255,255,255,0.3)', fontFamily: "'Space Grotesk', sans-serif", fontSize: '14px' }}>Galería de servicios</div>}>
+            <Suspense fallback={<div style={{ height: '100%', background: '#0a0a0a' }} />}>
+              <CircularGallery
+                items={[
+                  { image: 'https://picsum.photos/seed/dist/800/600?grayscale', text: 'Distribución Digital' },
+                  { image: 'https://picsum.photos/seed/ai/800/600?grayscale', text: 'Marketing con IA' },
+                  { image: 'https://picsum.photos/seed/agent/800/600?grayscale', text: 'Agentes IA 24/7' },
+                  { image: 'https://picsum.photos/seed/royal/800/600?grayscale', text: 'Gestión de Regalías' },
+                  { image: 'https://picsum.photos/seed/video/800/600?grayscale', text: 'Videos Musicales' },
+                  { image: 'https://picsum.photos/seed/fund/800/600?grayscale', text: 'Financiamiento' },
+                ]}
+                bend={1}
+                textColor="#F2EDE5"
+                borderRadius={0.05}
+                scrollSpeed={2}
+                scrollEase={0.05}
+              />
+            </Suspense>
+          </WebGLErrorBoundary>
         </div>
       </section>
 
