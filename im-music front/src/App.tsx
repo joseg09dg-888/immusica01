@@ -1,11 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import Aurora from './components/Aurora';
 import Dither from './components/Dither';
 import Magnet from './components/Magnet';
 import SpotlightCard from './components/SpotlightCard';
-import Particles from './components/Particles';
-import LetterGlitch from './components/LetterGlitch';
-import Ballpit from './components/Ballpit';
 import BlurText from './components/BlurText';
 import RotatingText from './components/RotatingText';
 import ShinyText from './components/ShinyText';
@@ -226,10 +222,15 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
       <style>{`
         @keyframes marquee { from{transform:translateX(0)} to{transform:translateX(-50%)} }
         @keyframes marqueeRev { from{transform:translateX(-50%)} to{transform:translateX(0)} }
-        @keyframes fadeIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
         @keyframes cardFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
         @keyframes glowPulse { 0%,100%{opacity:0.4} 50%{opacity:0.9} }
+        @keyframes blobFloat { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(30px,-20px) scale(1.05)} 66%{transform:translate(-20px,15px) scale(0.97)} }
+        @keyframes blobFloat2 { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(-25px,20px) scale(1.03)} 66%{transform:translate(20px,-15px) scale(0.98)} }
+        @keyframes waveBar { 0%,100%{height:20px} 50%{height:var(--h)} }
+        @keyframes dashFloat { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-12px)} }
+        @keyframes fadeInUp { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
         * { box-sizing: border-box; cursor: none !important; }
         html { scroll-behavior: smooth; }
         ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-track{background:#000} ::-webkit-scrollbar-thumb{background:${P};border-radius:3px}
@@ -274,134 +275,136 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
       </nav>
 
       {/* ── HERO ── */}
-      <section style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', padding: '80px 48px 0', position: 'relative', zIndex: 1, overflow: 'hidden' }}>
-        {/* Dither WebGL wave background — retro pixel aesthetic */}
-        <Dither
-          waveColor={[0.37, 0.09, 0.92]}
-          disableAnimation={false}
-          enableMouseInteraction
-          mouseRadius={0.3}
-          colorNum={4}
-          pixelSize={2}
-          waveAmplitude={0.3}
-          waveFrequency={3}
-          waveSpeed={0.05}
-          style={{ opacity: 0.85 }}
-        />
-        {/* Aurora glow layer on top */}
-        <Aurora
-          colorStops={['#3a0ca3', '#5E17EB', '#7209b7']}
-          amplitude={1.0}
-          blend={0.5}
-          speed={0.5}
-          style={{ top: '0%', height: '100%', opacity: 0.35, mixBlendMode: 'screen' as any }}
-        />
-        {/* LetterGlitch overlay — purple cyber chars */}
-        <LetterGlitch
-          glitchColors={['#5E17EB', '#7B3FFF', '#C084FC']}
-          glitchSpeed={45}
-          outerVignette
-          smooth
-          style={{ opacity: 0.18 }}
-        />
-        {/* Particles layer */}
-        <Particles
-          particleCount={80}
-          particleSpread={8}
-          speed={0.04}
-          particleColors={['#5E17EB', '#9B59B6', '#C084FC', '#ffffff']}
-          moveParticlesOnHover
-          particleHoverFactor={0.5}
-          alphaParticles
-          particleBaseSize={60}
-          style={{ pointerEvents: 'auto', opacity: 0.5 }}
-        />
-        {/* Ambient glow */}
-        <div style={{ position: 'absolute', top: '10%', left: '-100px', width: '500px', height: '500px', background: `radial-gradient(circle, rgba(94,23,235,0.12) 0%, transparent 65%)`, pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', top: '30%', right: '-50px', width: '400px', height: '400px', background: `radial-gradient(circle, rgba(123,63,255,0.08) 0%, transparent 65%)`, pointerEvents: 'none' }} />
+      <section style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', padding: '100px 72px 80px', position: 'relative', zIndex: 1, overflow: 'hidden', background: '#000' }}>
+        {/* CSS blob backgrounds — no WebGL */}
+        <div style={{ position: 'absolute', top: '-10%', left: '-5%', width: '700px', height: '700px', background: 'radial-gradient(circle, rgba(94,23,235,0.22) 0%, rgba(94,23,235,0.06) 45%, transparent 70%)', borderRadius: '50%', filter: 'blur(60px)', pointerEvents: 'none', animation: 'blobFloat 14s ease-in-out infinite' }} />
+        <div style={{ position: 'absolute', bottom: '-15%', right: '5%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(123,63,255,0.18) 0%, rgba(94,23,235,0.05) 45%, transparent 70%)', borderRadius: '50%', filter: 'blur(80px)', pointerEvents: 'none', animation: 'blobFloat2 18s ease-in-out infinite' }} />
+        <div style={{ position: 'absolute', top: '40%', left: '40%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(192,132,252,0.08) 0%, transparent 65%)', borderRadius: '50%', filter: 'blur(40px)', pointerEvents: 'none' }} />
 
-        <div className="landing-hero-grid" style={{ maxWidth: '1300px', margin: '0 auto', width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '64px', alignItems: 'center' }}>
+        <div style={{ maxWidth: '1340px', margin: '0 auto', width: '100%', display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '80px', alignItems: 'center' }}>
           {/* Left: text */}
-          <div style={{ animation: 'fadeIn 0.8s ease forwards' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(94,23,235,0.12)', border: '1px solid rgba(94,23,235,0.3)', borderRadius: '100px', padding: '6px 16px', marginBottom: '32px' }}>
-              <div style={{ width: '6px', height: '6px', background: '#22c55e', borderRadius: '50%', animation: 'pulse 1.5s ease-in-out infinite' }} />
-              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: PL }}>Plataforma activa — 50K+ artistas</span>
+          <div style={{ animation: 'fadeInUp 0.7s ease forwards' }}>
+            {/* Badge */}
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(94,23,235,0.12)', border: '1px solid rgba(94,23,235,0.35)', borderRadius: '100px', padding: '7px 18px', marginBottom: '36px' }}>
+              <div style={{ width: '7px', height: '7px', background: '#22c55e', borderRadius: '50%', animation: 'pulse 1.5s ease-in-out infinite', flexShrink: 0 }} />
+              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: PL }}>Plataforma activa — 50K+ artistas</span>
             </div>
 
-            <h1 style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(48px, 5.5vw, 80px)', lineHeight: 1.0, margin: '0 0 8px', letterSpacing: '-0.01em' }}>
-              <BlurText text="DISTRIBUYE." animateBy="characters" delay={60} stepDuration={0.5}
-                style={{ fontFamily: "'Anton', sans-serif", fontSize: 'inherit', lineHeight: 1.0, color: '#fff', letterSpacing: '-0.01em', display: 'block' }}
-              />
-              <BlurText text="MONETIZA." animateBy="characters" delay={60} stepDuration={0.5}
-                style={{ fontFamily: "'Anton', sans-serif", fontSize: 'inherit', lineHeight: 1.0, letterSpacing: '-0.01em', display: 'block', background: `linear-gradient(135deg, ${P}, ${PL}, #C084FC)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
-              />
-              <BlurText text="DOMINA." animateBy="characters" delay={60} stepDuration={0.5}
-                style={{ fontFamily: "'Anton', sans-serif", fontSize: 'inherit', lineHeight: 1.0, color: '#fff', letterSpacing: '-0.01em', display: 'block' }}
-              />
+            {/* Headline — Anton, huge, cream */}
+            <h1 style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(56px, 7vw, 96px)', lineHeight: 0.95, margin: '0 0 28px', letterSpacing: '-0.02em' }}>
+              <span style={{ display: 'block', color: '#F2EDE5' }}>DISTRIBUYE.</span>
+              <span style={{ display: 'block', background: `linear-gradient(130deg, ${P} 0%, ${PL} 50%, #C084FC 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>MONETIZA.</span>
+              <span style={{ display: 'block', color: '#F2EDE5' }}>DOMINA.</span>
             </h1>
+
             {/* Rotating tagline */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', fontFamily: "'Space Grotesk', sans-serif", fontSize: '14px', fontWeight: 600, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.08em' }}>
-              <span style={{ color: PL }}>▸</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px', fontFamily: "'Space Grotesk', sans-serif", fontSize: '14px', fontWeight: 600, letterSpacing: '0.06em' }}>
+              <span style={{ color: PL, fontSize: '12px' }}>▸</span>
               <RotatingText
                 texts={['DISTRIBUCIÓN EN 150+ PLATAFORMAS', 'REGALÍAS EN TIEMPO REAL', 'MARKETING CON IA', 'SPLITS AUTOMÁTICOS', 'PUBLISHING & REGISTRO']}
                 rotationInterval={2500}
                 splitBy="words"
                 staggerDuration={0.04}
                 staggerFrom="first"
-                style={{ color: 'rgba(255,255,255,0.7)', fontFamily: "'Space Grotesk', sans-serif", fontSize: '13px', letterSpacing: '0.06em' }}
+                style={{ color: 'rgba(242,237,229,0.55)', fontFamily: "'Space Grotesk', sans-serif", fontSize: '13px', letterSpacing: '0.06em' }}
               />
             </div>
 
-            <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '18px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, margin: '0 0 40px', maxWidth: '460px' }}>
+            <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '18px', color: 'rgba(242,237,229,0.45)', lineHeight: 1.75, margin: '0 0 44px', maxWidth: '480px' }}>
               La plataforma todo-en-uno para artistas independientes. Distribución en 150+ tiendas, regalías en tiempo real, marketing con IA y herramientas de crecimiento profesional.
             </p>
 
-            <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '48px' }}>
+            <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '52px', flexWrap: 'wrap' }}>
               <Magnet padding={60} magnetStrength={3}>
-                <Btn3D onClick={onEnter}>
-                  COMENZAR GRATIS <ArrowRight size={16} />
-                </Btn3D>
+                <Btn3D onClick={onEnter}>COMENZAR GRATIS <ArrowRight size={16} /></Btn3D>
               </Magnet>
               <Magnet padding={60} magnetStrength={4}>
-                <Btn3D variant="ghost" onClick={onEnter}>
-                  <Play size={14} /> Ver demo
-                </Btn3D>
+                <Btn3D variant="ghost" onClick={onEnter}><Play size={14} /> Ver demo</Btn3D>
               </Magnet>
             </div>
 
-            {/* Mini stats — animated counters */}
-            <div style={{ display: 'flex', gap: '32px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '32px' }}>
+            {/* Mini stats */}
+            <div style={{ display: 'flex', gap: '36px', borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: '32px', flexWrap: 'wrap' }}>
               {STATS.map(s => (
                 <div key={s.label}>
-                  <p style={{ fontFamily: "'Anton', sans-serif", fontSize: '26px', color: '#fff', margin: 0, letterSpacing: '0.02em' }}>
+                  <p style={{ fontFamily: "'Anton', sans-serif", fontSize: '28px', color: '#F2EDE5', margin: 0, letterSpacing: '0.02em' }}>
                     {s.prefix || ''}<AnimatedCounter target={s.num} suffix={s.suffix} />
                   </p>
-                  <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.35)', margin: '2px 0 0', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{s.label}</p>
+                  <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '10px', color: 'rgba(242,237,229,0.3)', margin: '3px 0 0', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{s.label}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Right: Ballpit — purple physics spheres */}
-          <div className="landing-ballpit-panel" style={{ position: 'relative', width: '100%', height: '480px', borderRadius: '24px', overflow: 'hidden', border: '1px solid rgba(94,23,235,0.2)', boxShadow: `0 0 80px rgba(94,23,235,0.2), inset 0 0 40px rgba(94,23,235,0.05)` }}>
-            <Ballpit
-              colors={['#5E17EB', '#7B3FFF', '#9B59B6', '#C084FC', '#3a0ca3', '#ffffff']}
-              count={80}
-              gravity={0.3}
-              followCursor
-            />
-            {/* Overlay tag badges */}
-            {[
-              { label: '150+ Plataformas', top: '8%', left: '6%', icon: Globe },
-              { label: 'IA Integrada', top: '8%', right: '6%', icon: Zap },
-              { label: 'Pagos Seguros', bottom: '8%', right: '6%', icon: Shield },
-              { label: 'Analytics Pro', bottom: '8%', left: '6%', icon: BarChart3 },
-            ].map((tag, i) => (
-              <div key={i} style={{ position: 'absolute', ...({ top: tag.top, left: tag.left, right: tag.right, bottom: tag.bottom } as any), background: 'rgba(5,5,5,0.85)', border: '1px solid rgba(94,23,235,0.4)', borderRadius: '10px', padding: '7px 12px', display: 'flex', alignItems: 'center', gap: '7px', backdropFilter: 'blur(16px)', boxShadow: `0 0 16px rgba(94,23,235,0.2)`, zIndex: 2 }}>
-                <tag.icon size={13} color={PL} />
-                <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.9)', whiteSpace: 'nowrap', letterSpacing: '0.05em' }}>{tag.label}</span>
+          {/* Right: CSS animated music dashboard — no WebGL */}
+          <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', animation: 'dashFloat 6s ease-in-out infinite' }}>
+            {/* Main dashboard card */}
+            <div style={{ width: '100%', maxWidth: '460px', background: 'rgba(10,5,20,0.85)', border: '1px solid rgba(94,23,235,0.3)', borderRadius: '28px', padding: '32px', backdropFilter: 'blur(24px)', boxShadow: '0 0 80px rgba(94,23,235,0.18), 0 40px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)' }}>
+              {/* Card header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px' }}>
+                <div>
+                  <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.15em', textTransform: 'uppercase', margin: '0 0 4px' }}>STREAMS HOY</p>
+                  <p style={{ fontFamily: "'Anton', sans-serif", fontSize: '36px', color: '#F2EDE5', margin: 0, letterSpacing: '-0.01em' }}>2,847</p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: '100px', padding: '6px 12px' }}>
+                  <TrendingUp size={13} color="#22c55e" />
+                  <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '12px', fontWeight: 700, color: '#22c55e' }}>+18.4%</span>
+                </div>
               </div>
-            ))}
+
+              {/* Waveform bars — pure CSS animation */}
+              <div style={{ display: 'flex', gap: '4px', alignItems: 'flex-end', height: '72px', marginBottom: '28px' }}>
+                {[45, 65, 38, 80, 55, 92, 40, 75, 60, 85, 50, 70, 42, 88, 58, 78, 44, 68, 90, 52].map((h, i) => (
+                  <div key={i} style={{
+                    flex: 1, borderRadius: '3px 3px 0 0',
+                    background: i % 3 === 0 ? P : i % 3 === 1 ? PL : 'rgba(94,23,235,0.35)',
+                    '--h': `${h}px`,
+                    height: '20px',
+                    animation: `waveBar ${1.2 + (i % 5) * 0.3}s ease-in-out infinite`,
+                    animationDelay: `${i * 0.08}s`,
+                  } as React.CSSProperties} />
+                ))}
+              </div>
+
+              {/* Platform pills */}
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', flexWrap: 'wrap' }}>
+                {[
+                  { name: 'Spotify', color: '#1DB954', streams: '1.2K' },
+                  { name: 'Apple', color: '#FC3C44', streams: '843' },
+                  { name: 'YouTube', color: '#FF0000', streams: '612' },
+                  { name: 'TikTok', color: '#69C9D0', streams: '190' },
+                ].map(p => (
+                  <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '6px 10px' }}>
+                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: p.color, flexShrink: 0 }} />
+                    <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', fontWeight: 600, color: 'rgba(255,255,255,0.6)' }}>{p.name}</span>
+                    <span style={{ fontFamily: "'Anton', sans-serif", fontSize: '12px', color: '#F2EDE5' }}>{p.streams}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Royalties row */}
+              <div style={{ background: 'rgba(94,23,235,0.1)', border: '1px solid rgba(94,23,235,0.2)', borderRadius: '14px', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '10px', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.12em', textTransform: 'uppercase', margin: '0 0 4px' }}>REGALÍAS PENDIENTES</p>
+                  <p style={{ fontFamily: "'Anton', sans-serif", fontSize: '24px', color: '#F2EDE5', margin: 0 }}>$342.80</p>
+                </div>
+                <div style={{ width: '40px', height: '40px', background: `linear-gradient(135deg, ${P}, ${PL})`, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 20px rgba(94,23,235,0.4)` }}>
+                  <DollarSign size={18} color="#fff" />
+                </div>
+              </div>
+            </div>
+
+            {/* Floating badge top-right */}
+            <div style={{ position: 'absolute', top: '-16px', right: '-16px', background: 'rgba(5,5,15,0.9)', border: '1px solid rgba(94,23,235,0.4)', borderRadius: '12px', padding: '10px 14px', backdropFilter: 'blur(16px)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', gap: '8px', animation: 'dashFloat 5s ease-in-out infinite', animationDelay: '1s' }}>
+              <Globe size={14} color={PL} />
+              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.85)', letterSpacing: '0.05em' }}>150+ Plataformas</span>
+            </div>
+
+            {/* Floating badge bottom-left */}
+            <div style={{ position: 'absolute', bottom: '-16px', left: '-16px', background: 'rgba(5,5,15,0.9)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '12px', padding: '10px 14px', backdropFilter: 'blur(16px)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', gap: '8px', animation: 'dashFloat 7s ease-in-out infinite', animationDelay: '2s' }}>
+              <Zap size={14} color="#22c55e" />
+              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.85)', letterSpacing: '0.05em' }}>IA Integrada</span>
+            </div>
           </div>
         </div>
       </section>
