@@ -1057,14 +1057,14 @@ function SidebarItem({ m, isActive, onNav, onClose }: { m: typeof MODULES[0]; is
       style={{
         width: '100%', display: 'flex', alignItems: 'center', gap: '9px',
         padding: '8px 10px', borderRadius: '10px', border: 'none', cursor: 'pointer',
-        background: isActive ? `rgba(94,23,235,0.18)` : hov ? 'rgba(255,255,255,0.04)' : 'transparent',
-        color: isActive ? '#fff' : hov ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.32)',
+        background: isActive ? `linear-gradient(90deg, rgba(94,23,235,0.28) 0%, rgba(94,23,235,0.05) 100%)` : hov ? 'rgba(255,255,255,0.04)' : 'transparent',
+        color: isActive ? '#C084FC' : hov ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.32)',
         fontSize: '12px', fontFamily: "'Space Grotesk', sans-serif",
         fontWeight: isActive ? 600 : 400,
-        transition: 'all 0.18s cubic-bezier(0.34,1.56,0.64,1)',
+        transition: 'all 0.2s cubic-bezier(0.34,1.56,0.64,1)',
         textAlign: 'left',
         transform: isActive ? 'translateX(4px)' : hov ? 'translateX(2px)' : 'translateX(0)',
-        boxShadow: isActive ? `inset 3px 0 0 ${P}, inset 0 0 20px rgba(94,23,235,0.08)` : 'none',
+        boxShadow: isActive ? `inset 2px 0 0 ${P}, inset 4px 0 20px rgba(94,23,235,0.18)` : 'none',
         position: 'relative',
       }}>
       <span style={{
@@ -1093,9 +1093,11 @@ function Sidebar({ active, onNav, user, onLogout, open, onClose }: {
   return (
     <>
       {open && <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 20 }} />}
-      <aside style={{ position: 'fixed', top: 0, left: 0, height: '100%', width: `${SIDEBAR_W}px`, background: 'rgba(5,4,12,0.98)', backdropFilter: 'blur(24px)', borderRight: '1px solid rgba(94,23,235,0.12)', zIndex: 30, display: 'flex', flexDirection: 'column' }}>
+      <aside style={{ position: 'fixed', top: 0, left: 0, height: '100%', width: `${SIDEBAR_W}px`, background: 'linear-gradient(180deg, #0a0612 0%, #050308 100%)', backdropFilter: 'blur(24px)', borderRight: '1px solid rgba(94,23,235,0.15)', zIndex: 30, display: 'flex', flexDirection: 'column' }}>
+        {/* Floating orb behind logo */}
+        <div style={{ position:'absolute', top:'-20px', left:'-20px', width:'140px', height:'140px', borderRadius:'50%', background:'radial-gradient(circle, rgba(94,23,235,0.18) 0%, transparent 65%)', filter:'blur(30px)', pointerEvents:'none', zIndex:0 }} />
         {/* Logo header */}
-        <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '11px' }}>
+        <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '11px', position:'relative', zIndex:1 }}>
           <div style={{ width: '34px', height: '34px', background: `linear-gradient(135deg, ${P}, ${PL})`, borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 20px rgba(94,23,235,0.5), 0 0 40px rgba(94,23,235,0.2)`, animation: 'logoFloat 4s ease-in-out infinite', flexShrink: 0 }}>
             <Music size={16} color="#fff" />
           </div>
@@ -1298,23 +1300,31 @@ function StatCard({ label, value, icon: Icon, trend, sparkline, glowColor = PL }
 
   return (
     <div ref={ref} onMouseMove={onMouseMove} onMouseEnter={() => setIsHov(true)} onMouseLeave={onMouseLeave}
-      style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '20px', padding: '22px', position: 'relative', overflow: 'hidden', transition: isHov ? 'border-color 0.15s' : 'all 0.6s cubic-bezier(0.34,1.56,0.64,1)', ...tiltStyle }}>
-      {/* Background glow orb */}
-      <div style={{ position: 'absolute', bottom: '-20px', right: '-20px', width: '100px', height: '100px', borderRadius: '50%', background: `radial-gradient(circle, ${glowColor}12, transparent 70%)`, pointerEvents: 'none' }} />
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px', position: 'relative', zIndex: 1 }}>
-        <IconCircle icon={Icon} color={glowColor} size={46} iconSize={18} />
-        {trend && (
-          <span style={{ fontSize: '11px', color: trend === 'up' ? '#22c55e' : '#ef4444', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, background: trend === 'up' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${trend === 'up' ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'}`, borderRadius: '6px', padding: '3px 7px' }}>
-            {trend === 'up' ? '▲ +12%' : '▼ -5%'}
-          </span>
-        )}
+      style={{ background: 'rgba(10,6,18,0.85)', backdropFilter: 'blur(40px) saturate(200%)', border: `1px solid rgba(94,23,235,0.2)`, borderRadius: '24px', padding: '22px', position: 'relative', overflow: 'hidden', transition: isHov ? 'border-color 0.15s' : 'all 0.65s cubic-bezier(0.34,1.56,0.64,1)', minHeight: '160px', display:'flex', flexDirection:'column', justifyContent:'space-between', ...tiltStyle }}>
+      {/* Large faded background icon watermark */}
+      <div style={{ position: 'absolute', right: '-16px', bottom: '-16px', opacity: 0.04, pointerEvents: 'none' }}>
+        <Icon size={120} color={glowColor} />
       </div>
-      <p style={{ fontFamily: "'Anton', sans-serif", fontSize: '30px', color: '#fff', margin: '0 0 3px', letterSpacing: '0.01em', textShadow: `0 0 30px ${glowColor}40`, position: 'relative', zIndex: 1 }}>{value}</p>
-      <p style={{ color: 'rgba(255,255,255,0.28)', fontSize: '11px', margin: '0 0 16px', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.06em', textTransform: 'uppercase', position: 'relative', zIndex: 1 }}>{label}</p>
-      {/* Sparkline */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '30px', position: 'relative', zIndex: 1 }}>
+      {/* Inner glow on hover */}
+      <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(circle at 80% 20%, ${glowColor}12 0%, transparent 60%)`, pointerEvents: 'none', opacity: isHov ? 1 : 0.5, transition: 'opacity 0.3s' }} />
+
+      <div style={{ position:'relative', zIndex:1 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+          <IconCircle icon={Icon} color={glowColor} size={46} iconSize={18} />
+          {trend && (
+            <span style={{ fontSize: '10px', color: trend === 'up' ? '#22c55e' : '#ef4444', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, background: trend === 'up' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${trend === 'up' ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`, borderRadius: '100px', padding: '3px 9px', letterSpacing:'0.04em' }}>
+              {trend === 'up' ? '▲ +12%' : '▼ -5%'}
+            </span>
+          )}
+        </div>
+        <p style={{ fontFamily: "'Anton', sans-serif", fontSize: '44px', color: '#fff', margin: '0 0 2px', letterSpacing: '-0.01em', textShadow: `0 0 40px ${glowColor}55`, lineHeight: 1, animation: 'countUp 0.5s ease both' }}>{value}</p>
+        <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '10px', margin: '0', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.1em', textTransform: 'uppercase' }}>{label}</p>
+      </div>
+
+      {/* Sparkline at bottom */}
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '28px', position: 'relative', zIndex: 1 }}>
         {bars.map((b, i) => (
-          <div key={i} style={{ flex: 1, height: mounted ? `${(b / maxBar) * 30}px` : '2px', background: i === bars.length - 1 ? glowColor : `${glowColor}40`, borderRadius: '2px 2px 0 0', transition: `height 0.6s cubic-bezier(0.34,1.56,0.64,1) ${i * 0.05}s`, minWidth: '4px', boxShadow: i === bars.length - 1 ? `0 0 8px ${glowColor}60` : 'none' }} />
+          <div key={i} style={{ flex: 1, height: mounted ? `${(b / maxBar) * 28}px` : '2px', background: i === bars.length - 1 ? glowColor : `${glowColor}35`, borderRadius: '2px 2px 0 0', transition: `height 0.7s cubic-bezier(0.34,1.56,0.64,1) ${i * 0.06}s`, minWidth: '4px', boxShadow: i === bars.length - 1 ? `0 0 10px ${glowColor}70` : 'none' }} />
         ))}
       </div>
     </div>
@@ -1480,6 +1490,48 @@ const COVER_GRADIENTS = [
   'linear-gradient(135deg,#5E17EB,#22c55e)',
 ];
 
+function TrackGridCard({ track: t, onDel }: { track: any; onDel: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [tiltStyle, setTiltStyle] = useState<React.CSSProperties>({});
+  const [hov, setHov] = useState(false);
+  const statusDot: Record<string,string> = { draft:'#71717a', published:'#22c55e', scheduled:'#3b82f6' };
+  const onMouseMove = (e: React.MouseEvent) => {
+    const el = ref.current; if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const nx = (e.clientX - rect.left) / rect.width;
+    const ny = (e.clientY - rect.top) / rect.height;
+    setTiltStyle({ transform: `perspective(800px) rotateX(${(ny-0.5)*-10}deg) rotateY(${(nx-0.5)*10}deg) translateY(-8px)`, boxShadow: `0 16px 48px rgba(94,23,235,0.3), 0 0 0 1px rgba(94,23,235,0.4)`, borderColor:'rgba(94,23,235,0.5)' });
+  };
+  const onMouseLeave = () => { setHov(false); setTiltStyle({ transform:'perspective(800px) rotateX(0) rotateY(0) translateY(0)', transition:'all 0.5s cubic-bezier(0.34,1.56,0.64,1)', boxShadow:'none', borderColor:'rgba(255,255,255,0.07)' }); };
+  return (
+    <div ref={ref} onMouseMove={onMouseMove} onMouseEnter={() => setHov(true)} onMouseLeave={onMouseLeave}
+      style={{ background:'rgba(10,6,18,0.85)', backdropFilter:'blur(24px)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:'20px', overflow:'hidden', transition:hov?'border-color 0.15s':'all 0.5s cubic-bezier(0.34,1.56,0.64,1)', height:'200px', display:'flex', flexDirection:'column', ...tiltStyle }}>
+      {/* Cover art */}
+      <div style={{ height:'128px', background:COVER_GRADIENTS[t.id % COVER_GRADIENTS.length], display:'flex', alignItems:'center', justifyContent:'center', position:'relative', overflow:'hidden', flexShrink:0 }}>
+        <div style={{ transform:hov?'scale(1.06)':'scale(1)', transition:'transform 0.4s ease', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <Music size={42} color="rgba(255,255,255,0.35)" />
+        </div>
+        {/* Status dot top-right */}
+        <div style={{ position:'absolute', top:'10px', right:'10px', width:'8px', height:'8px', borderRadius:'50%', background:statusDot[t.status]||'#71717a', boxShadow:`0 0 10px ${statusDot[t.status]||'#71717a'}` }} />
+        {/* Gradient overlay at bottom */}
+        <div style={{ position:'absolute', bottom:0, left:0, right:0, height:'40px', background:'linear-gradient(to top, rgba(10,6,18,0.9), transparent)' }} />
+      </div>
+      {/* Track info */}
+      <div style={{ padding:'10px 12px', flex:1, display:'flex', flexDirection:'column', justifyContent:'space-between' }}>
+        <p style={{ color:'#fff', fontSize:'12px', fontWeight:600, margin:0, fontFamily:"'Space Grotesk',sans-serif", overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.title}</p>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+          <span style={{ color:'rgba(255,255,255,0.3)', fontSize:'10px', fontFamily:"'Space Grotesk',sans-serif" }}>{t.genre||'Sin género'}</span>
+          <button onClick={e => { e.stopPropagation(); onDel(); }} style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.2)', padding:'2px', transition:'color 0.15s' }}
+            onMouseEnter={e => (e.currentTarget as HTMLElement).style.color='#ef4444'}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color='rgba(255,255,255,0.2)'}>
+            <Trash2 size={12}/>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CatalogPage() {
   const [tracks, setTracks] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -1557,22 +1609,13 @@ function CatalogPage() {
           ))}
         </Card>
       ) : (
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))', gap:'14px' }}>
-          {tracks.map(t => (
-            <Card key={t.id} style={{ padding:'0', overflow:'hidden' }}>
-              <div style={{ height:'120px', background: COVER_GRADIENTS[t.id % COVER_GRADIENTS.length], display:'flex', alignItems:'center', justifyContent:'center', borderRadius:'20px 20px 0 0' }}>
-                <Music size={36} color="rgba(255,255,255,0.4)" />
-              </div>
-              <div style={{ padding:'12px' }}>
-                <p style={{ color:'#fff', fontSize:'13px', fontWeight:600, margin:'0 0 3px', fontFamily:"'Space Grotesk',sans-serif", overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.title}</p>
-                <p style={{ color:'rgba(255,255,255,0.3)', fontSize:'11px', margin:'0 0 8px', fontFamily:"'Space Grotesk',sans-serif" }}>{t.genre||'Sin género'}</p>
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                  <span style={{ background: statusColors[t.status]||'#52525b', color:'#fff', fontSize:'9px', fontWeight:700, padding:'2px 6px', borderRadius:'4px', textTransform:'uppercase' }}>{t.status}</span>
-                  <button onClick={() => del(t.id, t.title)} style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.2)', padding:'2px' }}><Trash2 size={12}/></button>
-                </div>
-              </div>
-            </Card>
-          ))}
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'16px' }}>
+          {tracks.map(t => {
+            const statusDot: Record<string,string> = { draft:'#71717a', published:'#22c55e', scheduled:'#3b82f6' };
+            return (
+              <TrackGridCard key={t.id} track={t} onDel={() => del(t.id, t.title)} />
+            );
+          })}
         </div>
       )}
     </PageShell>
@@ -1598,24 +1641,36 @@ function RoyaltiesPage() {
 
   return (
     <PageShell title="Regalías">
-      {/* Hero balance — massive and impressive */}
-      <div style={{ position:'relative', background:'linear-gradient(135deg, rgba(0,80,40,0.25) 0%, rgba(0,30,20,0.4) 50%, rgba(0,0,0,0) 100%)', border:'1px solid rgba(34,197,94,0.2)', borderRadius:'28px', padding:'40px 48px', marginBottom:'28px', minHeight:'200px', display:'flex', alignItems:'center', justifyContent:'space-between', overflow:'hidden', boxShadow:'inset 0 1px 0 rgba(255,255,255,0.06), 0 0 80px rgba(34,197,94,0.05)' }}>
-        {/* Animated green orb behind number */}
-        <div style={{ position:'absolute', left:'40px', top:'50%', transform:'translateY(-50%)', width:'300px', height:'300px', borderRadius:'50%', background:'radial-gradient(circle, rgba(34,197,94,0.08) 0%, transparent 65%)', animation:'orbFloat 10s ease-in-out infinite', pointerEvents:'none' }} />
-        {/* Faded $ watermark */}
-        <div style={{ position:'absolute', right:'-20px', top:'50%', transform:'translateY(-50%)', fontFamily:"'Anton',sans-serif", fontSize:'220px', color:'rgba(34,197,94,0.04)', lineHeight:1, userSelect:'none', pointerEvents:'none', letterSpacing:'-0.05em' }}>$</div>
+      {/* Hero balance — 280px flagship card */}
+      <div style={{ position:'relative', background:'linear-gradient(135deg, #000d08 0%, #001a10 50%, #000d08 100%)', border:'1px solid rgba(34,197,94,0.15)', borderRadius:'28px', padding:'44px 52px', marginBottom:'28px', height:'280px', display:'flex', alignItems:'center', justifyContent:'space-between', overflow:'hidden', boxShadow:'inset 0 1px 0 rgba(255,255,255,0.05), 0 0 120px rgba(34,197,94,0.06)' }}>
+        {/* Floating particle dots */}
+        {[
+          { s:6, x:'15%', y:'20%', delay:'0s',  dur:'4s'  },
+          { s:4, x:'25%', y:'70%', delay:'1s',  dur:'5.5s' },
+          { s:5, x:'60%', y:'15%', delay:'0.5s',dur:'3.8s' },
+          { s:3, x:'75%', y:'65%', delay:'2s',  dur:'6s'  },
+          { s:4, x:'45%', y:'80%', delay:'1.5s',dur:'4.5s' },
+          { s:6, x:'88%', y:'30%', delay:'0.8s',dur:'5s'  },
+        ].map((p,i) => (
+          <div key={i} style={{ position:'absolute', left:p.x, top:p.y, width:`${p.s}px`, height:`${p.s}px`, borderRadius:'50%', background:'rgba(34,197,94,0.5)', boxShadow:'0 0 8px rgba(34,197,94,0.8)', animation:`orbFloat ${p.dur} ease-in-out ${p.delay} infinite`, pointerEvents:'none' }} />
+        ))}
+        {/* Large faded $ watermark */}
+        <div style={{ position:'absolute', right:'-30px', bottom:'-60px', fontFamily:"'Anton',sans-serif", fontSize:'300px', color:'rgba(34,197,94,0.03)', lineHeight:1, userSelect:'none', pointerEvents:'none', letterSpacing:'-0.05em' }}>$</div>
+        {/* Ambient green orb */}
+        <div style={{ position:'absolute', left:'-50px', top:'50%', transform:'translateY(-50%)', width:'400px', height:'400px', borderRadius:'50%', background:'radial-gradient(circle, rgba(34,197,94,0.06) 0%, transparent 65%)', animation:'orbFloat 12s ease-in-out infinite', pointerEvents:'none' }} />
+
         <div style={{ position:'relative', zIndex:1 }}>
-          <p style={{ color:'rgba(34,197,94,0.6)', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif", margin:'0 0 10px', letterSpacing:'0.18em', textTransform:'uppercase', fontWeight:700 }}>◆ BALANCE TOTAL · USD</p>
-          <p style={{ fontFamily:"'Anton',sans-serif", fontSize:'72px', color:'#22c55e', margin:'0 0 6px', letterSpacing:'-0.02em', textShadow:'0 0 60px rgba(34,197,94,0.8), 0 0 120px rgba(34,197,94,0.3)', lineHeight:1 }}>
+          <p style={{ color:'rgba(34,197,94,0.55)', fontSize:'10px', fontFamily:"'Space Grotesk',sans-serif", margin:'0 0 12px', letterSpacing:'0.22em', textTransform:'uppercase', fontWeight:700 }}>◆ BALANCE DISPONIBLE · USD</p>
+          <p style={{ fontFamily:"'Anton',sans-serif", fontSize:'clamp(3.5rem,6vw,5.5rem)', color:'#22c55e', margin:'0 0 8px', letterSpacing:'-0.02em', textShadow:'0 0 80px rgba(34,197,94,1), 0 0 160px rgba(34,197,94,0.4)', lineHeight:1 }}>
             ${loadingData ? '—' : totalRevenue.toFixed(2)}
           </p>
-          <p style={{ color:'rgba(255,255,255,0.3)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif", margin:0 }}>Actualizado · {new Date().toLocaleDateString('es-CO', { day:'2-digit', month:'long', year:'numeric' })}</p>
+          <p style={{ color:'rgba(255,255,255,0.25)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif", margin:0 }}>Actualizado · {new Date().toLocaleDateString('es-CO', { day:'2-digit', month:'long', year:'numeric' })}</p>
         </div>
-        <div style={{ position:'relative', zIndex:1, display:'flex', flexDirection:'column', alignItems:'flex-end', gap:'12px' }}>
-          <div style={{ width:'64px', height:'64px', background:'rgba(34,197,94,0.1)', border:'1px solid rgba(34,197,94,0.2)', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 30px rgba(34,197,94,0.2)' }}>
-            <DollarSign size={28} color="#22c55e" />
+        <div style={{ position:'relative', zIndex:1, display:'flex', flexDirection:'column', alignItems:'flex-end', gap:'14px' }}>
+          <div style={{ width:'70px', height:'70px', background:'rgba(34,197,94,0.08)', border:'1px solid rgba(34,197,94,0.18)', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 40px rgba(34,197,94,0.2)' }}>
+            <DollarSign size={32} color="#22c55e" />
           </div>
-          <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:'11px', color:'rgba(34,197,94,0.6)', background:'rgba(34,197,94,0.08)', border:'1px solid rgba(34,197,94,0.15)', borderRadius:'100px', padding:'4px 12px', fontWeight:700 }}>▲ EN CRECIMIENTO</span>
+          <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:'10px', color:'rgba(34,197,94,0.7)', background:'rgba(34,197,94,0.08)', border:'1px solid rgba(34,197,94,0.18)', borderRadius:'100px', padding:'5px 14px', fontWeight:700, letterSpacing:'0.1em' }}>▲ EN CRECIMIENTO</span>
         </div>
       </div>
 
@@ -3317,6 +3372,25 @@ export default function App() {
         @keyframes numberPulse {
           0%,100% { opacity:1; }
           50%     { opacity:0.75; }
+        }
+
+        /* ── Count-up appear ─────────────────────────────────────── */
+        @keyframes countUp {
+          from { opacity:0; transform:translateY(12px); }
+          to   { opacity:1; transform:translateY(0); }
+        }
+
+        /* ── 3D float ────────────────────────────────────────────── */
+        @keyframes float3d {
+          0%,100% { transform: translateY(0) rotateX(0deg) rotateZ(0deg); }
+          33%     { transform: translateY(-8px) rotateX(2deg) rotateZ(0.8deg); }
+          66%     { transform: translateY(-4px) rotateX(-1deg) rotateZ(-0.5deg); }
+        }
+
+        /* ── Bar fill ────────────────────────────────────────────── */
+        @keyframes barFill {
+          from { width: 0; }
+          to   { width: var(--target-width, 100%); }
         }
 
         /* ── Global resets ───────────────────────────────────────── */
