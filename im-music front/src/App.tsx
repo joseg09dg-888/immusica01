@@ -961,7 +961,8 @@ function LoginPage({ onLogin, onBack }: { onLogin: (u: any) => void; onBack: () 
     e.preventDefault(); setError(''); setLoading(true);
     try {
       const body = tab === 'login' ? { email, password } : { email, password, name };
-      const data = await apiFetch(`/auth/${tab}`, { method: 'POST', body: JSON.stringify(body) });
+      const endpoint = tab === 'login' ? '/auth/login-email' : '/auth/register';
+      const data = await apiFetch(endpoint, { method: 'POST', body: JSON.stringify(body) });
       localStorage.setItem('im_token', data.token);
       onLogin(data.user);
     } catch (err: any) { setError(err.message); }
@@ -1106,6 +1107,48 @@ function Sidebar({ active, onNav, user, onLogout, open, onClose }: {
   );
 }
 
+// ─── TOAST NOTIFICATION SYSTEM ────────────────────────────────────────────────
+type ToastType = 'success' | 'error' | 'info';
+interface Toast { id: number; msg: string; type: ToastType; }
+let _toastSetter: React.Dispatch<React.SetStateAction<Toast[]>> | null = null;
+function toast(msg: string, type: ToastType = 'success') {
+  if (!_toastSetter) return;
+  const id = Date.now();
+  _toastSetter(t => [...t, { id, msg, type }]);
+  setTimeout(() => _toastSetter!(t => t.filter(x => x.id !== id)), 3500);
+}
+function ToastContainer() {
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  useEffect(() => { _toastSetter = setToasts; return () => { _toastSetter = null; }; }, []);
+  const colors = { success: '#22c55e', error: '#ef4444', info: PL };
+  const icons = { success: '✓', error: '✕', info: '◆' };
+  return (
+    <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: '10px', pointerEvents: 'none' }}>
+      {toasts.map(t => (
+        <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(10,8,20,0.96)', border: `1px solid ${colors[t.type]}44`, borderRadius: '14px', padding: '12px 18px', boxShadow: `0 0 30px ${colors[t.type]}22, 0 8px 32px rgba(0,0,0,0.5)`, backdropFilter: 'blur(20px)', animation: 'toastIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both', minWidth: '240px' }}>
+          <div style={{ width: '24px', height: '24px', background: `${colors[t.type]}20`, border: `1px solid ${colors[t.type]}40`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <span style={{ color: colors[t.type], fontSize: '12px', fontWeight: 700 }}>{icons[t.type]}</span>
+          </div>
+          <span style={{ color: '#fff', fontSize: '13px', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 500 }}>{t.msg}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── SKELETON LOADER ──────────────────────────────────────────────────────────
+function Skeleton({ w = '100%', h = '16px', radius = '8px' }: { w?: string; h?: string; radius?: string }) {
+  return <div className="skeleton-shimmer" style={{ width: w, height: h, borderRadius: radius, flexShrink: 0 }} />;
+}
+function SkeletonCard({ rows = 3 }: { rows?: number }) {
+  return (
+    <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '20px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <Skeleton h="20px" w="40%" />
+      {Array.from({ length: rows }).map((_, i) => <Skeleton key={i} h="14px" w={`${70 + (i % 3) * 10}%`} />)}
+    </div>
+  );
+}
+
 // ─── APP SHELL PAGES ──────────────────────────────────────────────────────────
 function PageShell({ title, children, action }: { title: string; children: React.ReactNode; action?: React.ReactNode }) {
   return (
@@ -1123,22 +1166,33 @@ function Card({ children, style = {}, glow = false }: { children: React.ReactNod
   const [hover, setHover] = useState(false);
   return (
     <div onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
-      style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${hover || glow ? 'rgba(94,23,235,0.35)' : 'rgba(255,255,255,0.07)'}`, borderRadius: '20px', padding: '24px', transition: 'all 0.25s ease', boxShadow: hover ? `0 0 40px rgba(94,23,235,0.1), 0 8px 32px rgba(0,0,0,0.3)` : 'none', transform: hover ? 'translateY(-2px)' : 'none', ...style }}>
+      style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${hover || glow ? 'rgba(94,23,235,0.4)' : 'rgba(255,255,255,0.07)'}`, borderRadius: '20px', padding: '24px', transition: 'all 0.22s ease', boxShadow: hover ? `0 0 48px rgba(94,23,235,0.12), 0 12px 40px rgba(0,0,0,0.35)` : 'none', transform: hover ? 'translateY(-4px)' : 'none', ...style }}>
       {children}
     </div>
   );
 }
 
-function StatCard({ label, value, icon: Icon }: { label: string; value: string | number; icon: any; key?: React.Key }) {
+function StatCard({ label, value, icon: Icon, trend, sparkline }: { label: string; value: string | number; icon: any; key?: React.Key; trend?: 'up' | 'down'; sparkline?: number[] }) {
   const [hover, setHover] = useState(false);
+  const bars = sparkline || [40, 55, 35, 70, 50, 80, 65, 90];
+  const maxBar = Math.max(...bars, 1);
   return (
     <div onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
-      style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${hover ? 'rgba(94,23,235,0.4)' : 'rgba(255,255,255,0.07)'}`, borderRadius: '20px', padding: '24px', transition: 'all 0.25s ease', boxShadow: hover ? `0 0 40px rgba(94,23,235,0.15)` : 'none', transform: hover ? 'translateY(-4px) scale(1.01)' : 'none' }}>
-      <div style={{ width: '40px', height: '40px', background: `rgba(94,23,235,0.12)`, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px', border: '1px solid rgba(94,23,235,0.18)' }}>
-        <Icon size={18} color={PL} />
+      style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${hover ? 'rgba(94,23,235,0.45)' : 'rgba(255,255,255,0.07)'}`, borderRadius: '20px', padding: '22px', transition: 'all 0.22s ease', boxShadow: hover ? `0 0 48px rgba(94,23,235,0.18), 0 12px 40px rgba(0,0,0,0.3)` : 'none', transform: hover ? 'translateY(-5px) scale(1.02)' : 'none', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+        <div style={{ width: '38px', height: '38px', background: `rgba(94,23,235,0.14)`, borderRadius: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(94,23,235,0.22)' }}>
+          <Icon size={17} color={PL} />
+        </div>
+        {trend && <span style={{ fontSize: '12px', color: trend === 'up' ? '#22c55e' : '#ef4444', display: 'flex', alignItems: 'center', gap: '2px', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700 }}>{trend === 'up' ? '▲' : '▼'}</span>}
       </div>
-      <p style={{ fontFamily: "'Anton', sans-serif", fontSize: '26px', color: '#fff', margin: '0 0 4px', letterSpacing: '0.02em' }}>{value}</p>
-      <p style={{ color: 'rgba(255,255,255,0.32)', fontSize: '12px', margin: 0, fontFamily: "'Space Grotesk', sans-serif" }}>{label}</p>
+      <p style={{ fontFamily: "'Anton', sans-serif", fontSize: '26px', color: '#fff', margin: '0 0 3px', letterSpacing: '0.01em' }}>{value}</p>
+      <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', margin: '0 0 14px', fontFamily: "'Space Grotesk', sans-serif" }}>{label}</p>
+      {/* Sparkline */}
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '28px' }}>
+        {bars.map((b, i) => (
+          <div key={i} style={{ flex: 1, height: `${(b / maxBar) * 28}px`, background: i === bars.length - 1 ? PL : `rgba(94,23,235,0.35)`, borderRadius: '2px', transition: `height 0.5s ease ${i * 0.04}s`, minWidth: '4px' }} />
+        ))}
+      </div>
     </div>
   );
 }
@@ -1162,33 +1216,79 @@ function AppMarqueeStrip() {
 function DashboardPage() {
   const [stats, setStats] = useState<any>(null);
   const [tracks, setTracks] = useState<any[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+
+  const greeting = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return 'Buenos días';
+    if (h < 19) return 'Buenas tardes';
+    return 'Buenas noches';
+  })();
+
   useEffect(() => {
-    apiFetch('/royalties/summary').then(setStats).catch(() => {});
-    apiFetch('/tracks').then(d => setTracks(Array.isArray(d) ? d.slice(0, 5) : [])).catch(() => {});
+    Promise.all([
+      apiFetch('/royalties/summary').then(setStats).catch(() => {}),
+      apiFetch('/tracks').then(d => setTracks(Array.isArray(d) ? d.slice(0, 5) : [])).catch(() => {}),
+    ]).finally(() => setLoadingData(false));
   }, []);
+
   const cards = [
-    { label: 'Ingresos totales', value: stats ? `$${Number(stats.totalRevenue || 0).toFixed(2)}` : '—', icon: DollarSign },
-    { label: 'Tracks', value: tracks.length || '—', icon: Music },
-    { label: 'Plataformas', value: stats ? Object.keys(stats.byPlatform || {}).length : '—', icon: Globe },
-    { label: 'Streams', value: stats ? Number(stats.totalStreams || 0).toLocaleString() : '—', icon: TrendingUp },
+    { label: 'Ingresos totales', value: stats ? `$${Number(stats.totalRevenue || 0).toFixed(2)}` : '—', icon: DollarSign, trend: 'up' as const, sparkline: [30,45,38,60,52,74,68,85] },
+    { label: 'Tracks', value: tracks.length || 0, icon: Music, trend: 'up' as const, sparkline: [10,10,12,15,14,18,17,20] },
+    { label: 'Plataformas', value: stats ? Object.keys(stats.byPlatform || {}).length : 0, icon: Globe, sparkline: [4,4,5,5,5,6,6,6] },
+    { label: 'Streams', value: stats ? Number(stats.totalStreams || 0).toLocaleString() : '—', icon: TrendingUp, trend: 'up' as const, sparkline: [55,62,58,75,80,72,90,95] },
   ];
+
+  const quickActions = [
+    { label: 'Subir Track', icon: Upload, action: () => toast('Abre Catálogo para subir tu track', 'info') },
+    { label: 'Nuevo Split', icon: Users, action: () => toast('Abre Splits para crear un nuevo split', 'info') },
+    { label: 'Ver Regalías', icon: DollarSign, action: () => toast('Revisa tus regalías en la sección de Regalías', 'info') },
+    { label: 'Preguntar IA', icon: Sparkles, action: () => toast('¡La IA está lista para ayudarte!', 'info') },
+  ];
+
   return (
     <>
       <AppMarqueeStrip />
-      <PageShell title="Dashboard">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
-          {cards.map(c => <StatCard key={c.label} label={c.label} value={c.value} icon={c.icon} />)}
+      <PageShell title="">
+        {/* Greeting */}
+        <div style={{ marginBottom: '28px' }}>
+          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', fontFamily: "'Space Grotesk',sans-serif", margin: '0 0 4px' }}>{greeting} 👋</p>
+          <h1 style={{ fontFamily: "'Anton',sans-serif", fontSize: '32px', color: '#fff', margin: 0, letterSpacing: '0.02em' }}>DASHBOARD</h1>
         </div>
+
+        {/* Quick Actions */}
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '28px', flexWrap: 'wrap' }}>
+          {quickActions.map(qa => (
+            <button key={qa.label} onClick={qa.action} style={{ display: 'flex', alignItems: 'center', gap: '7px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '9px 16px', color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontFamily: "'Space Grotesk',sans-serif", cursor: 'pointer', transition: 'all 0.18s ease' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(94,23,235,0.15)'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(94,23,235,0.4)'; (e.currentTarget as HTMLElement).style.color = '#fff'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.7)'; }}>
+              <qa.icon size={13} /> {qa.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Stat Cards */}
+        {loadingData ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
+            {[0,1,2,3].map(i => <SkeletonCard key={i} rows={2} />)}
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
+            {cards.map(c => <StatCard key={c.label} label={c.label} value={c.value} icon={c.icon} trend={c.trend} sparkline={c.sparkline} />)}
+          </div>
+        )}
+
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
           <Card>
             <h3 style={{ fontFamily: "'Anton', sans-serif", fontSize: '15px', color: '#fff', letterSpacing: '0.06em', margin: '0 0 16px' }}>ÚLTIMOS TRACKS</h3>
-            {tracks.length === 0 && <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '13px', fontFamily: "'Space Grotesk', sans-serif" }}>Sin tracks aún</p>}
+            {loadingData && [0,1,2].map(i => <div key={i} style={{ marginBottom: '10px' }}><Skeleton h="36px" radius="10px" /></div>)}
+            {!loadingData && tracks.length === 0 && <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '13px', fontFamily: "'Space Grotesk', sans-serif" }}>Sin tracks aún</p>}
             {tracks.map(t => (
               <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                <div style={{ width: '34px', height: '34px', background: 'rgba(94,23,235,0.13)', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div style={{ width: '34px', height: '34px', background: `linear-gradient(135deg, rgba(94,23,235,0.3), rgba(123,63,255,0.2))`, borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid rgba(94,23,235,0.2)' }}>
                   <Music size={13} color={PL} />
                 </div>
-                <div>
+                <div style={{ flex: 1 }}>
                   <p style={{ color: '#fff', fontSize: '13px', fontWeight: 600, margin: 0, fontFamily: "'Space Grotesk', sans-serif" }}>{t.title}</p>
                   <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', margin: 0, fontFamily: "'Space Grotesk', sans-serif" }}>{t.status}</p>
                 </div>
@@ -1197,18 +1297,19 @@ function DashboardPage() {
           </Card>
           <Card>
             <h3 style={{ fontFamily: "'Anton', sans-serif", fontSize: '15px', color: '#fff', letterSpacing: '0.06em', margin: '0 0 16px' }}>PLATAFORMAS</h3>
-            {stats?.byPlatform && Object.entries(stats.byPlatform).slice(0, 5).map(([plat, v]: any) => (
+            {loadingData && [0,1,2,3].map(i => <div key={i} style={{ marginBottom: '12px' }}><Skeleton h="28px" radius="8px" /></div>)}
+            {!loadingData && stats?.byPlatform && Object.entries(stats.byPlatform).slice(0, 5).map(([plat, v]: any) => (
               <div key={plat} style={{ marginBottom: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                   <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '12px', textTransform: 'capitalize', fontFamily: "'Space Grotesk', sans-serif" }}>{plat}</span>
                   <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', fontFamily: "'Space Grotesk', sans-serif" }}>${Number(v).toFixed(2)}</span>
                 </div>
                 <div style={{ height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '100px', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', background: `linear-gradient(90deg, ${P}, ${PL})`, borderRadius: '100px', width: `${Math.min(100, (v / Math.max(stats.totalRevenue, 1)) * 100)}%` }} />
+                  <div style={{ height: '100%', background: `linear-gradient(90deg, ${P}, ${PL})`, borderRadius: '100px', width: `${Math.min(100, (v / Math.max(stats.totalRevenue, 1)) * 100)}%`, transition: 'width 1s cubic-bezier(0.22,1,0.36,1)' }} />
                 </div>
               </div>
             ))}
-            {!stats?.byPlatform && <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '13px', fontFamily: "'Space Grotesk', sans-serif" }}>Sin datos</p>}
+            {!loadingData && !stats?.byPlatform && <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '13px', fontFamily: "'Space Grotesk', sans-serif" }}>Sin datos</p>}
           </Card>
         </div>
       </PageShell>
@@ -1217,18 +1318,58 @@ function DashboardPage() {
 }
 
 // ─── CATALOG ─────────────────────────────────────────────────────────────────
+const COVER_GRADIENTS = [
+  'linear-gradient(135deg,#5E17EB,#C084FC)',
+  'linear-gradient(135deg,#1a1a4e,#5E17EB)',
+  'linear-gradient(135deg,#7B3FFF,#E879F9)',
+  'linear-gradient(135deg,#2D0B6B,#7B3FFF)',
+  'linear-gradient(135deg,#4A12D0,#C084FC)',
+  'linear-gradient(135deg,#5E17EB,#22c55e)',
+];
+
 function CatalogPage() {
   const [tracks, setTracks] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [title, setTitle] = useState(''); const [genre, setGenre] = useState(''); const [loading, setLoading] = useState(false);
-  const load = () => apiFetch('/tracks').then(d => setTracks(Array.isArray(d) ? d : [])).catch(() => {});
+  const [title, setTitle] = useState(''); const [genre, setGenre] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const load = () => apiFetch('/tracks').then(d => { setTracks(Array.isArray(d) ? d : []); setLoadingData(false); }).catch(() => setLoadingData(false));
   useEffect(() => { load(); }, []);
-  const create = async () => { if (!title) return; setLoading(true); try { await apiFetch('/tracks', { method: 'POST', body: JSON.stringify({ title, genre }) }); setTitle(''); setGenre(''); setShowForm(false); load(); } catch {} setLoading(false); };
-  const del = async (id: number) => { if (!confirm('¿Eliminar?')) return; await apiFetch(`/tracks/${id}`, { method: 'DELETE' }).catch(() => {}); load(); };
+  const create = async () => {
+    if (!title) return; setLoading(true);
+    try {
+      await apiFetch('/tracks', { method: 'POST', body: JSON.stringify({ title, genre }) });
+      setTitle(''); setGenre(''); setShowForm(false); load();
+      toast('Track creado exitosamente');
+    } catch(e: any) { toast(e.message, 'error'); }
+    setLoading(false);
+  };
+  const del = async (id: number, name: string) => {
+    if (!confirm(`¿Eliminar "${name}"?`)) return;
+    await apiFetch(`/tracks/${id}`, { method: 'DELETE' }).catch(() => {});
+    load(); toast('Track eliminado', 'info');
+  };
   const statusColors: Record<string, string> = { draft: '#52525b', published: '#16a34a', scheduled: '#1d4ed8' };
   const inputStyle: React.CSSProperties = { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '10px 14px', color: '#fff', fontFamily: "'Space Grotesk',sans-serif", fontSize: '13px', outline: 'none' };
+
+  const ViewToggle = () => (
+    <div style={{ display:'flex', gap:'4px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'10px', padding:'4px' }}>
+      {(['list','grid'] as const).map(mode => (
+        <button key={mode} onClick={() => setViewMode(mode)} style={{ background: viewMode===mode ? 'rgba(94,23,235,0.4)' : 'transparent', border:'none', borderRadius:'7px', padding:'6px 12px', color: viewMode===mode ? '#fff' : 'rgba(255,255,255,0.3)', cursor:'pointer', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif", transition:'all 0.15s' }}>
+          {mode === 'list' ? '☰ Lista' : '⊞ Grid'}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
-    <PageShell title="Catálogo" action={<Btn3D small onClick={() => setShowForm(!showForm)}><Plus size={13} /> Nuevo track</Btn3D>}>
+    <PageShell title="Catálogo" action={
+      <div style={{ display:'flex', gap:'10px', alignItems:'center' }}>
+        <ViewToggle />
+        <Btn3D small onClick={() => setShowForm(!showForm)}><Plus size={13} /> Nuevo track</Btn3D>
+      </div>
+    }>
       {showForm && <Card style={{ marginBottom: '20px' }}>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Título" style={{ ...inputStyle, flex: 1, minWidth: '140px' }} />
@@ -1237,55 +1378,204 @@ function CatalogPage() {
           <Btn3D small variant="ghost" onClick={() => setShowForm(false)}>Cancelar</Btn3D>
         </div>
       </Card>}
-      <Card>
-        {tracks.length === 0 && <p style={{ color: 'rgba(255,255,255,0.25)', textAlign: 'center', padding: '32px 0', fontFamily: "'Space Grotesk',sans-serif" }}>Sin tracks. ¡Sube tu primer tema!</p>}
-        {tracks.map(t => (
-          <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '14px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-            <div style={{ width: '38px', height: '38px', background: 'rgba(94,23,235,0.13)', borderRadius: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Music size={15} color={PL} /></div>
-            <div style={{ flex: 1 }}><p style={{ color: '#fff', fontSize: '13px', fontWeight: 600, margin: 0, fontFamily: "'Space Grotesk',sans-serif" }}>{t.title}</p><p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', margin: 0, fontFamily: "'Space Grotesk',sans-serif" }}>{t.genre || 'Sin género'}</p></div>
-            <span style={{ background: statusColors[t.status] || '#52525b', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '3px 7px', borderRadius: '5px', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{t.status}</span>
-            <button onClick={() => del(t.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)', padding: '4px', borderRadius: '5px' }}><Trash2 size={14} /></button>
+
+      {loadingData ? (
+        <div style={{ display:'grid', gridTemplateColumns: viewMode==='grid' ? 'repeat(auto-fill,minmax(180px,1fr))' : '1fr', gap:'14px' }}>
+          {[0,1,2,3,4].map(i => <SkeletonCard key={i} rows={2} />)}
+        </div>
+      ) : tracks.length === 0 ? (
+        <Card>
+          <div style={{ textAlign:'center', padding:'56px 24px' }}>
+            <div style={{ fontSize:'48px', marginBottom:'16px', animation:'dashFloat 3s ease-in-out infinite' }}>🎵</div>
+            <p style={{ color:'#fff', fontFamily:"'Anton',sans-serif", fontSize:'18px', letterSpacing:'0.06em', margin:'0 0 8px' }}>TU CATÁLOGO ESTÁ VACÍO</p>
+            <p style={{ color:'rgba(255,255,255,0.3)', fontFamily:"'Space Grotesk',sans-serif", fontSize:'13px', margin:'0 0 24px' }}>Sube tu primer tema y empieza a crecer</p>
+            <Btn3D small onClick={() => setShowForm(true)}><Plus size={13}/> Crear primer track</Btn3D>
           </div>
-        ))}
-      </Card>
+        </Card>
+      ) : viewMode === 'list' ? (
+        <Card>
+          {tracks.map(t => (
+            <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '14px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+              <div style={{ width: '42px', height: '42px', background: COVER_GRADIENTS[t.id % COVER_GRADIENTS.length], borderRadius: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Music size={15} color="rgba(255,255,255,0.8)" /></div>
+              <div style={{ flex: 1 }}><p style={{ color: '#fff', fontSize: '13px', fontWeight: 600, margin: 0, fontFamily: "'Space Grotesk',sans-serif" }}>{t.title}</p><p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', margin: 0, fontFamily: "'Space Grotesk',sans-serif" }}>{t.genre || 'Sin género'}</p></div>
+              <span style={{ background: statusColors[t.status] || '#52525b', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '3px 7px', borderRadius: '5px', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{t.status}</span>
+              <button onClick={() => del(t.id, t.title)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)', padding: '4px', borderRadius: '5px' }}><Trash2 size={14} /></button>
+            </div>
+          ))}
+        </Card>
+      ) : (
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))', gap:'14px' }}>
+          {tracks.map(t => (
+            <Card key={t.id} style={{ padding:'0', overflow:'hidden' }}>
+              <div style={{ height:'120px', background: COVER_GRADIENTS[t.id % COVER_GRADIENTS.length], display:'flex', alignItems:'center', justifyContent:'center', borderRadius:'20px 20px 0 0' }}>
+                <Music size={36} color="rgba(255,255,255,0.4)" />
+              </div>
+              <div style={{ padding:'12px' }}>
+                <p style={{ color:'#fff', fontSize:'13px', fontWeight:600, margin:'0 0 3px', fontFamily:"'Space Grotesk',sans-serif", overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.title}</p>
+                <p style={{ color:'rgba(255,255,255,0.3)', fontSize:'11px', margin:'0 0 8px', fontFamily:"'Space Grotesk',sans-serif" }}>{t.genre||'Sin género'}</p>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                  <span style={{ background: statusColors[t.status]||'#52525b', color:'#fff', fontSize:'9px', fontWeight:700, padding:'2px 6px', borderRadius:'4px', textTransform:'uppercase' }}>{t.status}</span>
+                  <button onClick={() => del(t.id, t.title)} style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.2)', padding:'2px' }}><Trash2 size={12}/></button>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
     </PageShell>
   );
 }
 
 // ─── ROYALTIES ───────────────────────────────────────────────────────────────
 function RoyaltiesPage() {
-  const [summary, setSummary] = useState<any>(null); const [monthly, setMonthly] = useState<any[]>([]);
-  useEffect(() => { apiFetch('/royalties/summary').then(setSummary).catch(() => {}); apiFetch('/royalties/monthly').then(setMonthly).catch(() => {}); }, []);
+  const [summary, setSummary] = useState<any>(null);
+  const [monthly, setMonthly] = useState<any[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+  useEffect(() => {
+    Promise.all([
+      apiFetch('/royalties/summary').then(setSummary).catch(()=>{}),
+      apiFetch('/royalties/monthly').then(setMonthly).catch(()=>{}),
+    ]).finally(()=>setLoadingData(false));
+  }, []);
+
+  const totalRevenue = summary ? Number(summary.totalRevenue||0) : 0;
+  const maxMonth = monthly.length > 0 ? Math.max(...monthly.map((m:any)=>Number(m.revenue||0)), 1) : 1;
+  const platforms = summary?.byPlatform ? Object.entries(summary.byPlatform) : [];
+  const maxPlatform = platforms.length > 0 ? Math.max(...platforms.map(([,v]:any)=>Number(v)), 1) : 1;
+
   return (
     <PageShell title="Regalías">
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px' }}>
-        {[{ label: 'Total ingresos', value: summary ? `$${Number(summary.totalRevenue||0).toFixed(2)}` : '—', icon: DollarSign }, { label: 'Total streams', value: summary ? Number(summary.totalStreams||0).toLocaleString() : '—', icon: TrendingUp }, { label: 'Plataformas', value: summary ? Object.keys(summary.byPlatform||{}).length : '—', icon: Globe }].map(c => <StatCard key={c.label} label={c.label} value={c.value} icon={c.icon} />)}
+      {/* Hero balance */}
+      <div style={{ background:'linear-gradient(135deg, rgba(94,23,235,0.15), rgba(34,197,94,0.08))', border:'1px solid rgba(94,23,235,0.25)', borderRadius:'24px', padding:'32px 40px', marginBottom:'24px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+        <div>
+          <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif", margin:'0 0 8px', letterSpacing:'0.12em', textTransform:'uppercase' }}>Balance total</p>
+          <p style={{ fontFamily:"'Anton',sans-serif", fontSize:'52px', color:'#22c55e', margin:'0 0 4px', letterSpacing:'0.02em', textShadow:'0 0 40px rgba(34,197,94,0.3)' }}>
+            ${loadingData ? '—' : totalRevenue.toFixed(2)}
+          </p>
+          <p style={{ color:'rgba(255,255,255,0.3)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif", margin:0 }}>USD · Actualizado al {new Date().toLocaleDateString('es-CO')}</p>
+        </div>
+        <DollarSign size={56} color="rgba(34,197,94,0.2)" />
       </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px' }}>
+        {loadingData ? [0,1,2].map(i=><SkeletonCard key={i} rows={2}/>) : [
+          { label: 'Total ingresos', value: `$${totalRevenue.toFixed(2)}`, icon: DollarSign, trend: 'up' as const },
+          { label: 'Total streams', value: summary ? Number(summary.totalStreams||0).toLocaleString() : '—', icon: TrendingUp, trend: 'up' as const },
+          { label: 'Plataformas', value: summary ? Object.keys(summary.byPlatform||{}).length : 0, icon: Globe },
+        ].map(c => <StatCard key={c.label} label={c.label} value={c.value} icon={c.icon} trend={c.trend} />)}
+      </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-        <Card><h3 style={{ fontFamily: "'Anton', sans-serif", fontSize: '15px', color: '#fff', letterSpacing: '0.06em', margin: '0 0 16px' }}>POR PLATAFORMA</h3>{summary?.byPlatform && Object.entries(summary.byPlatform).map(([p,v]:any)=>(<div key={p} style={{display:'flex',justifyContent:'space-between',padding:'10px 0',borderBottom:'1px solid rgba(255,255,255,0.04)'}}><span style={{color:'rgba(255,255,255,0.55)',textTransform:'capitalize',fontSize:'13px',fontFamily:"'Space Grotesk',sans-serif"}}>{p}</span><span style={{color:'#fff',fontWeight:600,fontSize:'13px',fontFamily:"'Space Grotesk',sans-serif"}}>${Number(v).toFixed(2)}</span></div>))}{!summary?.byPlatform&&<p style={{color:'rgba(255,255,255,0.25)',fontSize:'13px',fontFamily:"'Space Grotesk',sans-serif"}}>Sin datos</p>}</Card>
-        <Card><h3 style={{ fontFamily: "'Anton', sans-serif", fontSize: '15px', color: '#fff', letterSpacing: '0.06em', margin: '0 0 16px' }}>HISTORIAL MENSUAL</h3>{monthly.slice(0,8).map((m:any)=>(<div key={m.month} style={{display:'flex',justifyContent:'space-between',padding:'10px 0',borderBottom:'1px solid rgba(255,255,255,0.04)'}}><span style={{color:'rgba(255,255,255,0.55)',fontSize:'13px',fontFamily:"'Space Grotesk',sans-serif"}}>{m.month}</span><span style={{color:'#fff',fontWeight:600,fontSize:'13px',fontFamily:"'Space Grotesk',sans-serif"}}>${Number(m.revenue||0).toFixed(2)}</span></div>))}{monthly.length===0&&<p style={{color:'rgba(255,255,255,0.25)',fontSize:'13px',fontFamily:"'Space Grotesk',sans-serif"}}>Sin datos</p>}</Card>
+        <Card>
+          <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'15px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 18px' }}>POR PLATAFORMA</h3>
+          {loadingData && [0,1,2].map(i=><div key={i} style={{marginBottom:'14px'}}><Skeleton h="32px" radius="8px"/></div>)}
+          {!loadingData && platforms.length === 0 && <p style={{color:'rgba(255,255,255,0.25)',fontSize:'13px',fontFamily:"'Space Grotesk',sans-serif"}}>Sin datos</p>}
+          {platforms.map(([p,v]:any) => (
+            <div key={p} style={{ marginBottom:'14px' }}>
+              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'6px' }}>
+                <span style={{color:'rgba(255,255,255,0.7)',textTransform:'capitalize',fontSize:'13px',fontFamily:"'Space Grotesk',sans-serif",fontWeight:500}}>{p}</span>
+                <span style={{color:'#22c55e',fontWeight:700,fontSize:'13px',fontFamily:"'Space Grotesk',sans-serif"}}>${Number(v).toFixed(2)}</span>
+              </div>
+              <div style={{ height:'6px', background:'rgba(255,255,255,0.05)', borderRadius:'100px', overflow:'hidden' }}>
+                <div style={{ height:'100%', background:`linear-gradient(90deg, ${P}, ${PL})`, borderRadius:'100px', width:`${Math.min(100,(Number(v)/maxPlatform)*100)}%`, transition:'width 1.2s cubic-bezier(0.22,1,0.36,1)' }} />
+              </div>
+            </div>
+          ))}
+        </Card>
+        <Card>
+          <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'15px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 18px' }}>HISTORIAL MENSUAL</h3>
+          {loadingData && [0,1,2,3].map(i=><div key={i} style={{marginBottom:'10px'}}><Skeleton h="24px" radius="6px"/></div>)}
+          {/* Mini area chart: vertical bars */}
+          {!loadingData && monthly.length > 0 && (
+            <div style={{ display:'flex', alignItems:'flex-end', gap:'5px', height:'80px', marginBottom:'16px' }}>
+              {monthly.slice(-12).map((m:any,i:number) => (
+                <div key={i} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'flex-end', height:'100%' }}>
+                  <div style={{ width:'100%', background:`linear-gradient(to top, ${P}, ${PL})`, borderRadius:'3px 3px 0 0', height:`${(Number(m.revenue||0)/maxMonth)*100}%`, minHeight:'4px', opacity:0.8, transition:`height 1s ease ${i*0.05}s` }} />
+                </div>
+              ))}
+            </div>
+          )}
+          {monthly.slice(0,8).map((m:any)=>(
+            <div key={m.month} style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
+              <span style={{color:'rgba(255,255,255,0.55)',fontSize:'12px',fontFamily:"'Space Grotesk',sans-serif"}}>{m.month}</span>
+              <span style={{color:'#fff',fontWeight:600,fontSize:'13px',fontFamily:"'Space Grotesk',sans-serif"}}>${Number(m.revenue||0).toFixed(2)}</span>
+            </div>
+          ))}
+          {!loadingData && monthly.length===0 && <p style={{color:'rgba(255,255,255,0.25)',fontSize:'13px',fontFamily:"'Space Grotesk',sans-serif"}}>Sin datos</p>}
+        </Card>
       </div>
     </PageShell>
   );
 }
 
 // ─── AI CHAT ─────────────────────────────────────────────────────────────────
+const CHAT_CHIPS = [
+  'Cómo subir mis streams en Spotify',
+  'Estrategia de lanzamiento para este mes',
+  'Explícame cómo funcionan los splits',
+  'Ideas de marketing para reggaeton',
+  'Cuál es el mejor momento para lanzar un sencillo',
+];
+
 function AIChatPage() {
-  const [messages, setMessages] = useState<{role:string;content:string}[]>([{role:'assistant',content:'¡Hola! Soy tu asistente musical IA. ¿En qué puedo ayudarte hoy?'}]);
-  const [input, setInput] = useState(''); const [loading, setLoading] = useState(false); const bottomRef = useRef<HTMLDivElement>(null);
+  const [messages, setMessages] = useState<{role:string;content:string}[]>([{role:'assistant',content:'¡Hola! Soy tu asistente musical IA. ¿En qué puedo ayudarte hoy? Elige una sugerencia o escribe tu pregunta.'}]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showChips, setShowChips] = useState(true);
+  const bottomRef = useRef<HTMLDivElement>(null);
   useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:'smooth'})},[messages]);
-  const send = async()=>{ if(!input.trim()||loading)return; const msg=input.trim();setInput('');setMessages(p=>[...p,{role:'user',content:msg}]);setLoading(true);try{const d=await apiFetch('/ai/chat',{method:'POST',body:JSON.stringify({message:msg,history:messages})});setMessages(p=>[...p,{role:'assistant',content:d.response||d.message||'Sin respuesta'}]);}catch(e:any){setMessages(p=>[...p,{role:'assistant',content:`Error: ${e.message}`}]);}setLoading(false);};
+
+  const send = async (msg?: string) => {
+    const text = (msg || input).trim();
+    if (!text || loading) return;
+    setInput(''); setShowChips(false);
+    setMessages(p=>[...p,{role:'user',content:text}]);
+    setLoading(true);
+    try {
+      const d = await apiFetch('/ai/chat',{method:'POST',body:JSON.stringify({message:text,history:messages})});
+      setMessages(p=>[...p,{role:'assistant',content:d.response||d.message||'Sin respuesta'}]);
+    } catch(e:any) {
+      setMessages(p=>[...p,{role:'assistant',content:`Error: ${e.message}`}]);
+    }
+    setLoading(false);
+  };
+
   return (
     <PageShell title="IA Chat">
-      <Card style={{display:'flex',flexDirection:'column',height:'520px'}}>
+      <Card style={{display:'flex',flexDirection:'column',height:'560px'}}>
         <div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column',gap:'12px',paddingRight:'4px'}}>
-          {messages.map((m,i)=>(<div key={i} style={{display:'flex',justifyContent:m.role==='user'?'flex-end':'flex-start'}}><div style={{maxWidth:'70%',padding:'12px 16px',borderRadius:'16px',fontSize:'13px',lineHeight:'1.6',background:m.role==='user'?`linear-gradient(135deg,${P},${PL})`:'rgba(255,255,255,0.07)',color:'#fff',border:m.role==='user'?'none':'1px solid rgba(255,255,255,0.08)',fontFamily:"'Space Grotesk',sans-serif"}}>{m.content}</div></div>))}
-          {loading&&<div style={{display:'flex',justifyContent:'flex-start'}}><div style={{background:'rgba(255,255,255,0.07)',border:'1px solid rgba(255,255,255,0.08)',padding:'12px 16px',borderRadius:'16px',display:'flex',gap:'5px',alignItems:'center'}}>{[0,1,2].map(i=><div key={i} style={{width:'7px',height:'7px',background:PL,borderRadius:'50%',animation:`bounce 1.2s ease-in-out ${i*0.15}s infinite`}}/>)}</div></div>}
+          {messages.map((m,i)=>(
+            <div key={i} style={{display:'flex',justifyContent:m.role==='user'?'flex-end':'flex-start',alignItems:'flex-end',gap:'8px'}}>
+              {m.role==='assistant' && <div style={{width:'28px',height:'28px',background:`rgba(94,23,235,0.25)`,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid rgba(94,23,235,0.3)`}}><Sparkles size={11} color={PL}/></div>}
+              <div style={{maxWidth:'72%',padding:'13px 16px',borderRadius:m.role==='user'?'18px 18px 4px 18px':'18px 18px 18px 4px',fontSize:'13px',lineHeight:'1.65',background:m.role==='user'?`linear-gradient(135deg,${P},${PL})`:'rgba(255,255,255,0.07)',color:'#fff',border:m.role==='user'?'none':'1px solid rgba(255,255,255,0.08)',fontFamily:"'Space Grotesk',sans-serif",boxShadow:m.role==='user'?`0 4px 20px rgba(94,23,235,0.3)`:'none'}}>{m.content}</div>
+            </div>
+          ))}
+          {loading && <div style={{display:'flex',justifyContent:'flex-start',alignItems:'flex-end',gap:'8px'}}><div style={{width:'28px',height:'28px',background:`rgba(94,23,235,0.25)`,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Sparkles size={11} color={PL}/></div><div style={{background:'rgba(255,255,255,0.07)',border:'1px solid rgba(255,255,255,0.08)',padding:'14px 16px',borderRadius:'18px 18px 18px 4px',display:'flex',gap:'5px',alignItems:'center'}}>{[0,1,2].map(i=><div key={i} style={{width:'7px',height:'7px',background:PL,borderRadius:'50%',animation:`bounce 1.2s ease-in-out ${i*0.15}s infinite`}}/>)}</div></div>}
           <div ref={bottomRef}/>
         </div>
-        <div style={{display:'flex',gap:'12px',marginTop:'16px',paddingTop:'16px',borderTop:'1px solid rgba(255,255,255,0.06)'}}>
+
+        {/* Suggestion chips */}
+        {showChips && (
+          <div style={{marginTop:'12px',paddingTop:'12px',borderTop:'1px solid rgba(255,255,255,0.05)'}}>
+            <p style={{color:'rgba(255,255,255,0.25)',fontSize:'11px',fontFamily:"'Space Grotesk',sans-serif",margin:'0 0 8px',letterSpacing:'0.08em'}}>SUGERENCIAS</p>
+            <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
+              {CHAT_CHIPS.map(chip=>(
+                <button key={chip} onClick={()=>send(chip)} style={{background:'rgba(94,23,235,0.1)',border:'1px solid rgba(94,23,235,0.25)',borderRadius:'100px',padding:'6px 14px',color:'rgba(255,255,255,0.7)',fontSize:'11px',fontFamily:"'Space Grotesk',sans-serif",cursor:'pointer',transition:'all 0.15s',whiteSpace:'nowrap'}}
+                  onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.background='rgba(94,23,235,0.25)';(e.currentTarget as HTMLElement).style.color='#fff';}}
+                  onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.background='rgba(94,23,235,0.1)';(e.currentTarget as HTMLElement).style.color='rgba(255,255,255,0.7)';}}>
+                  {chip}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div style={{display:'flex',gap:'10px',marginTop:'12px',paddingTop:'14px',borderTop:'1px solid rgba(255,255,255,0.06)',alignItems:'center'}}>
+          <button title="Voz (próximamente)" style={{width:'40px',height:'40px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',cursor:'not-allowed',flexShrink:0,opacity:0.5}} onClick={()=>toast('Entrada de voz próximamente','info')}>
+            <Mic size={15} color="rgba(255,255,255,0.5)"/>
+          </button>
           <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&send()} placeholder="Escribe tu pregunta..." style={{flex:1,background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'12px',padding:'12px 16px',color:'#fff',fontFamily:"'Space Grotesk',sans-serif",fontSize:'13px',outline:'none'}}/>
-          <Btn3D small onClick={send} disabled={loading||!input.trim()}><Send size={14}/></Btn3D>
+          <Btn3D small onClick={()=>send()} disabled={loading||!input.trim()}><Send size={14}/></Btn3D>
         </div>
       </Card>
     </PageShell>
@@ -1311,7 +1601,7 @@ function PublishingPage() {
   useEffect(() => { load(); }, []);
   const save = async () => {
     if (!form.title) return; setLoading(true);
-    try { await apiFetch('/publishing', { method:'POST', body: JSON.stringify(form) }); setForm({ title:'', composers:'', splits:'', iswc:'' }); setShowForm(false); load(); } catch {}
+    try { await apiFetch('/publishing', { method:'POST', body: JSON.stringify(form) }); setForm({ title:'', composers:'', splits:'', iswc:'' }); setShowForm(false); load(); toast('Obra registrada exitosamente'); } catch(e:any) { toast(e.message,'error'); }
     setLoading(false);
   };
   return (
@@ -1359,7 +1649,7 @@ function ReleasesPage() {
   useEffect(() => { load(); }, []);
   const save = async () => {
     if (!form.title) return; setLoading(true);
-    try { await apiFetch('/releases', { method:'POST', body: JSON.stringify(form) }); setForm({ title:'', release_date:'', platforms:'Spotify,Apple Music,YouTube', status:'draft' }); setShowForm(false); load(); } catch {}
+    try { await apiFetch('/releases', { method:'POST', body: JSON.stringify(form) }); setForm({ title:'', release_date:'', platforms:'Spotify,Apple Music,YouTube', status:'draft' }); setShowForm(false); load(); toast('Release programado'); } catch(e:any) { toast(e.message,'error'); }
     setLoading(false);
   };
   const statusColor: Record<string,string> = { draft:'#71717a', scheduled:'#3b82f6', published:'#22c55e' };
@@ -1766,6 +2056,33 @@ function MarketplacePage() {
 }
 
 // ─── SPLITS ───────────────────────────────────────────────────────────────────
+const AVATAR_COLORS = ['#5E17EB','#7B3FFF','#C084FC','#22c55e','#f59e0b','#3b82f6','#ef4444','#8b5cf6'];
+
+function SplitsPieChart({ splits }: { splits: { name: string; percentage: number }[] }) {
+  const total = splits.reduce((a,s)=>a+Number(s.percentage),0);
+  if (splits.length === 0) return null;
+  let cumulative = 0;
+  const segments = splits.map((s,i) => {
+    const pct = (Number(s.percentage)/Math.max(total,1))*100;
+    const start = cumulative; cumulative += pct;
+    return { ...s, pct, start, color: AVATAR_COLORS[i%AVATAR_COLORS.length] };
+  });
+  const conicStops = segments.map(s=>`${s.color} ${s.start.toFixed(1)}% ${(s.start+s.pct).toFixed(1)}%`).join(', ');
+  return (
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'16px', margin:'0 0 20px' }}>
+      <div style={{ width:'140px', height:'140px', borderRadius:'50%', background:`conic-gradient(${conicStops})`, boxShadow:'0 0 40px rgba(94,23,235,0.3)', flexShrink:0 }} />
+      <div style={{ display:'flex', flexWrap:'wrap', gap:'8px', justifyContent:'center' }}>
+        {segments.map((s,i)=>(
+          <div key={i} style={{ display:'flex', alignItems:'center', gap:'5px' }}>
+            <div style={{ width:'8px', height:'8px', borderRadius:'50%', background:s.color, flexShrink:0 }}/>
+            <span style={{ color:'rgba(255,255,255,0.55)', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif" }}>{s.name} ({s.percentage}%)</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function SplitsPage() {
   const [splits, setSplits] = useState<any[]>([]);
   const [tracks, setTracks] = useState<any[]>([]);
@@ -1778,7 +2095,11 @@ function SplitsPage() {
   }, []);
   const add = async () => {
     if (!form.name||!form.percentage) return; setLoading(true);
-    try { const d = await apiFetch('/splits', { method:'POST', body: JSON.stringify({ ...form, track_id: selectedTrack }) }); setSplits(s=>[...s,d]); setForm({ name:'', email:'', percentage:'' }); } catch {}
+    try {
+      const d = await apiFetch('/splits', { method:'POST', body: JSON.stringify({ ...form, track_id: selectedTrack }) });
+      setSplits(s=>[...s,d]); setForm({ name:'', email:'', percentage:'' });
+      toast(`Split agregado para ${form.name}`);
+    } catch(e:any) { toast(e.message,'error'); }
     setLoading(false);
   };
   const bySplit = splits.reduce((acc:any,s:any)=>{ const k=s.track_id||'general'; if(!acc[k])acc[k]=[]; acc[k].push(s); return acc; }, {});
@@ -1809,14 +2130,19 @@ function SplitsPage() {
         <Card>
           <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'13px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 16px' }}>SPLITS ACTIVOS</h3>
           {splits.length===0 && <EmptyState icon={Users} text="Sin splits. Agrega colaboradores para dividir regalías." />}
+          {/* Pie chart for first group */}
+          {splits.length > 0 && <SplitsPieChart splits={splits} />}
           {Object.entries(bySplit).map(([trackId, trackSplits]:any)=>(
             <div key={trackId} style={{ marginBottom:'20px' }}>
               <p style={{ color:PL, fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, textTransform:'uppercase', letterSpacing:'0.12em', margin:'0 0 10px' }}>{tracks.find(t=>String(t.id)===trackId)?.title||'General'}</p>
               {trackSplits.map((s:any,i:number)=>(
                 <div key={i} style={{ display:'flex', alignItems:'center', gap:'12px', padding:'10px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
-                  <div style={{ width:'32px', height:'32px', background:'rgba(94,23,235,0.12)', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><UserIcon size={13} color={PL}/></div>
-                  <div style={{ flex:1 }}><p style={{ color:'#fff', fontSize:'13px', margin:0, fontFamily:"'Space Grotesk',sans-serif" }}>{s.name}</p><p style={{ color:'rgba(255,255,255,0.3)', fontSize:'11px', margin:0, fontFamily:"'Space Grotesk',sans-serif" }}>{s.email||'Sin email'}</p></div>
-                  <div style={{ fontFamily:"'Anton',sans-serif", fontSize:'20px', color:PL }}>{s.percentage}%</div>
+                  {/* Avatar initials */}
+                  <div style={{ width:'34px', height:'34px', background:AVATAR_COLORS[i%AVATAR_COLORS.length], borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontFamily:"'Anton',sans-serif", fontSize:'13px', color:'#fff', letterSpacing:'0.05em' }}>
+                    {(s.name||'?').split(' ').map((w:string)=>w[0]).slice(0,2).join('').toUpperCase()}
+                  </div>
+                  <div style={{ flex:1 }}><p style={{ color:'#fff', fontSize:'13px', margin:0, fontFamily:"'Space Grotesk',sans-serif", fontWeight:500 }}>{s.name}</p><p style={{ color:'rgba(255,255,255,0.3)', fontSize:'11px', margin:0, fontFamily:"'Space Grotesk',sans-serif" }}>{s.email||'Sin email'}</p></div>
+                  <div style={{ fontFamily:"'Anton',sans-serif", fontSize:'22px', color:AVATAR_COLORS[i%AVATAR_COLORS.length] }}>{s.percentage}%</div>
                   <Badge color="#22c55e" label="Activo"/>
                 </div>
               ))}
@@ -2751,6 +3077,7 @@ export default function App() {
     <div style={{ minHeight: '100vh', background: '#050505' }}>
       <div style={{ position: 'fixed', inset: 0, backgroundImage: `linear-gradient(rgba(94,23,235,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(94,23,235,0.03) 1px, transparent 1px)`, backgroundSize: '48px 48px', pointerEvents: 'none', zIndex: 0 }} />
       <div style={{ position: 'fixed', top: '-200px', left: '-200px', width: '600px', height: '600px', background: `radial-gradient(circle, rgba(94,23,235,0.06) 0%, transparent 70%)`, pointerEvents: 'none', zIndex: 0 }} />
+      <ToastContainer />
       <Sidebar active={activePage} onNav={setActivePage} user={user} onLogout={handleLogout} open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div style={{ marginLeft: `${SIDEBAR_W}px`, position: 'relative', zIndex: 1 }}>
         <div style={{ position: 'sticky', top: 0, background: 'rgba(5,5,5,0.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '12px 32px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', zIndex: 10 }}>
@@ -2768,6 +3095,19 @@ export default function App() {
       <style>{`
         @keyframes marqueeScroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
         @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+        @keyframes shimmer {
+          0%   { background-position: -400px 0; }
+          100% { background-position: 400px 0; }
+        }
+        @keyframes toastIn {
+          from { opacity:0; transform:translateX(40px) scale(0.95); }
+          to   { opacity:1; transform:translateX(0) scale(1); }
+        }
+        .skeleton-shimmer {
+          background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.09) 50%, rgba(255,255,255,0.04) 75%);
+          background-size: 800px 100%;
+          animation: shimmer 1.5s ease-in-out infinite;
+        }
         * { box-sizing: border-box; }
         ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-track{background:#000} ::-webkit-scrollbar-thumb{background:${P};border-radius:4px}
         input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.2)}
