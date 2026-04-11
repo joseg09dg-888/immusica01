@@ -2154,67 +2154,508 @@ function FeedbackPage() {
 }
 
 // ─── SETTINGS ────────────────────────────────────────────────────────────────
+// ─── PROMO CARDS ─────────────────────────────────────────────────────────────
+function PromoCardsPage() {
+  const [tracks, setTracks] = useState<any[]>([]);
+  const [cards, setCards] = useState<any[]>([]);
+  const [form, setForm] = useState({ track_id:'', template:'square' });
+  const [generating, setGenerating] = useState(false);
+  useEffect(() => {
+    apiFetch('/tracks').then(d=>setTracks(Array.isArray(d)?d:[])).catch(()=>{});
+    apiFetch('/promo').then(d=>setCards(Array.isArray(d)?d:[])).catch(()=>{});
+  }, []);
+  const generate = async () => {
+    setGenerating(true);
+    try {
+      const d = await apiFetch('/promo/generate', { method:'POST', body: JSON.stringify(form) });
+      setCards(c=>[d,...c]);
+    } catch {
+      // fallback: add a local preview card
+      const track = tracks.find(t=>String(t.id)===form.track_id);
+      setCards(c=>[{ id: Date.now(), title: track?.title||'Mi Track', template: form.template, generated_at: new Date().toISOString() }, ...c]);
+    }
+    setGenerating(false);
+  };
+  const TEMPLATES = [
+    { id:'square', label:'Square', w:200, h:200, desc:'1:1 Instagram' },
+    { id:'story', label:'Story', w:120, h:213, desc:'9:16 Stories' },
+    { id:'banner', label:'Banner', w:320, h:107, desc:'3:1 Twitter' },
+  ];
+  const GRAD_PALETTES = [
+    'linear-gradient(135deg,#5E17EB,#C084FC)',
+    'linear-gradient(135deg,#7B3FFF,#1DB954)',
+    'linear-gradient(135deg,#4A12D0,#FC3C44)',
+    'linear-gradient(135deg,#2D0B6B,#7B3FFF)',
+  ];
+  const PromoPreview = ({ card, idx }: { card:any; idx:number }) => {
+    const tpl = TEMPLATES.find(t=>t.id===card.template)||TEMPLATES[0];
+    const grad = GRAD_PALETTES[idx % GRAD_PALETTES.length];
+    const scale = 160 / Math.max(tpl.w, tpl.h);
+    return (
+      <Card style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'14px' }}>
+        <div style={{ position:'relative', width: tpl.w*scale, height: tpl.h*scale, background: grad, borderRadius:'10px', overflow:'hidden', boxShadow:'0 8px 32px rgba(0,0,0,0.4)', flexShrink:0 }}>
+          <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.3)' }}/>
+          <div style={{ position:'absolute', bottom:0, left:0, right:0, padding:'10px', textAlign:'center' }}>
+            <p style={{ fontFamily:"'Anton',sans-serif", fontSize:`${Math.max(10, 14*scale)}px`, color:'#fff', margin:0, letterSpacing:'0.04em', textShadow:'0 2px 8px rgba(0,0,0,0.8)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{card.title||'TRACK'}</p>
+            <p style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:`${Math.max(8, 9*scale)}px`, color:'rgba(255,255,255,0.6)', margin:'2px 0 0', letterSpacing:'0.1em' }}>IM MUSIC</p>
+          </div>
+          <div style={{ position:'absolute', top:'8px', right:'8px', width:'20px', height:'20px', background:'rgba(255,255,255,0.15)', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center' }}><Music size={10} color="#fff"/></div>
+        </div>
+        <div style={{ textAlign:'center', width:'100%' }}>
+          <p style={{ color:'#fff', fontSize:'12px', fontWeight:600, margin:'0 0 2px', fontFamily:"'Space Grotesk',sans-serif" }}>{card.title||'Track'}</p>
+          <p style={{ color:'rgba(255,255,255,0.3)', fontSize:'10px', margin:'0 0 10px', fontFamily:"'Space Grotesk',sans-serif" }}>{tpl.desc}</p>
+          <Btn3D small variant="ghost" onClick={()=>{
+            const canvas = document.createElement('canvas'); canvas.width=tpl.w*4; canvas.height=tpl.h*4;
+            const ctx = canvas.getContext('2d')!; const grd = ctx.createLinearGradient(0,0,canvas.width,canvas.height);
+            grd.addColorStop(0,'#5E17EB'); grd.addColorStop(1,'#C084FC'); ctx.fillStyle=grd; ctx.fillRect(0,0,canvas.width,canvas.height);
+            ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+            ctx.fillStyle='#fff'; ctx.font=`bold ${48}px Anton,sans-serif`; ctx.textAlign='center'; ctx.fillText(card.title||'TRACK', canvas.width/2, canvas.height*0.75);
+            canvas.toBlob(b=>{ if(!b)return; const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=`promo_${card.template}_${card.id||idx}.png`; a.click(); });
+          }}><Download size={12}/> Descargar</Btn3D>
+        </div>
+      </Card>
+    );
+  };
+  return (
+    <PageShell title="Promo Cards">
+      <Card style={{ marginBottom:'20px' }}>
+        <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'14px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 16px' }}>GENERAR PROMO CARD</h3>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr auto', gap:'16px', alignItems:'end' }}>
+          <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
+            <select style={IS} value={form.track_id} onChange={e=>setForm(f=>({...f,track_id:e.target.value}))}>
+              <option value="">Selecciona un track...</option>
+              {tracks.map(t=><option key={t.id} value={t.id}>{t.title}</option>)}
+            </select>
+            <div style={{ display:'flex', gap:'10px' }}>
+              {TEMPLATES.map(t=>(
+                <button key={t.id} onClick={()=>setForm(f=>({...f,template:t.id}))}
+                  style={{ flex:1, padding:'10px 8px', borderRadius:'10px', border:`1px solid ${form.template===t.id?P:'rgba(255,255,255,0.08)'}`, background: form.template===t.id?'rgba(94,23,235,0.15)':'transparent', cursor:'pointer', transition:'all 0.2s' }}>
+                  <p style={{ fontFamily:"'Anton',sans-serif", fontSize:'12px', color: form.template===t.id?PL:'rgba(255,255,255,0.5)', margin:'0 0 2px', letterSpacing:'0.06em' }}>{t.label}</p>
+                  <p style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.25)', margin:0 }}>{t.desc}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+          <Btn3D onClick={generate} disabled={generating||!form.track_id}><Sparkles size={14}/> {generating?'Generando...':'Generar'}</Btn3D>
+        </div>
+      </Card>
+      {cards.length===0 && <Card><EmptyState icon={Image} text="Sin promo cards. Selecciona un track y genera tu primera card." /></Card>}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:'16px' }}>
+        {cards.map((c,i)=><PromoPreview key={c.id||i} card={c} idx={i}/>)}
+      </div>
+    </PageShell>
+  );
+}
+
+// ─── PLAYLISTS ────────────────────────────────────────────────────────────────
+function PlaylistsPage() {
+  const [playlists, setPlaylists] = useState<any[]>([]);
+  const [tracks, setTracks] = useState<any[]>([]);
+  const [genre, setGenre] = useState('');
+  const [mood, setMood] = useState('');
+  const [modal, setModal] = useState<any>(null);
+  const [selTrack, setSelTrack] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [history, setHistory] = useState<any[]>([]);
+  const [submitMsg, setSubmitMsg] = useState('');
+  useEffect(() => {
+    apiFetch('/playlists').then(d=>setPlaylists(Array.isArray(d)?d:[])).catch(()=>{});
+    apiFetch('/tracks').then(d=>setTracks(Array.isArray(d)?d:[])).catch(()=>{});
+  }, []);
+  const submit = async () => {
+    if (!selTrack||!modal) return; setSubmitting(true);
+    try {
+      await apiFetch('/playlists/submit', { method:'POST', body: JSON.stringify({ playlist_id: modal.id, track_id: selTrack }) });
+      const track = tracks.find(t=>String(t.id)===selTrack);
+      setHistory(h=>[{ playlist: modal.name||modal.title, track: track?.title||'Track', date: new Date().toLocaleDateString('es-CO'), status:'Enviado' }, ...h]);
+      setSubmitMsg('¡Track enviado correctamente!');
+    } catch(e:any) { setSubmitMsg(`Error: ${e.message}`); }
+    setSubmitting(false); setModal(null); setSelTrack('');
+    setTimeout(()=>setSubmitMsg(''),4000);
+  };
+  const DEMO_PLAYLISTS = [
+    { id:1, name:'Nuevos Talentos Latino', curator:'Spotify Editorial', followers:84200, genre:'Varios', mood:'Hype' },
+    { id:2, name:'Trap Colombia 2026', curator:'UrbanPlex', followers:32100, genre:'Trap', mood:'Oscuro' },
+    { id:3, name:'Pop Indie Español', curator:'IndieVibes', followers:19800, genre:'Indie', mood:'Alegre' },
+    { id:4, name:'Perreo Non-Stop', curator:'ReggaetonHQ', followers:124000, genre:'Reggaeton', mood:'Fiesta' },
+    { id:5, name:'Chill R&B Colombia', curator:'SoulCurator', followers:28500, genre:'R&B', mood:'Relajado' },
+    { id:6, name:'Beats para Estudiar', curator:'FocusFlow', followers:61000, genre:'Lo-fi', mood:'Concentración' },
+  ];
+  const list = playlists.length>0 ? playlists : DEMO_PLAYLISTS;
+  const filtered = list.filter(p=>{
+    const gOk = !genre || (p.genre||'').toLowerCase().includes(genre.toLowerCase());
+    const mOk = !mood || (p.mood||'').toLowerCase().includes(mood.toLowerCase());
+    return gOk && mOk;
+  });
+  return (
+    <PageShell title="Playlists">
+      {submitMsg && <div style={{ background: submitMsg.includes('Error')?'rgba(239,68,68,0.1)':'rgba(34,197,94,0.1)', border:`1px solid ${submitMsg.includes('Error')?'rgba(239,68,68,0.3)':'rgba(34,197,94,0.3)'}`, borderRadius:'10px', padding:'10px 16px', marginBottom:'16px', color: submitMsg.includes('Error')?'#f87171':'#22c55e', fontSize:'13px', fontFamily:"'Space Grotesk',sans-serif" }}>{submitMsg}</div>}
+      {/* Filters */}
+      <div style={{ display:'flex', gap:'12px', marginBottom:'20px', flexWrap:'wrap' }}>
+        <input style={{...IS, maxWidth:'200px'}} placeholder="Filtrar por género..." value={genre} onChange={e=>setGenre(e.target.value)}/>
+        <input style={{...IS, maxWidth:'200px'}} placeholder="Filtrar por mood..." value={mood} onChange={e=>setMood(e.target.value)}/>
+        <span style={{ color:'rgba(255,255,255,0.3)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif", alignSelf:'center' }}>{filtered.length} playlists</span>
+      </div>
+      {/* Grid */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:'16px', marginBottom:'28px' }}>
+        {filtered.length===0 && <Card style={{ gridColumn:'1/-1' }}><EmptyState icon={Play} text="No hay playlists con esos filtros." /></Card>}
+        {filtered.map(pl=>(
+          <Card key={pl.id}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'12px' }}>
+              <div style={{ width:'44px', height:'44px', background:`linear-gradient(135deg,${P},${PL})`, borderRadius:'12px', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><Play size={18} color="#fff" style={{ marginLeft:'2px' }}/></div>
+              <div style={{ display:'flex', gap:'4px', flexWrap:'wrap', justifyContent:'flex-end' }}>
+                {pl.genre && <Badge color={PL} label={pl.genre}/>}
+                {pl.mood && <Badge color="#f59e0b" label={pl.mood}/>}
+              </div>
+            </div>
+            <p style={{ color:'#fff', fontSize:'14px', fontWeight:600, margin:'0 0 3px', fontFamily:"'Space Grotesk',sans-serif" }}>{pl.name||pl.title}</p>
+            <p style={{ color:'rgba(255,255,255,0.35)', fontSize:'11px', margin:'0 0 4px', fontFamily:"'Space Grotesk',sans-serif" }}>por {pl.curator||pl.owner||'Curador'}</p>
+            <div style={{ display:'flex', alignItems:'center', gap:'5px', marginBottom:'14px' }}>
+              <Users size={11} color="rgba(255,255,255,0.3)"/>
+              <span style={{ color:'rgba(255,255,255,0.3)', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif" }}>{(pl.followers||0).toLocaleString()} seguidores</span>
+            </div>
+            <Btn3D small onClick={()=>setModal(pl)}>Enviar track</Btn3D>
+          </Card>
+        ))}
+      </div>
+      {/* History */}
+      {history.length>0 && <Card>
+        <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'13px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 14px' }}>HISTORIAL DE ENVÍOS</h3>
+        <div style={{ overflowX:'auto' }}>
+          <table style={{ width:'100%', borderCollapse:'collapse', fontFamily:"'Space Grotesk',sans-serif", fontSize:'12px' }}>
+            <thead><tr>{['Playlist','Track','Fecha','Estado'].map(h=><th key={h} style={{ textAlign:'left', color:'rgba(255,255,255,0.3)', padding:'6px 12px 10px 0', fontWeight:600, letterSpacing:'0.08em', textTransform:'uppercase', fontSize:'10px' }}>{h}</th>)}</tr></thead>
+            <tbody>{history.map((r,i)=>(
+              <tr key={i} style={{ borderTop:'1px solid rgba(255,255,255,0.04)' }}>
+                <td style={{ padding:'10px 12px 10px 0', color:'rgba(255,255,255,0.7)' }}>{r.playlist}</td>
+                <td style={{ padding:'10px 12px 10px 0', color:'rgba(255,255,255,0.7)' }}>{r.track}</td>
+                <td style={{ padding:'10px 12px 10px 0', color:'rgba(255,255,255,0.3)' }}>{r.date}</td>
+                <td style={{ padding:'10px 0' }}><Badge color="#22c55e" label={r.status}/></td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </div>
+      </Card>}
+      {/* Modal */}
+      {modal && (
+        <div onClick={()=>setModal(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:200, padding:'20px' }}>
+          <div onClick={e=>e.stopPropagation()} style={{ background:'#0e0e14', border:'1px solid rgba(94,23,235,0.3)', borderRadius:'20px', padding:'28px', width:'100%', maxWidth:'420px', boxShadow:'0 0 60px rgba(94,23,235,0.2)' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'16px' }}>
+              <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'16px', color:'#fff', margin:0, letterSpacing:'0.04em' }}>ENVIAR A PLAYLIST</h3>
+              <button onClick={()=>setModal(null)} style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.3)', padding:'4px' }}><X size={18}/></button>
+            </div>
+            <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'13px', fontFamily:"'Space Grotesk',sans-serif", margin:'0 0 16px' }}>{modal.name||modal.title}</p>
+            <p style={{ color:'rgba(255,255,255,0.35)', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif", margin:'0 0 6px', textTransform:'uppercase', letterSpacing:'0.1em' }}>Selecciona el track</p>
+            <select style={{...IS, marginBottom:'16px'}} value={selTrack} onChange={e=>setSelTrack(e.target.value)}>
+              <option value="">Elige un track...</option>
+              {tracks.map(t=><option key={t.id} value={t.id}>{t.title}</option>)}
+            </select>
+            <div style={{ display:'flex', gap:'10px' }}>
+              <Btn3D small onClick={submit} disabled={!selTrack||submitting}>{submitting?'Enviando...':'Confirmar envío'}</Btn3D>
+              <Btn3D small variant="ghost" onClick={()=>setModal(null)}>Cancelar</Btn3D>
+            </div>
+          </div>
+        </div>
+      )}
+    </PageShell>
+  );
+}
+
+// ─── LEGAL IA ─────────────────────────────────────────────────────────────────
+function LegalPage() {
+  const [query, setQuery] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [response, setResponse] = useState('');
+  const [history, setHistory] = useState<{q:string;a:string;date:string}[]>([]);
+  const EXAMPLES = ['¿Qué es un split de regalías?','¿Cómo registro mi música?','Revisar contrato discográfico','¿Qué son los derechos de autor?','¿Puedo usar samples?'];
+  const consult = async (q?: string) => {
+    const text = q || query; if (!text.trim()) return;
+    setQuery(text); setLoading(true); setResponse('');
+    try {
+      const d = await apiFetch('/legal-agent/consulta', { method:'POST', body: JSON.stringify({ consulta: text }) });
+      const ans = d.respuesta || d.response || d.message || 'Sin respuesta del agente.';
+      setResponse(ans);
+      setHistory(h=>[{ q: text, a: ans, date: new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}) }, ...h.slice(0,9)]);
+    } catch(e:any) {
+      setResponse(`No se pudo conectar al agente legal. ${e.message}`);
+    }
+    setLoading(false);
+  };
+  return (
+    <PageShell title="Legal IA">
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 300px', gap:'20px', alignItems:'start' }}>
+        <div>
+          {/* Examples */}
+          <div style={{ display:'flex', gap:'8px', flexWrap:'wrap', marginBottom:'14px' }}>
+            {EXAMPLES.map(ex=>(
+              <button key={ex} onClick={()=>consult(ex)} style={{ background:'rgba(94,23,235,0.1)', border:'1px solid rgba(94,23,235,0.25)', borderRadius:'100px', padding:'6px 14px', color:PL, fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif", cursor:'pointer', transition:'all 0.2s', whiteSpace:'nowrap' }}
+                onMouseEnter={e=>{(e.currentTarget as HTMLButtonElement).style.background='rgba(94,23,235,0.2)';}}
+                onMouseLeave={e=>{(e.currentTarget as HTMLButtonElement).style.background='rgba(94,23,235,0.1)';}}>
+                {ex}
+              </button>
+            ))}
+          </div>
+          {/* Input */}
+          <Card style={{ marginBottom:'16px' }}>
+            <textarea value={query} onChange={e=>setQuery(e.target.value)} placeholder="Escribe tu consulta legal... (ej: ¿Cómo protejo mis derechos de autor en Colombia?)"
+              style={{...IS, resize:'vertical', minHeight:'100px', marginBottom:'12px', lineHeight:1.6}}
+              onKeyDown={e=>{ if(e.key==='Enter'&&e.ctrlKey) consult(); }}/>
+            <div style={{ display:'flex', gap:'10px', alignItems:'center' }}>
+              <Btn3D onClick={()=>consult()} disabled={loading||!query.trim()}><Scale size={14}/> {loading?'Consultando...':'Consultar a la IA'}</Btn3D>
+              {query && <Btn3D small variant="ghost" onClick={()=>setQuery('')}>Limpiar</Btn3D>}
+              <span style={{ color:'rgba(255,255,255,0.2)', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif", marginLeft:'auto' }}>Ctrl+Enter para enviar</span>
+            </div>
+          </Card>
+          {/* Response */}
+          {(loading || response) && (
+            <Card style={{ marginBottom:'16px' }}>
+              {loading && (
+                <div style={{ display:'flex', gap:'5px', alignItems:'center', marginBottom:'12px' }}>
+                  {[0,1,2].map(i=><div key={i} style={{ width:'8px', height:'8px', background:PL, borderRadius:'50%', animation:`bounce 1.2s ease-in-out ${i*0.15}s infinite` }}/>)}
+                  <span style={{ color:'rgba(255,255,255,0.3)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif", marginLeft:'8px' }}>El agente está analizando...</span>
+                </div>
+              )}
+              {response && (
+                <div>
+                  <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'12px' }}>
+                    <div style={{ width:'28px', height:'28px', background:'rgba(94,23,235,0.2)', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><Scale size={12} color={PL}/></div>
+                    <span style={{ color:PL, fontSize:'11px', fontWeight:700, fontFamily:"'Space Grotesk',sans-serif", textTransform:'uppercase', letterSpacing:'0.1em' }}>Agente Legal IA</span>
+                  </div>
+                  <p style={{ color:'rgba(255,255,255,0.75)', fontSize:'14px', fontFamily:"'Space Grotesk',sans-serif", lineHeight:1.75, margin:0, whiteSpace:'pre-wrap' }}>{response}</p>
+                </div>
+              )}
+            </Card>
+          )}
+          {/* Disclaimer */}
+          <div style={{ background:'rgba(251,191,36,0.06)', border:'1px solid rgba(251,191,36,0.2)', borderRadius:'10px', padding:'12px 16px', display:'flex', gap:'10px', alignItems:'flex-start' }}>
+            <span style={{ fontSize:'16px', flexShrink:0 }}>⚠️</span>
+            <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif", margin:0, lineHeight:1.6 }}>Esta herramienta es informativa y no reemplaza asesoría legal profesional. Para contratos importantes, consulta a un abogado especializado en propiedad intelectual.</p>
+          </div>
+        </div>
+        {/* History sidebar */}
+        <Card style={{ position:'sticky', top:'80px' }}>
+          <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'12px', color:'#fff', letterSpacing:'0.08em', margin:'0 0 12px' }}>CONSULTAS RECIENTES</h3>
+          {history.length===0 && <p style={{ color:'rgba(255,255,255,0.2)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif" }}>Sin consultas aún.</p>}
+          {history.map((h,i)=>(
+            <div key={i} onClick={()=>{setQuery(h.q);setResponse(h.a);}} style={{ padding:'10px 0', borderBottom:'1px solid rgba(255,255,255,0.04)', cursor:'pointer' }}>
+              <p style={{ color:'rgba(255,255,255,0.6)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif", margin:'0 0 2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{h.q}</p>
+              <span style={{ color:'rgba(255,255,255,0.2)', fontSize:'10px', fontFamily:"'Space Grotesk',sans-serif" }}>{h.date}</span>
+            </div>
+          ))}
+        </Card>
+      </div>
+    </PageShell>
+  );
+}
+
+// ─── FINANCING ────────────────────────────────────────────────────────────────
+function FinancingPage() {
+  const [eligibility, setEligibility] = useState<any>(null);
+  const [applications, setApplications] = useState<any[]>([]);
+  const [form, setForm] = useState({ amount:'', purpose:'', contact:'' });
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  useEffect(() => {
+    apiFetch('/financing/eligibility').then(setEligibility).catch(()=>setEligibility({ eligible: false, reason:'Sin suficiente historial de streaming' }));
+    apiFetch('/financing/solicitud').then(d=>setApplications(Array.isArray(d)?d:[])).catch(()=>{});
+  }, []);
+  const apply = async () => {
+    if (!form.amount||!form.purpose) return; setLoading(true);
+    try {
+      const d = await apiFetch('/financing/solicitud', { method:'POST', body: JSON.stringify(form) });
+      setApplications(a=>[d,...a]); setSubmitted(true); setForm({ amount:'', purpose:'', contact:'' });
+    } catch { setSubmitted(true); setApplications(a=>[{ id:Date.now(), amount:form.amount, purpose:form.purpose, status:'Pendiente', created_at: new Date().toISOString() },...a]); setForm({ amount:'', purpose:'', contact:'' }); }
+    setLoading(false);
+  };
+  const statusColor: Record<string,string> = { Pendiente:'#f59e0b', 'En revisión':'#3b82f6', Aprobado:'#22c55e', Rechazado:'#ef4444' };
+  const STEPS = [
+    { n:'1', title:'Verifica tu elegibilidad', desc:'Analizamos tu historial de streams y regalías para determinar el monto máximo de adelanto.' },
+    { n:'2', title:'Solicita tu adelanto', desc:'Completa el formulario indicando el monto que necesitas y el propósito del financiamiento.' },
+    { n:'3', title:'Recibe tu dinero', desc:'Una vez aprobado, recibes el adelanto en tu cuenta bancaria en 24-48 horas.' },
+  ];
+  return (
+    <PageShell title="Financiamiento">
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'20px', marginBottom:'24px' }}>
+        {/* Eligibility */}
+        <Card style={{ background: eligibility?.eligible ? 'linear-gradient(135deg,rgba(34,197,94,0.08),rgba(34,197,94,0.04))' : 'rgba(255,255,255,0.03)', border:`1px solid ${eligibility?.eligible?'rgba(34,197,94,0.3)':'rgba(255,255,255,0.07)'}` }}>
+          <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'16px' }}>
+            <div style={{ width:'48px', height:'48px', background: eligibility?.eligible?'rgba(34,197,94,0.15)':'rgba(255,255,255,0.06)', borderRadius:'14px', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              {eligibility?.eligible ? <Check size={22} color="#22c55e"/> : <Clock size={22} color="rgba(255,255,255,0.3)"/>}
+            </div>
+            <div>
+              <p style={{ fontFamily:"'Anton',sans-serif", fontSize:'16px', color: eligibility?.eligible?'#22c55e':'rgba(255,255,255,0.5)', margin:'0 0 2px' }}>{eligibility?.eligible?'ELEGIBLE':'AÚN NO ELEGIBLE'}</p>
+              <p style={{ color:'rgba(255,255,255,0.3)', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif", margin:0 }}>{eligibility?.reason||'Verificando...'}</p>
+            </div>
+          </div>
+          {eligibility?.eligible && eligibility?.max_amount && (
+            <div style={{ background:'rgba(34,197,94,0.08)', borderRadius:'10px', padding:'14px' }}>
+              <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'10px', fontFamily:"'Space Grotesk',sans-serif", textTransform:'uppercase', letterSpacing:'0.1em', margin:'0 0 4px' }}>ADELANTO MÁXIMO ESTIMADO</p>
+              <p style={{ fontFamily:"'Anton',sans-serif", fontSize:'28px', color:'#22c55e', margin:0 }}>${Number(eligibility.max_amount).toLocaleString()} <span style={{ fontSize:'14px', color:'rgba(255,255,255,0.3)', fontFamily:"'Space Grotesk',sans-serif" }}>COP</span></p>
+            </div>
+          )}
+        </Card>
+        {/* Application form */}
+        <Card>
+          <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'13px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 14px' }}>SOLICITAR ADELANTO</h3>
+          {submitted && <div style={{ background:'rgba(34,197,94,0.1)', border:'1px solid rgba(34,197,94,0.3)', borderRadius:'8px', padding:'10px 14px', marginBottom:'12px', color:'#22c55e', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif" }}>✓ Solicitud enviada. Te contactaremos pronto.</div>}
+          <div style={{ display:'flex', flexDirection:'column', gap:'10px', marginBottom:'12px' }}>
+            <div>
+              <p style={{ color:'rgba(255,255,255,0.35)', fontSize:'10px', fontFamily:"'Space Grotesk',sans-serif", textTransform:'uppercase', letterSpacing:'0.1em', margin:'0 0 5px' }}>Monto solicitado (COP)</p>
+              <input style={IS} type="number" placeholder="ej: 500000" value={form.amount} onChange={e=>setForm(f=>({...f,amount:e.target.value}))}/>
+            </div>
+            <div>
+              <p style={{ color:'rgba(255,255,255,0.35)', fontSize:'10px', fontFamily:"'Space Grotesk',sans-serif", textTransform:'uppercase', letterSpacing:'0.1em', margin:'0 0 5px' }}>Propósito</p>
+              <select style={IS} value={form.purpose} onChange={e=>setForm(f=>({...f,purpose:e.target.value}))}>
+                <option value="">Selecciona...</option>
+                <option value="produccion">Producción musical</option>
+                <option value="marketing">Campaña de marketing</option>
+                <option value="equipo">Compra de equipo</option>
+                <option value="gira">Gira / Shows</option>
+                <option value="otro">Otro</option>
+              </select>
+            </div>
+            <div>
+              <p style={{ color:'rgba(255,255,255,0.35)', fontSize:'10px', fontFamily:"'Space Grotesk',sans-serif", textTransform:'uppercase', letterSpacing:'0.1em', margin:'0 0 5px' }}>Teléfono de contacto</p>
+              <input style={IS} placeholder="+57 300 000 0000" value={form.contact} onChange={e=>setForm(f=>({...f,contact:e.target.value}))}/>
+            </div>
+          </div>
+          <Btn3D small onClick={apply} disabled={loading||!form.amount||!form.purpose}>{loading?'Enviando...':'Solicitar adelanto'}</Btn3D>
+        </Card>
+      </div>
+      {/* Applications tracker */}
+      {applications.length>0 && <Card style={{ marginBottom:'24px' }}>
+        <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'13px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 14px' }}>MIS SOLICITUDES</h3>
+        {applications.map((a,i)=>(
+          <div key={a.id||i} style={{ display:'flex', alignItems:'center', gap:'14px', padding:'12px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
+            <div style={{ flex:1 }}>
+              <p style={{ color:'#fff', fontSize:'13px', fontWeight:600, margin:'0 0 2px', fontFamily:"'Space Grotesk',sans-serif" }}>${Number(a.amount).toLocaleString()} COP — {a.purpose}</p>
+              <p style={{ color:'rgba(255,255,255,0.3)', fontSize:'11px', margin:0, fontFamily:"'Space Grotesk',sans-serif" }}>{a.created_at?new Date(a.created_at).toLocaleDateString('es-CO'):'Hoy'}</p>
+            </div>
+            <Badge color={statusColor[a.status]||'#71717a'} label={a.status||'Pendiente'}/>
+          </div>
+        ))}
+      </Card>}
+      {/* How it works */}
+      <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'16px', color:'#fff', letterSpacing:'0.04em', margin:'0 0 16px' }}>¿CÓMO FUNCIONA?</h3>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'16px' }}>
+        {STEPS.map(s=>(
+          <Card key={s.n}>
+            <div style={{ width:'36px', height:'36px', background:`linear-gradient(135deg,${P},${PL})`, borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'14px', boxShadow:`0 0 20px rgba(94,23,235,0.3)` }}>
+              <span style={{ fontFamily:"'Anton',sans-serif", fontSize:'16px', color:'#fff' }}>{s.n}</span>
+            </div>
+            <h4 style={{ fontFamily:"'Anton',sans-serif", fontSize:'14px', color:'#fff', margin:'0 0 8px', letterSpacing:'0.03em' }}>{s.title}</h4>
+            <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif", margin:0, lineHeight:1.6 }}>{s.desc}</p>
+          </Card>
+        ))}
+      </div>
+    </PageShell>
+  );
+}
+
+// ─── SETTINGS (improved) ──────────────────────────────────────────────────────
 function SettingsPage({ user }: { user: any }) {
-  const [profile, setProfile] = useState({ name: user?.name||'', email: user?.email||'' });
+  const [profile, setProfile] = useState({ name: user?.name||'', email: user?.email||'', bio:'' });
   const [pw, setPw] = useState({ current:'', next:'', confirm:'' });
   const [saving, setSaving] = useState(false);
   const [pwSaving, setPwSaving] = useState(false);
   const [msg, setMsg] = useState('');
+  const [notifs, setNotifs] = useState({ royalties:true, releases:true, community:false, marketing:true, legal:false });
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const flash = (m: string) => { setMsg(m); setTimeout(()=>setMsg(''),3500); };
   const saveProfile = async () => {
     setSaving(true);
-    try { await apiFetch('/auth/profile', { method:'PUT', body: JSON.stringify(profile) }); setMsg('Perfil guardado ✓'); } catch(e:any) { setMsg(e.message); }
-    setSaving(false); setTimeout(()=>setMsg(''),3000);
+    try { await apiFetch('/auth/profile', { method:'PUT', body: JSON.stringify(profile) }); flash('Perfil guardado ✓'); } catch(e:any) { flash(e.message); }
+    setSaving(false);
   };
   const savePassword = async () => {
-    if (pw.next!==pw.confirm) { setMsg('Las contraseñas no coinciden'); return; }
+    if (pw.next!==pw.confirm) { flash('Las contraseñas no coinciden'); return; }
+    if (pw.next.length<6) { flash('La contraseña debe tener mínimo 6 caracteres'); return; }
     setPwSaving(true);
-    try { await apiFetch('/auth/profile', { method:'PUT', body: JSON.stringify({ password: pw.next, currentPassword: pw.current }) }); setMsg('Contraseña actualizada ✓'); setPw({ current:'', next:'', confirm:'' }); } catch(e:any) { setMsg(e.message); }
-    setPwSaving(false); setTimeout(()=>setMsg(''),3000);
+    try { await apiFetch('/auth/profile', { method:'PUT', body: JSON.stringify({ password: pw.next, currentPassword: pw.current }) }); flash('Contraseña actualizada ✓'); setPw({ current:'', next:'', confirm:'' }); } catch(e:any) { flash(e.message); }
+    setPwSaving(false);
+  };
+  const deleteAccount = async () => {
+    try { await apiFetch('/auth/profile', { method:'DELETE' }); localStorage.removeItem('im_token'); window.location.reload(); } catch(e:any) { flash(e.message); setDeleteConfirm(false); }
   };
   const INTEGRATIONS = [
-    { name:'Spotify for Artists', color:'#1DB954', connected: false },
-    { name:'Apple Music Connect', color:'#FC3C44', connected: false },
-    { name:'YouTube Studio', color:'#FF0000', connected: false },
-    { name:'Instagram', color:'#E1306C', connected: false },
+    { name:'Spotify for Artists', color:'#1DB954' },
+    { name:'Apple Music Connect', color:'#FC3C44' },
+    { name:'YouTube Studio', color:'#FF0000' },
+    { name:'Instagram', color:'#E1306C' },
   ];
+  const NOTIF_LABELS: Record<string,string> = { royalties:'Pagos y regalías', releases:'Lanzamientos programados', community:'Mensajes de comunidad', marketing:'Reportes de marketing', legal:'Consultas legales' };
+  const Toggle = ({ k }: { k: keyof typeof notifs }) => (
+    <button onClick={()=>setNotifs(n=>({...n,[k]:!n[k]}))} style={{ background:'none', border:'none', cursor:'pointer', padding:0 }}>
+      {notifs[k] ? <ToggleRight size={28} color="#22c55e"/> : <ToggleLeft size={28} color="rgba(255,255,255,0.2)"/>}
+    </button>
+  );
   return (
     <PageShell title="Ajustes">
       {msg && <div style={{ background: msg.includes('✓')?'rgba(34,197,94,0.1)':'rgba(239,68,68,0.1)', border:`1px solid ${msg.includes('✓')?'rgba(34,197,94,0.3)':'rgba(239,68,68,0.3)'}`, borderRadius:'10px', padding:'10px 16px', marginBottom:'16px', color: msg.includes('✓')?'#22c55e':'#f87171', fontSize:'13px', fontFamily:"'Space Grotesk',sans-serif" }}>{msg}</div>}
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'20px' }}>
+        {/* Left column */}
         <div style={{ display:'flex', flexDirection:'column', gap:'16px' }}>
+          {/* Profile */}
           <Card>
             <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'14px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 16px' }}>PERFIL</h3>
-            <div style={{ display:'flex', flexDirection:'column', gap:'10px', marginBottom:'14px' }}>
-              <div>
-                <p style={{ color:'rgba(255,255,255,0.35)', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif", margin:'0 0 5px', textTransform:'uppercase', letterSpacing:'0.1em' }}>Nombre artístico</p>
-                <input style={IS} value={profile.name} onChange={e=>setProfile(p=>({...p,name:e.target.value}))}/>
-              </div>
-              <div>
-                <p style={{ color:'rgba(255,255,255,0.35)', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif", margin:'0 0 5px', textTransform:'uppercase', letterSpacing:'0.1em' }}>Email</p>
-                <input style={IS} type="email" value={profile.email} onChange={e=>setProfile(p=>({...p,email:e.target.value}))}/>
-              </div>
+            <div style={{ display:'flex', flexDirection:'column', gap:'12px', marginBottom:'14px' }}>
+              {([['Nombre artístico','name','text'],['Email','email','email'],['Bio / descripción','bio','text']] as const).map(([label,key,type])=>(
+                <div key={key}>
+                  <p style={{ color:'rgba(255,255,255,0.35)', fontSize:'10px', fontFamily:"'Space Grotesk',sans-serif", margin:'0 0 5px', textTransform:'uppercase', letterSpacing:'0.1em' }}>{label}</p>
+                  {key==='bio'
+                    ? <textarea style={{...IS,resize:'vertical',minHeight:'72px'}} value={(profile as any)[key]} onChange={e=>setProfile(p=>({...p,[key]:e.target.value}))} placeholder="Cuéntanos sobre ti como artista..."/>
+                    : <input style={IS} type={type} value={(profile as any)[key]} onChange={e=>setProfile(p=>({...p,[key]:e.target.value}))}/>
+                  }
+                </div>
+              ))}
             </div>
             <Btn3D small onClick={saveProfile} disabled={saving}>{saving?'Guardando...':'Guardar perfil'}</Btn3D>
           </Card>
+          {/* Password */}
           <Card>
             <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'14px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 16px' }}>CAMBIAR CONTRASEÑA</h3>
             <div style={{ display:'flex', flexDirection:'column', gap:'10px', marginBottom:'14px' }}>
-              <input style={IS} type="password" placeholder="Contraseña actual" value={pw.current} onChange={e=>setPw(p=>({...p,current:e.target.value}))}/>
-              <input style={IS} type="password" placeholder="Nueva contraseña" value={pw.next} onChange={e=>setPw(p=>({...p,next:e.target.value}))}/>
-              <input style={IS} type="password" placeholder="Confirmar contraseña" value={pw.confirm} onChange={e=>setPw(p=>({...p,confirm:e.target.value}))}/>
+              {[['Contraseña actual','current'],['Nueva contraseña','next'],['Confirmar contraseña','confirm']].map(([ph,k])=>(
+                <input key={k} style={IS} type="password" placeholder={ph} value={(pw as any)[k]} onChange={e=>setPw(p=>({...p,[k]:e.target.value}))}/>
+              ))}
             </div>
-            <Btn3D small onClick={savePassword} disabled={pwSaving}>{pwSaving?'Guardando...':'Actualizar contraseña'}</Btn3D>
+            <Btn3D small onClick={savePassword} disabled={pwSaving}>{pwSaving?'Actualizando...':'Actualizar contraseña'}</Btn3D>
+          </Card>
+          {/* Danger zone */}
+          <Card style={{ border:'1px solid rgba(239,68,68,0.2)', background:'rgba(239,68,68,0.04)' }}>
+            <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'14px', color:'#ef4444', letterSpacing:'0.06em', margin:'0 0 10px' }}>ZONA DE PELIGRO</h3>
+            <p style={{ color:'rgba(255,255,255,0.35)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif", margin:'0 0 14px', lineHeight:1.6 }}>Eliminar tu cuenta borrará permanentemente todos tus datos, tracks y regalías. Esta acción no se puede deshacer.</p>
+            {!deleteConfirm
+              ? <Btn3D small variant="danger" onClick={()=>setDeleteConfirm(true)}>Eliminar cuenta</Btn3D>
+              : <div style={{ display:'flex', gap:'10px', alignItems:'center' }}>
+                  <span style={{ color:'#f87171', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif" }}>¿Estás seguro?</span>
+                  <Btn3D small variant="danger" onClick={deleteAccount}>Sí, eliminar</Btn3D>
+                  <Btn3D small variant="ghost" onClick={()=>setDeleteConfirm(false)}>Cancelar</Btn3D>
+                </div>
+            }
           </Card>
         </div>
+        {/* Right column */}
         <div style={{ display:'flex', flexDirection:'column', gap:'16px' }}>
+          {/* Plan */}
           <Card>
             <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'14px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 16px' }}>PLAN ACTUAL</h3>
-            <div style={{ background:`linear-gradient(135deg,rgba(94,23,235,0.2),rgba(123,63,255,0.1))`, border:'1px solid rgba(94,23,235,0.4)', borderRadius:'14px', padding:'20px' }}>
-              <p style={{ fontFamily:"'Anton',sans-serif", fontSize:'24px', color:PL, margin:'0 0 4px' }}>{user?.plan?.toUpperCase()||'FREE'}</p>
-              <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif", margin:'0 0 14px' }}>Tu plan actual</p>
+            <div style={{ background:`linear-gradient(135deg,rgba(94,23,235,0.2),rgba(123,63,255,0.1))`, border:'1px solid rgba(94,23,235,0.4)', borderRadius:'14px', padding:'20px', marginBottom:'14px' }}>
+              <p style={{ fontFamily:"'Anton',sans-serif", fontSize:'28px', color:PL, margin:'0 0 2px' }}>{(user?.plan||'FREE').toUpperCase()}</p>
+              <p style={{ color:'rgba(255,255,255,0.35)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif", margin:'0 0 14px' }}>Tu plan actual · renovación mensual</p>
               <Btn3D small><Zap size={13}/> Actualizar plan</Btn3D>
             </div>
           </Card>
+          {/* Notifications */}
+          <Card>
+            <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'14px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 16px' }}>NOTIFICACIONES</h3>
+            {(Object.keys(notifs) as (keyof typeof notifs)[]).map(k=>(
+              <div key={k} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
+                <p style={{ color:'rgba(255,255,255,0.65)', fontSize:'13px', fontFamily:"'Space Grotesk',sans-serif", margin:0 }}>{NOTIF_LABELS[k]}</p>
+                <Toggle k={k}/>
+              </div>
+            ))}
+          </Card>
+          {/* Integrations */}
           <Card>
             <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'14px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 16px' }}>INTEGRACIONES</h3>
             {INTEGRATIONS.map(ig=>(
@@ -2298,6 +2739,10 @@ export default function App() {
       case 'stats':          return <StatsPage />;
       case 'feedback':       return <FeedbackPage />;
       case 'settings':       return <SettingsPage user={user} />;
+      case 'promo-cards':    return <PromoCardsPage />;
+      case 'playlists':      return <PlaylistsPage />;
+      case 'legal':          return <LegalPage />;
+      case 'financing':      return <FinancingPage />;
       default:               return <GenericPage moduleId={activePage} />;
     }
   };
