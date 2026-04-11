@@ -95,24 +95,50 @@ function Btn3D({ children, onClick, disabled = false, type = 'button', variant =
   type?: 'button' | 'submit'; variant?: 'primary' | 'ghost' | 'danger'; small?: boolean; fullWidth?: boolean;
 }) {
   const [pressed, setPressed] = useState(false);
-  const bg = variant === 'danger' ? '#7f1d1d' : variant === 'ghost' ? 'rgba(255,255,255,0.06)' : P;
-  const shadow = variant === 'primary'
-    ? `0 ${pressed ? '2px' : '6px'} 0 rgba(45,11,107,1), 0 0 ${pressed ? '20px' : '40px'} rgba(94,23,235,0.45)`
-    : `0 ${pressed ? '1px' : '3px'} 0 rgba(0,0,0,0.6)`;
+  const [hovered, setHovered] = useState(false);
+  const bg = variant === 'danger' ? '#7f1d1d' : variant === 'ghost' ? 'rgba(255,255,255,0.07)' : P;
+  let shadow: string;
+  if (variant === 'primary') {
+    if (pressed)  shadow = `0 2px 0 #2D0B6B, 0 0 12px rgba(94,23,235,0.3)`;
+    else if (hovered) shadow = `0 4px 0 #2D0B6B, 0 0 30px rgba(94,23,235,0.5), 0 0 60px rgba(94,23,235,0.2)`;
+    else          shadow = `0 6px 0 #2D0B6B, 0 0 20px rgba(94,23,235,0.3)`;
+  } else if (variant === 'danger') {
+    shadow = `0 ${pressed ? '1px' : hovered ? '3px' : '4px'} 0 rgba(80,0,0,0.9)`;
+  } else {
+    shadow = pressed ? `0 1px 0 rgba(0,0,0,0.8)` : hovered ? `0 0 20px rgba(94,23,235,0.3), 0 3px 0 rgba(0,0,0,0.5)` : `0 3px 0 rgba(0,0,0,0.6)`;
+  }
+  let translateY = '0';
+  if (pressed)  translateY = '6px';
+  else if (hovered) translateY = '-3px';
+
   return (
     <button type={type} onClick={onClick} disabled={disabled}
-      onMouseDown={() => setPressed(true)} onMouseUp={() => setPressed(false)} onMouseLeave={() => setPressed(false)}
+      onMouseDown={() => setPressed(true)}
+      onMouseUp={() => { setPressed(false); }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => { setPressed(false); setHovered(false); }}
       style={{
         background: bg, color: '#fff',
-        border: variant === 'ghost' ? '1px solid rgba(255,255,255,0.15)' : 'none',
-        borderRadius: '12px', padding: small ? '8px 18px' : '14px 32px',
-        fontFamily: "'Anton', sans-serif", letterSpacing: '0.12em', textTransform: 'uppercase',
-        fontSize: small ? '11px' : '13px', cursor: disabled ? 'not-allowed' : 'pointer',
-        opacity: disabled ? 0.5 : 1, display: 'inline-flex', alignItems: 'center', gap: '8px',
-        transform: `translateY(${pressed ? '4px' : '0'})`,
+        border: variant === 'ghost' ? '1px solid rgba(255,255,255,0.18)' : 'none',
+        borderRadius: '14px',
+        padding: small ? '10px 22px' : '15px 36px',
+        minHeight: small ? '40px' : '52px',
+        minWidth: small ? '80px' : '160px',
+        fontFamily: "'Anton', sans-serif",
+        letterSpacing: '0.15em',
+        textTransform: 'uppercase',
+        fontSize: small ? '11px' : '13px',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.5 : 1,
+        display: 'inline-flex', alignItems: 'center', justifyContent: fullWidth ? 'center' : undefined,
+        gap: '8px',
+        transform: `translateY(${translateY})`,
         boxShadow: shadow,
-        transition: pressed ? 'transform 0.06s ease, box-shadow 0.06s ease' : 'transform 0.18s cubic-bezier(0.3,0.7,0.4,1.5), box-shadow 0.18s ease',
-        width: fullWidth ? '100%' : undefined, justifyContent: fullWidth ? 'center' : undefined,
+        transition: pressed
+          ? 'transform 0.06s ease, box-shadow 0.06s ease'
+          : `transform 0.35s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s ease`,
+        width: fullWidth ? '100%' : undefined,
+        whiteSpace: 'nowrap',
       }}>
       {children}
     </button>
@@ -178,9 +204,21 @@ const SERVICES = [
 ];
 
 const PLANS = [
-  { name: 'FREE', price: '$0', period: '/mes', features: ['3 lanzamientos/año', 'Spotify + Apple Music', 'Estadísticas básicas', 'Soporte por email'], cta: 'Empezar gratis', featured: false },
-  { name: 'INDIE', price: '$9', period: '/mes', features: ['Lanzamientos ilimitados', '+150 plataformas', 'Analytics avanzado', 'Splits automáticos', 'Marketing IA'], cta: 'Empezar ahora', featured: true },
-  { name: 'PRO', price: '$29', period: '/mes', features: ['Todo en INDIE', 'Publishing completo', 'Spotlight premium', 'Store Maximizer', 'Financiamiento', 'Soporte prioritario'], cta: 'Ir al Pro', featured: false },
+  {
+    name: 'FREE', price: 'GRATIS', cop: '$0 COP', period: '/mes',
+    features: ['3 lanzamientos/año', 'Spotify + Apple Music', 'Estadísticas básicas', 'Soporte por email'],
+    cta: 'EMPEZAR GRATIS', featured: false,
+  },
+  {
+    name: 'INDIE', price: '$37.000', cop: 'COP/mes', period: '/mes',
+    features: ['Lanzamientos ilimitados', '+150 plataformas', 'Analytics avanzado', 'Splits automáticos', 'Marketing IA'],
+    cta: 'EMPEZAR AHORA', featured: false,
+  },
+  {
+    name: 'PRO', price: '$119.000', cop: 'COP/mes', period: '/mes',
+    features: ['Todo lo de INDIE', 'Publishing completo', 'Spotlight premium', 'Store Maximizer', 'Financiamiento', 'Soporte 24/7 prioritario'],
+    cta: 'IR AL PRO', featured: true,
+  },
 ];
 
 const STATS = [
@@ -199,11 +237,41 @@ const ARTISTS = [
   { name: 'Dara K', genre: 'Electrónica', streams: '8.7M', img: '🎵', color: '#C084FC' },
 ];
 
+// ─── Confetti burst ──────────────────────────────────────────────────────────
+function fireConfetti(originEl?: HTMLElement) {
+  const colors = ['#5E17EB', '#7B3FFF', '#C084FC', '#F2EDE5', '#22c55e', '#fbbf24'];
+  const count = 60;
+  const rect = originEl?.getBoundingClientRect();
+  const cx = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
+  const cy = rect ? rect.top + rect.height / 2 : window.innerHeight / 2;
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-particle';
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const size = 6 + Math.random() * 8;
+    const angle = (Math.random() * 360) * Math.PI / 180;
+    const distance = 80 + Math.random() * 200;
+    el.style.cssText = `
+      left:${cx + Math.cos(angle) * distance * 0.3}px;
+      top:${cy}px;
+      width:${size}px; height:${size}px;
+      background:${color};
+      border-radius:${Math.random() > 0.5 ? '50%' : '2px'};
+      animation-duration:${1.2 + Math.random() * 1.5}s;
+      animation-delay:${Math.random() * 0.3}s;
+      transform:translateX(${(Math.random() - 0.5) * 400}px);
+    `;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 3000);
+  }
+}
+
 function LandingPage({ onEnter }: { onEnter: () => void }) {
   const [scrolled, setScrolled] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [cursorPos, setCursorPos] = useState({ x: -100, y: -100 });
   const [ringPos, setRingPos] = useState({ x: -100, y: -100 });
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const ringRef = useRef<{ x: number; y: number }>({ x: -100, y: -100 });
   const rafRef = useRef<number>(0);
 
@@ -219,9 +287,7 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
   }, []);
 
   useEffect(() => {
-    const onMove = (e: MouseEvent) => {
-      setCursorPos({ x: e.clientX, y: e.clientY });
-    };
+    const onMove = (e: MouseEvent) => setCursorPos({ x: e.clientX, y: e.clientY });
     window.addEventListener('mousemove', onMove);
     return () => window.removeEventListener('mousemove', onMove);
   }, []);
@@ -241,6 +307,16 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
     return () => { cancelAnimationFrame(rafRef.current); window.removeEventListener('mousemove', onMove); };
   }, []);
 
+  // Scroll reveal observer
+  useEffect(() => {
+    const els = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
+    }, { threshold: 0.12 });
+    els.forEach(el => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div style={{ minHeight: '100vh', background: '#020202', color: '#fff', overflowX: 'hidden', cursor: 'none' }}>
       {/* Global styles */}
@@ -249,16 +325,86 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
         @keyframes marqueeRev { from{transform:translateX(-50%)} to{transform:translateX(0)} }
         @keyframes fadeIn { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-        @keyframes cardFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
-        @keyframes glowPulse { 0%,100%{opacity:0.4} 50%{opacity:0.9} }
-        @keyframes blobFloat { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(30px,-20px) scale(1.05)} 66%{transform:translate(-20px,15px) scale(0.97)} }
-        @keyframes blobFloat2 { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(-25px,20px) scale(1.03)} 66%{transform:translate(20px,-15px) scale(0.98)} }
         @keyframes waveBar { 0%,100%{height:20px} 50%{height:var(--h)} }
         @keyframes dashFloat { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-12px)} }
-        @keyframes fadeInUp { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes rotateCube { from{transform:rotateX(12deg) rotateY(0deg)} to{transform:rotateX(12deg) rotateY(360deg)} }
+        @keyframes spin { to{transform:rotate(360deg)} }
+
+        /* Hero headline staggered fade-up */
+        @keyframes heroWord { from{opacity:0;transform:translateY(40px)} to{opacity:1;transform:translateY(0)} }
+        .hero-line-1{animation:heroWord 0.7s cubic-bezier(0.22,1,0.36,1) 0.1s both}
+        .hero-line-2{animation:heroWord 0.7s cubic-bezier(0.22,1,0.36,1) 0.25s both}
+        .hero-line-3{animation:heroWord 0.7s cubic-bezier(0.22,1,0.36,1) 0.4s both}
+        .hero-badge{animation:heroWord 0.6s cubic-bezier(0.22,1,0.36,1) 0.0s both}
+        .hero-body{animation:heroWord 0.7s cubic-bezier(0.22,1,0.36,1) 0.55s both}
+        .hero-cta{animation:heroWord 0.7s cubic-bezier(0.22,1,0.36,1) 0.7s both}
+        .hero-stats{animation:heroWord 0.7s cubic-bezier(0.22,1,0.36,1) 0.85s both}
+        .hero-card{animation:heroWord 0.8s cubic-bezier(0.22,1,0.36,1) 0.3s both}
+
+        /* Scroll reveal */
+        .reveal{opacity:0;transform:translateY(36px);transition:opacity 0.7s cubic-bezier(0.22,1,0.36,1),transform 0.7s cubic-bezier(0.22,1,0.36,1)}
+        .reveal.visible{opacity:1;transform:translateY(0)}
+        .reveal-delay-1{transition-delay:0.1s}
+        .reveal-delay-2{transition-delay:0.2s}
+        .reveal-delay-3{transition-delay:0.3s}
+        .reveal-delay-4{transition-delay:0.4s}
+        .reveal-delay-5{transition-delay:0.5s}
+        .reveal-delay-6{transition-delay:0.6s}
+
+        /* Pulsing border for featured plan card */
+        @keyframes borderPulse {
+          0%,100%{box-shadow:0 0 0 0 rgba(94,23,235,0.4),0 0 60px rgba(94,23,235,0.25),0 20px 60px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.08)}
+          50%{box-shadow:0 0 0 6px rgba(94,23,235,0.15),0 0 80px rgba(94,23,235,0.4),0 20px 60px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.08)}
+        }
+        .featured-plan{animation:borderPulse 2.5s ease-in-out infinite}
+
+        /* Confetti particle */
+        @keyframes confettiFall {
+          0%{transform:translateY(-20px) rotate(0deg);opacity:1}
+          100%{transform:translateY(120vh) rotate(720deg);opacity:0}
+        }
+        .confetti-particle{position:fixed;width:8px;height:8px;border-radius:2px;pointer-events:none;z-index:99999;animation:confettiFall linear forwards}
+
         * { box-sizing: border-box; cursor: none !important; }
         html { scroll-behavior: smooth; }
         ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-track{background:#000} ::-webkit-scrollbar-thumb{background:${P};border-radius:3px}
+
+        /* Responsive */
+        @media(max-width:1024px){
+          .landing-hero-grid{grid-template-columns:1fr!important}
+          .landing-hero-card{display:none!important}
+          .landing-why-grid{grid-template-columns:repeat(2,1fr)!important}
+          .landing-pricing-grid{grid-template-columns:1fr!important;max-width:480px;margin:0 auto}
+          .landing-footer-grid{grid-template-columns:1fr 1fr!important}
+          .landing-stats-grid{grid-template-columns:repeat(2,1fr)!important;gap:24px!important}
+          .landing-testimonials-grid{grid-template-columns:1fr!important}
+        }
+        @media(max-width:768px){
+          .landing-nav-links{display:none!important}
+          .landing-hamburger{display:flex!important}
+          .landing-hero-section{padding:90px 24px 60px!important}
+          .landing-hero-grid{gap:40px!important}
+          .landing-why-grid{grid-template-columns:1fr!important}
+          .landing-stats-grid{grid-template-columns:repeat(2,1fr)!important;gap:0!important}
+          .landing-pricing-grid{grid-template-columns:1fr!important;max-width:360px}
+          .landing-footer-grid{grid-template-columns:1fr!important}
+          .landing-services-title{font-size:clamp(28px,8vw,44px)!important}
+          .landing-section-padding{padding:80px 24px!important}
+          .landing-stats-section{padding:48px 24px!important}
+          .artist-carousel{padding:16px 20px 24px!important}
+          .hero-stats{gap:20px!important;flex-wrap:wrap!important}
+          .hero-stats>div{min-width:calc(50% - 10px)}
+        }
+        @media(max-width:480px){
+          .landing-stats-grid{grid-template-columns:repeat(2,1fr)!important}
+          .landing-hero-cta{flex-direction:column!important;align-items:flex-start!important}
+          .landing-hero-h1{font-size:clamp(44px,13vw,68px)!important}
+        }
+
+        /* Mobile menu */
+        .mobile-nav{position:fixed;top:64px;left:0;right:0;background:rgba(5,5,10,0.98);backdrop-filter:blur(24px);border-bottom:1px solid rgba(94,23,235,0.2);padding:20px 24px;z-index:49;display:flex;flex-direction:column;gap:4px}
+        .mobile-nav a{color:rgba(255,255,255,0.7);font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer;transition:color 0.2s}
+        .mobile-nav a:hover{color:#fff}
       `}</style>
 
       {/* ── CUSTOM CURSOR ── */}
@@ -275,103 +421,116 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
         padding: '0 48px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        background: scrolled ? 'rgba(2,2,2,0.92)' : 'transparent',
-        backdropFilter: scrolled ? 'blur(20px)' : 'none',
-        borderBottom: scrolled ? '1px solid rgba(94,23,235,0.15)' : '1px solid transparent',
+        background: scrolled ? 'rgba(2,2,2,0.95)' : 'transparent',
+        backdropFilter: scrolled ? 'blur(24px)' : 'none',
+        borderBottom: scrolled ? '1px solid rgba(94,23,235,0.18)' : '1px solid transparent',
         transition: 'all 0.35s ease',
       }}>
+        {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ width: '32px', height: '32px', background: `linear-gradient(135deg, ${P}, ${PL})`, borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 16px rgba(94,23,235,0.4)` }}>
-            <Music size={15} color="#fff" />
+          <div style={{ width: '34px', height: '34px', background: `linear-gradient(135deg, ${P}, ${PL})`, borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 20px rgba(94,23,235,0.5)` }}>
+            <Music size={16} color="#fff" />
           </div>
-          <span style={{ fontFamily: "'Anton', sans-serif", fontSize: '20px', letterSpacing: '0.05em' }}>IM MUSIC</span>
+          <span style={{ fontFamily: "'Anton', sans-serif", fontSize: '20px', letterSpacing: '0.08em', color: '#F2EDE5' }}>IM MUSIC</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
-          {['Servicios', 'Precios', 'Artistas'].map(l => (
-            <span key={l} style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'color 0.2s' }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#fff')} onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.45)')}>
+        {/* Desktop links */}
+        <div className="landing-nav-links" style={{ display: 'flex', alignItems: 'center', gap: '36px' }}>
+          {[['Servicios','#servicios'], ['Precios','#precios'], ['Artistas','#artistas']].map(([l, href]) => (
+            <a key={l} href={href} style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11px', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', cursor: 'pointer', transition: 'color 0.2s', textDecoration: 'none' }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#F2EDE5')} onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.45)')}>
               {l}
-            </span>
+            </a>
           ))}
           <Magnet padding={40} magnetStrength={3}>
             <Btn3D small onClick={onEnter}>Entrar</Btn3D>
           </Magnet>
         </div>
+        {/* Hamburger - mobile only */}
+        <button className="landing-hamburger" onClick={() => setMobileMenuOpen(o => !o)}
+          style={{ display: 'none', flexDirection: 'column', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}>
+          {[0,1,2].map(i => (
+            <div key={i} style={{ width: '22px', height: '2px', background: mobileMenuOpen && i === 1 ? 'transparent' : '#F2EDE5', borderRadius: '2px', transition: 'all 0.25s ease',
+              transform: mobileMenuOpen ? (i===0 ? 'rotate(45deg) translate(5px,5px)' : i===2 ? 'rotate(-45deg) translate(5px,-5px)' : 'none') : 'none' }} />
+          ))}
+        </button>
       </nav>
+      {/* Mobile menu */}
+      {mobileMenuOpen && (
+        <div className="mobile-nav">
+          {[['Servicios','#servicios'], ['Precios','#precios'], ['Artistas','#artistas']].map(([l, href]) => (
+            <a key={l} href={href} onClick={() => setMobileMenuOpen(false)}>{l}</a>
+          ))}
+          <div style={{ paddingTop: '12px' }}>
+            <Btn3D onClick={() => { setMobileMenuOpen(false); onEnter(); }} fullWidth>ENTRAR A LA PLATAFORMA</Btn3D>
+          </div>
+        </div>
+      )}
 
       {/* ── HERO ── */}
-      <section style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', padding: '100px 72px 80px', position: 'relative', zIndex: 1, overflow: 'hidden', background: '#000' }}>
+      <section className="landing-hero-section" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', padding: '100px 72px 80px', position: 'relative', zIndex: 1, overflow: 'hidden', background: '#000' }}>
         {/* CSS animated background — always visible immediately */}
         <CSSLightPillar />
+        {/* Purple radial glow blobs */}
+        <div style={{ position: 'absolute', top: '20%', right: '10%', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(94,23,235,0.18) 0%, transparent 70%)', pointerEvents: 'none', animation: 'heroWord 1s ease 0.2s both' }} />
+        <div style={{ position: 'absolute', bottom: '10%', right: '25%', width: '300px', height: '300px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(192,132,252,0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
         {/* LightPillar WebGL background — lazy loaded, replaces CSS version if WebGL works */}
         <WebGLErrorBoundary fallback={null}>
           <Suspense fallback={null}>
             <LightPillar
-              topColor="#5E17EB"
-              bottomColor="#7B3FFF"
-              intensity={1}
-              rotationSpeed={0.3}
-              glowAmount={0.002}
-              pillarWidth={3}
-              pillarHeight={0.4}
-              noiseIntensity={0.5}
-              pillarRotation={25}
-              interactive={false}
-              mixBlendMode="screen"
-              quality="high"
+              topColor="#5E17EB" bottomColor="#7B3FFF"
+              intensity={1} rotationSpeed={0.3} glowAmount={0.002}
+              pillarWidth={3} pillarHeight={0.4} noiseIntensity={0.5}
+              pillarRotation={25} interactive={false} mixBlendMode="screen" quality="high"
             />
           </Suspense>
         </WebGLErrorBoundary>
-        {/* Subtle dark overlay so text stays readable */}
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)', pointerEvents: 'none' }} />
+        {/* Readable overlay */}
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.52)', pointerEvents: 'none' }} />
 
-        <div style={{ maxWidth: '1340px', margin: '0 auto', width: '100%', display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '80px', alignItems: 'center' }}>
+        <div className="landing-hero-grid" style={{ maxWidth: '1340px', margin: '0 auto', width: '100%', display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '80px', alignItems: 'center', position: 'relative' }}>
           {/* Left: text */}
-          <div style={{ animation: 'fadeInUp 0.7s ease forwards' }}>
+          <div>
             {/* Badge */}
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(94,23,235,0.12)', border: '1px solid rgba(94,23,235,0.35)', borderRadius: '100px', padding: '7px 18px', marginBottom: '36px' }}>
+            <div className="hero-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(94,23,235,0.14)', border: '1px solid rgba(94,23,235,0.4)', borderRadius: '100px', padding: '8px 20px', marginBottom: '36px' }}>
               <div style={{ width: '7px', height: '7px', background: '#22c55e', borderRadius: '50%', animation: 'pulse 1.5s ease-in-out infinite', flexShrink: 0 }} />
               <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: PL }}>Plataforma activa — 50K+ artistas</span>
             </div>
 
-            {/* Headline — Anton, huge, cream */}
-            <h1 style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(56px, 7vw, 96px)', lineHeight: 0.95, margin: '0 0 28px', letterSpacing: '-0.02em' }}>
-              <span style={{ display: 'block', color: '#F2EDE5' }}>DISTRIBUYE.</span>
-              <span style={{ display: 'block', background: `linear-gradient(130deg, ${P} 0%, ${PL} 50%, #C084FC 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>MONETIZA.</span>
-              <span style={{ display: 'block', color: '#F2EDE5' }}>DOMINA.</span>
+            {/* Headline — staggered animation */}
+            <h1 className="landing-hero-h1" style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(3.5rem, 7vw, 6rem)', lineHeight: 0.92, margin: '0 0 28px', letterSpacing: '-0.01em' }}>
+              <span className="hero-line-1" style={{ display: 'block', color: '#F2EDE5' }}>DISTRIBUYE.</span>
+              <span className="hero-line-2" style={{ display: 'block', background: `linear-gradient(130deg, ${P} 0%, ${PL} 50%, #C084FC 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>MONETIZA.</span>
+              <span className="hero-line-3" style={{ display: 'block', color: '#F2EDE5' }}>DOMINA.</span>
             </h1>
 
             {/* Rotating tagline */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px', fontFamily: "'Space Grotesk', sans-serif", fontSize: '14px', fontWeight: 600, letterSpacing: '0.06em' }}>
+            <div className="hero-body" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', fontFamily: "'Space Grotesk', sans-serif", fontSize: '14px', fontWeight: 600, letterSpacing: '0.06em' }}>
               <span style={{ color: PL, fontSize: '12px' }}>▸</span>
               <RotatingText
                 texts={['DISTRIBUCIÓN EN 150+ PLATAFORMAS', 'REGALÍAS EN TIEMPO REAL', 'MARKETING CON IA', 'SPLITS AUTOMÁTICOS', 'PUBLISHING & REGISTRO']}
-                rotationInterval={2500}
-                splitBy="words"
-                staggerDuration={0.04}
-                staggerFrom="first"
+                rotationInterval={2500} splitBy="words" staggerDuration={0.04} staggerFrom="first"
                 style={{ color: 'rgba(242,237,229,0.55)', fontFamily: "'Space Grotesk', sans-serif", fontSize: '13px', letterSpacing: '0.06em' }}
               />
             </div>
 
-            <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '18px', color: 'rgba(242,237,229,0.45)', lineHeight: 1.75, margin: '0 0 44px', maxWidth: '480px' }}>
+            <p className="hero-body" style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '17px', color: 'rgba(242,237,229,0.5)', lineHeight: 1.75, margin: '0 0 44px', maxWidth: '480px' }}>
               La plataforma todo-en-uno para artistas independientes. Distribución en 150+ tiendas, regalías en tiempo real, marketing con IA y herramientas de crecimiento profesional.
             </p>
 
-            <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '52px', flexWrap: 'wrap' }}>
+            <div className="hero-cta landing-hero-cta" style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '52px', flexWrap: 'wrap' }}>
               <Magnet padding={60} magnetStrength={3}>
                 <Btn3D onClick={onEnter}>COMENZAR GRATIS <ArrowRight size={16} /></Btn3D>
               </Magnet>
               <Magnet padding={60} magnetStrength={4}>
-                <Btn3D variant="ghost" onClick={onEnter}><Play size={14} /> Ver demo</Btn3D>
+                <Btn3D variant="ghost" onClick={onEnter}><Play size={14} /> VER DEMO</Btn3D>
               </Magnet>
             </div>
 
             {/* Mini stats */}
-            <div style={{ display: 'flex', gap: '36px', borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: '32px', flexWrap: 'wrap' }}>
+            <div className="hero-stats" style={{ display: 'flex', gap: '36px', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '32px', flexWrap: 'wrap' }}>
               {STATS.map(s => (
                 <div key={s.label}>
-                  <p style={{ fontFamily: "'Anton', sans-serif", fontSize: '28px', color: '#F2EDE5', margin: 0, letterSpacing: '0.02em' }}>
+                  <p style={{ fontFamily: "'Anton', sans-serif", fontSize: '30px', color: '#F2EDE5', margin: 0, letterSpacing: '0.02em' }}>
                     {s.prefix || ''}<AnimatedCounter target={s.num} suffix={s.suffix} />
                   </p>
                   <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '10px', color: 'rgba(242,237,229,0.3)', margin: '3px 0 0', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{s.label}</p>
@@ -381,7 +540,7 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
           </div>
 
           {/* Right: CSS animated music dashboard — no WebGL */}
-          <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', animation: 'dashFloat 6s ease-in-out infinite' }}>
+          <div className="landing-hero-card hero-card" style={{ position: 'relative', display: 'flex', justifyContent: 'center', animation: 'dashFloat 6s ease-in-out infinite' }}>
             {/* Main dashboard card */}
             <div style={{ width: '100%', maxWidth: '460px', background: 'rgba(10,5,20,0.85)', border: '1px solid rgba(94,23,235,0.3)', borderRadius: '28px', padding: '32px', backdropFilter: 'blur(24px)', boxShadow: '0 0 80px rgba(94,23,235,0.18), 0 40px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)' }}>
               {/* Card header */}
@@ -460,7 +619,7 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
       </div>
 
       {/* ── STATS BAR ── */}
-      <section style={{ background: `linear-gradient(135deg, rgba(94,23,235,0.15) 0%, rgba(45,11,107,0.2) 100%)`, borderTop: '1px solid rgba(94,23,235,0.2)', borderBottom: '1px solid rgba(94,23,235,0.2)', padding: '64px 48px', position: 'relative', zIndex: 1, overflow: 'hidden' }}>
+      <section className="landing-stats-section" style={{ background: `linear-gradient(135deg, rgba(94,23,235,0.12) 0%, rgba(45,11,107,0.18) 100%)`, borderTop: '1px solid rgba(94,23,235,0.2)', borderBottom: '1px solid rgba(94,23,235,0.2)', padding: '64px 48px', position: 'relative', zIndex: 1, overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '600px', height: '300px', background: `radial-gradient(ellipse, rgba(94,23,235,0.12) 0%, transparent 70%)`, pointerEvents: 'none' }} />
         <div className="landing-stats-grid" style={{ maxWidth: '1100px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0', position: 'relative' }}>
           {[
@@ -469,44 +628,52 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
             { end: 2, suffix: 'M+', prefix: '$', label: 'En regalías pagadas', icon: DollarSign },
             { end: 98, suffix: '%', label: 'Tasa de satisfacción', icon: Star },
           ].map((stat, i) => (
-            <div key={i} style={{ textAlign: 'center', padding: '0 24px', borderRight: i < 3 ? '1px solid rgba(94,23,235,0.2)' : 'none' }}>
-              <stat.icon size={20} color={PL} style={{ marginBottom: '12px' }} />
-              <div style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(40px, 4vw, 60px)', color: '#fff', letterSpacing: '-0.02em', lineHeight: 1, marginBottom: '8px' }}>
+            <div key={i} className={`reveal reveal-delay-${i + 1}`} style={{ textAlign: 'center', padding: '0 24px', borderRight: i < 3 ? '1px solid rgba(94,23,235,0.2)' : 'none' }}>
+              <stat.icon size={22} color={PL} style={{ marginBottom: '14px', display: 'block', margin: '0 auto 14px' }} />
+              <div style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(2.5rem, 4vw, 3.75rem)', color: '#F2EDE5', letterSpacing: '-0.02em', lineHeight: 1, marginBottom: '10px' }}>
                 {stat.prefix || ''}<CountUp end={stat.end} suffix={stat.suffix} duration={2000} />
               </div>
-              <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{stat.label}</div>
+              <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{stat.label}</div>
             </div>
           ))}
         </div>
       </section>
 
       {/* ── SERVICES ── */}
-      <section id="servicios" style={{ padding: '120px 0', position: 'relative', zIndex: 1 }}>
-        <div style={{ textAlign: 'center', marginBottom: '72px', padding: '0 48px' }}>
-          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', color: PL, display: 'block', marginBottom: '16px' }}>LO QUE OFRECEMOS</span>
-          <h2 style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(36px, 4vw, 60px)', color: '#fff', margin: 0, letterSpacing: '0.01em' }}>
-            TODO LO QUE NECESITAS<br />
+      <section id="servicios" className="landing-section-padding" style={{ padding: '120px 48px', position: 'relative', zIndex: 1 }}>
+        <div style={{ textAlign: 'center', marginBottom: '72px' }}>
+          <span className="reveal" style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', color: PL, display: 'block', marginBottom: '16px' }}>LO QUE OFRECEMOS</span>
+          <h2 className="reveal reveal-delay-1 landing-services-title" style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(2.5rem, 5vw, 3.75rem)', color: '#F2EDE5', margin: '0 0 8px', letterSpacing: '0.01em' }}>
+            TODO LO QUE NECESITAS
+          </h2>
+          <h2 className="reveal reveal-delay-2" style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(2.5rem, 5vw, 3.75rem)', margin: '0', letterSpacing: '0.01em' }}>
             <span style={{ background: `linear-gradient(135deg, ${P}, ${PL})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>EN UNA PLATAFORMA</span>
           </h2>
         </div>
-        {/* CircularGallery — interactive scrollable service showcase */}
-        <div style={{ width: '100%', height: '500px', background: '#0a0a0a' }}>
-          <WebGLErrorBoundary fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'rgba(255,255,255,0.3)', fontFamily: "'Space Grotesk', sans-serif", fontSize: '14px' }}>Galería de servicios</div>}>
-            <Suspense fallback={<div style={{ height: '100%', background: '#0a0a0a' }} />}>
+        {/* Service cards grid */}
+        <div className="reveal reveal-delay-2" style={{ maxWidth: '1200px', margin: '0 auto 60px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+          {SERVICES.map((s, i) => (
+            <ServiceCard key={i} icon={s.icon} title={s.title} desc={s.desc} />
+          ))}
+        </div>
+        {/* CircularGallery — interactive scrollable showcase */}
+        <div className="reveal reveal-delay-3" style={{ width: '100%', height: '420px', background: '#050505', borderRadius: '24px', overflow: 'hidden', border: '1px solid rgba(94,23,235,0.12)' }}>
+          <WebGLErrorBoundary fallback={
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'rgba(255,255,255,0.3)', fontFamily: "'Space Grotesk', sans-serif", fontSize: '14px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+              Arrastra para explorar servicios
+            </div>
+          }>
+            <Suspense fallback={<div style={{ height: '100%', background: '#050505', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ width: '40px', height: '40px', border: `3px solid ${P}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /></div>}>
               <CircularGallery
                 items={[
-                  { image: 'https://picsum.photos/seed/dist/800/600?grayscale', text: 'Distribución Digital' },
-                  { image: 'https://picsum.photos/seed/ai/800/600?grayscale', text: 'Marketing con IA' },
-                  { image: 'https://picsum.photos/seed/agent/800/600?grayscale', text: 'Agentes IA 24/7' },
-                  { image: 'https://picsum.photos/seed/royal/800/600?grayscale', text: 'Gestión de Regalías' },
-                  { image: 'https://picsum.photos/seed/video/800/600?grayscale', text: 'Videos Musicales' },
-                  { image: 'https://picsum.photos/seed/fund/800/600?grayscale', text: 'Financiamiento' },
+                  { image: 'https://picsum.photos/seed/music1/800/600?grayscale', text: 'Distribución Digital' },
+                  { image: 'https://picsum.photos/seed/music2/800/600?grayscale', text: 'Marketing con IA' },
+                  { image: 'https://picsum.photos/seed/music3/800/600?grayscale', text: 'Agentes IA 24/7' },
+                  { image: 'https://picsum.photos/seed/music4/800/600?grayscale', text: 'Gestión de Regalías' },
+                  { image: 'https://picsum.photos/seed/music5/800/600?grayscale', text: 'Videos Musicales' },
+                  { image: 'https://picsum.photos/seed/music6/800/600?grayscale', text: 'Financiamiento' },
                 ]}
-                bend={1}
-                textColor="#F2EDE5"
-                borderRadius={0.05}
-                scrollSpeed={2}
-                scrollEase={0.05}
+                bend={1} textColor="#F2EDE5" borderRadius={0.05} scrollSpeed={2} scrollEase={0.05}
               />
             </Suspense>
           </WebGLErrorBoundary>
@@ -514,12 +681,12 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
       </section>
 
       {/* ── POR QUÉ NOSOTROS ── */}
-      <section style={{ padding: '80px 48px', position: 'relative', zIndex: 1 }}>
+      <section className="landing-section-padding" style={{ padding: '80px 48px', position: 'relative', zIndex: 1 }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '64px' }}>
-            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', color: PL, display: 'block', marginBottom: '16px' }}>NUESTRA VENTAJA</span>
-            <h2 style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(32px, 3.5vw, 52px)', color: '#fff', margin: 0, letterSpacing: '0.01em' }}>
-              POR QUÉ <span style={{ background: `linear-gradient(135deg, ${P}, ${PL})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>IM MUSIC</span>
+            <span className="reveal" style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', color: PL, display: 'block', marginBottom: '16px' }}>NUESTRA VENTAJA</span>
+            <h2 className="reveal reveal-delay-1" style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(2.2rem, 4vw, 3.5rem)', color: '#F2EDE5', margin: 0, letterSpacing: '0.01em' }}>
+              POR QUÉ <span style={{ color: P }}>IM MUSIC</span>
             </h2>
           </div>
           <div className="landing-why-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
@@ -529,15 +696,16 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
               { icon: Sparkles, title: 'IA de primera', desc: 'Herramientas de IA entrenadas específicamente para la industria musical.' },
               { icon: Shield, title: 'Seguridad total', desc: 'Contratos digitales, splits automatizados, pagos verificados y seguros.' },
             ].map((d, i) => (
-              <div key={i} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '20px', padding: '32px 24px', transition: 'all 0.3s ease' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(94,23,235,0.08)'; (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(94,23,235,0.3)'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.02)'; (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.06)'; }}
+              <div key={i} className={`reveal reveal-delay-${i + 1}`}
+                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '20px', padding: '32px 24px', transition: 'all 0.3s ease' }}
+                onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background = 'rgba(94,23,235,0.1)'; el.style.borderColor = 'rgba(94,23,235,0.35)'; el.style.boxShadow = '0 0 30px rgba(94,23,235,0.12)'; el.style.transform = 'translateY(-4px)'; }}
+                onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background = 'rgba(255,255,255,0.02)'; el.style.borderColor = 'rgba(255,255,255,0.06)'; el.style.boxShadow = 'none'; el.style.transform = 'none'; }}
               >
-                <div style={{ width: '44px', height: '44px', background: `rgba(94,23,235,0.15)`, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', border: '1px solid rgba(94,23,235,0.25)' }}>
-                  <d.icon size={20} color={PL} />
+                <div style={{ width: '48px', height: '48px', background: `rgba(94,23,235,0.15)`, borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', border: '1px solid rgba(94,23,235,0.3)' }}>
+                  <d.icon size={22} color={PL} />
                 </div>
-                <h3 style={{ fontFamily: "'Anton', sans-serif", fontSize: '20px', color: '#fff', margin: '0 0 10px', letterSpacing: '0.03em' }}>{d.title}</h3>
-                <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.4)', lineHeight: 1.7, margin: 0 }}>{d.desc}</p>
+                <h3 style={{ fontFamily: "'Anton', sans-serif", fontSize: '22px', color: '#F2EDE5', margin: '0 0 10px', letterSpacing: '0.03em' }}>{d.title}</h3>
+                <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '15px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, margin: 0 }}>{d.desc}</p>
               </div>
             ))}
           </div>
@@ -548,9 +716,9 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
       <section id="artistas" style={{ padding: '100px 0', position: 'relative', zIndex: 1, overflow: 'hidden' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 48px', marginBottom: '48px' }}>
           <div style={{ textAlign: 'center' }}>
-            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', color: PL, display: 'block', marginBottom: '16px' }}>ARTISTAS QUE CONFÍAN</span>
-            <h2 style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(32px, 3.5vw, 52px)', color: '#fff', margin: 0, letterSpacing: '0.01em' }}>
-              HISTORIAS DE <span style={{ background: `linear-gradient(135deg, ${P}, ${PL})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>ÉXITO</span>
+            <span className="reveal" style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', color: PL, display: 'block', marginBottom: '16px' }}>ARTISTAS QUE CONFÍAN</span>
+            <h2 className="reveal reveal-delay-1" style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(2.2rem, 4vw, 3.5rem)', color: '#F2EDE5', margin: 0, letterSpacing: '0.01em' }}>
+              HISTORIAS DE <span style={{ color: P }}>ÉXITO</span>
             </h2>
           </div>
         </div>
@@ -575,11 +743,11 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
       </section>
 
       {/* ── TESTIMONIALS ── */}
-      <section style={{ padding: '80px 48px', position: 'relative', zIndex: 1, background: 'rgba(0,0,0,0.4)' }}>
+      <section className="landing-section-padding" style={{ padding: '80px 48px', position: 'relative', zIndex: 1, background: 'rgba(5,5,15,0.6)' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '56px' }}>
-            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', color: PL, display: 'block', marginBottom: '16px' }}>TESTIMONIOS</span>
-            <h2 style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(30px, 3vw, 48px)', color: '#fff', margin: 0 }}>LO QUE DICEN LOS ARTISTAS</h2>
+            <span className="reveal" style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', color: PL, display: 'block', marginBottom: '16px' }}>TESTIMONIOS</span>
+            <h2 className="reveal reveal-delay-1" style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(2.2rem, 3.5vw, 3.5rem)', color: '#F2EDE5', margin: 0 }}>LO QUE DICEN LOS ARTISTAS</h2>
           </div>
           <div className="landing-testimonials-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
             {[
@@ -587,7 +755,9 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
               { quote: '"El split automático con mi productor funciona perfecto. Cero drama, cero confusion, puro dinero."', name: 'Niko Beats', role: 'Trap Producer', stars: 5 },
               { quote: '"El marketing con IA me generó una estrategia que triplicó mis seguidores en 3 meses."', name: 'Mía Solar', role: 'Pop Artist', stars: 5 },
             ].map((t, i) => (
-              <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '20px', padding: '32px', position: 'relative' }}>
+              <div key={i} className={`reveal reveal-delay-${i + 1}`} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '20px', padding: '32px', position: 'relative', transition: 'all 0.3s ease' }}
+                onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor = 'rgba(94,23,235,0.35)'; el.style.boxShadow = '0 0 30px rgba(94,23,235,0.1)'; }}
+                onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor = 'rgba(255,255,255,0.07)'; el.style.boxShadow = 'none'; }}>
                 <div style={{ position: 'absolute', top: '20px', right: '24px', display: 'flex', gap: '3px' }}>
                   {Array.from({ length: t.stars }).map((_, si) => <Star key={si} size={12} color="#fbbf24" fill="#fbbf24" />)}
                 </div>
@@ -609,55 +779,52 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
       </section>
 
       {/* ── PRICING ── */}
-      <section id="precios" style={{ padding: '120px 48px', position: 'relative', zIndex: 1 }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+      <section id="precios" className="landing-section-padding" style={{ padding: '120px 48px', position: 'relative', zIndex: 1 }}>
+        {/* Glow behind section */}
+        <div style={{ position: 'absolute', top: '30%', left: '50%', transform: 'translateX(-50%)', width: '900px', height: '500px', background: 'radial-gradient(ellipse, rgba(94,23,235,0.1) 0%, transparent 65%)', pointerEvents: 'none' }} />
+        <div style={{ maxWidth: '1100px', margin: '0 auto', position: 'relative' }}>
           <div style={{ textAlign: 'center', marginBottom: '72px' }}>
-            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', color: PL, display: 'block', marginBottom: '16px' }}>PLANES Y PRECIOS</span>
-            <h2 style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(36px, 4vw, 56px)', color: '#fff', margin: '0 0 12px', letterSpacing: '0.01em' }}>ELIGE TU PLAN</h2>
-            <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '16px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>Sin compromisos. Cambia de plan cuando quieras.</p>
+            <span className="reveal" style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', color: PL, display: 'block', marginBottom: '16px' }}>PLANES Y PRECIOS</span>
+            <h2 className="reveal reveal-delay-1" style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(2.5rem, 4.5vw, 3.75rem)', color: '#F2EDE5', margin: '0 0 12px', letterSpacing: '0.01em' }}>ELIGE TU PLAN</h2>
+            <p className="reveal reveal-delay-2" style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '16px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, margin: 0 }}>Sin compromisos. Precios en pesos colombianos. Cambia cuando quieras.</p>
           </div>
           <div className="landing-pricing-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', alignItems: 'center' }}>
             {PLANS.map((plan, i) => (
-              <PlanCard key={i} plan={plan} onSelect={onEnter} />
+              <PlanCard key={i} plan={plan} onSelect={(el) => { fireConfetti(el); onEnter(); }} />
             ))}
           </div>
         </div>
       </section>
 
       {/* ── CTA FINAL ── */}
-      <section style={{ padding: '120px 48px', position: 'relative', zIndex: 1, textAlign: 'center' }}>
-        {/* Glow backdrop */}
-        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '800px', height: '400px', background: `radial-gradient(ellipse, rgba(94,23,235,0.15) 0%, transparent 70%)`, pointerEvents: 'none' }} />
+      <section className="landing-section-padding" style={{ padding: '120px 48px', position: 'relative', zIndex: 1, textAlign: 'center' }}>
+        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '800px', height: '400px', background: `radial-gradient(ellipse, rgba(94,23,235,0.18) 0%, transparent 70%)`, pointerEvents: 'none' }} />
         <div style={{ maxWidth: '700px', margin: '0 auto', position: 'relative' }}>
-          <div style={{ width: '88px', height: '88px', background: `linear-gradient(135deg, ${P}, ${PL})`, borderRadius: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 32px', boxShadow: `0 0 80px rgba(94,23,235,0.6), 0 20px 40px rgba(94,23,235,0.3)` }}>
+          <div className="reveal" style={{ width: '88px', height: '88px', background: `linear-gradient(135deg, ${P}, ${PL})`, borderRadius: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 32px', boxShadow: `0 0 80px rgba(94,23,235,0.6), 0 20px 40px rgba(94,23,235,0.3)` }}>
             <Music size={40} color="#fff" />
           </div>
-          <h2 style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(44px, 5.5vw, 72px)', color: '#fff', margin: '0 0 20px', letterSpacing: '0.01em', lineHeight: 1.05 }}>
+          <h2 className="reveal reveal-delay-1" style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(2.8rem, 5.5vw, 4.5rem)', color: '#F2EDE5', margin: '0 0 20px', letterSpacing: '0.01em', lineHeight: 1.05 }}>
             EMPIEZA HOY.<br />
             <ShinyText text="ES GRATIS." color={`rgba(255,255,255,0.5)`} shineColor="#fff" speed={1.5} spread={100}
               style={{ fontFamily: "'Anton', sans-serif", fontSize: 'inherit', letterSpacing: '0.01em' }} />
           </h2>
-          <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '18px', color: 'rgba(255,255,255,0.4)', margin: '0 0 48px', lineHeight: 1.7 }}>Sin tarjeta de crédito. Sin contratos. Cancela cuando quieras.</p>
-          <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
+          <p className="reveal reveal-delay-2" style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '17px', color: 'rgba(255,255,255,0.5)', margin: '0 0 48px', lineHeight: 1.7 }}>Sin tarjeta de crédito. Sin contratos. Cancela cuando quieras.</p>
+          <div className="reveal reveal-delay-3" style={{ display: 'flex', gap: '16px', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
             <Magnet padding={60} magnetStrength={2}>
-              <Btn3D onClick={onEnter}>
-                CREAR CUENTA GRATIS <ArrowRight size={16} />
-              </Btn3D>
+              <Btn3D onClick={onEnter}>CREAR CUENTA GRATIS <ArrowRight size={16} /></Btn3D>
             </Magnet>
             <Magnet padding={60} magnetStrength={3}>
-              <Btn3D variant="ghost" onClick={onEnter}>
-                Ver demo <Play size={14} />
-              </Btn3D>
+              <Btn3D variant="ghost" onClick={onEnter}>VER DEMO <Play size={14} /></Btn3D>
             </Magnet>
           </div>
-          <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.2)', marginTop: '24px', letterSpacing: '0.05em' }}>
+          <p className="reveal reveal-delay-4" style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.2)', marginTop: '24px', letterSpacing: '0.05em' }}>
             50,000+ artistas ya confían en IM Music · Distribución activa en 150+ plataformas
           </p>
         </div>
       </section>
 
       {/* ── FOOTER (4 columns) ── */}
-      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '64px 48px 32px', position: 'relative', zIndex: 1 }}>
+      <footer style={{ borderTop: '1px solid rgba(94,23,235,0.15)', padding: '64px 48px 32px', position: 'relative', zIndex: 1, background: 'rgba(5,3,12,1)' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div className="landing-footer-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '48px', marginBottom: '48px' }}>
             {/* Brand */}
@@ -738,62 +905,67 @@ function ServiceCard({ icon: Icon, title, desc }: { key?: React.Key; icon: any; 
   );
 }
 
-function PlanCard({ plan, onSelect }: { key?: React.Key; plan: typeof PLANS[0]; onSelect: () => void }) {
+function PlanCard({ plan, onSelect }: { key?: React.Key; plan: typeof PLANS[0]; onSelect: (el?: HTMLElement) => void }) {
   const [hover, setHover] = useState(false);
   const [tilt, setTilt] = useState({ rx: 0, ry: 0 });
   const cardRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLDivElement>(null);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;
     const rect = cardRef.current.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width - 0.5;
     const y = (e.clientY - rect.top) / rect.height - 0.5;
-    setTilt({ rx: -y * 12, ry: x * 12 });
+    setTilt({ rx: -y * 10, ry: x * 10 });
   };
 
   return (
-    <div style={{ perspective: '800px' }}>
+    <div className={`reveal reveal-delay-${plan.name === 'FREE' ? 1 : plan.name === 'INDIE' ? 2 : 3}`} style={{ perspective: '800px' }}>
       <div
         ref={cardRef}
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => { setHover(false); setTilt({ rx: 0, ry: 0 }); }}
         onMouseMove={handleMouseMove}
+        className={plan.featured ? 'featured-plan' : ''}
         style={{
-          background: plan.featured ? `linear-gradient(160deg, rgba(94,23,235,0.2), rgba(123,63,255,0.1))` : 'rgba(255,255,255,0.03)',
-          border: `1px solid ${plan.featured ? 'rgba(94,23,235,0.6)' : hover ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.06)'}`,
+          background: plan.featured
+            ? `linear-gradient(160deg, rgba(94,23,235,0.25) 0%, rgba(123,63,255,0.15) 50%, rgba(94,23,235,0.1) 100%)`
+            : 'rgba(255,255,255,0.03)',
+          border: `1px solid ${plan.featured ? 'rgba(94,23,235,0.7)' : hover ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.07)'}`,
           borderRadius: '24px', padding: '36px 28px',
           transform: plan.featured
-            ? `scale(1.04) rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`
+            ? `scale(1.05) rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`
             : `translateY(${hover ? '-6px' : '0'}) rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`,
-          transition: hover ? 'transform 0.1s ease, box-shadow 0.3s ease, border-color 0.3s ease' : 'transform 0.4s cubic-bezier(0.3,0.7,0.4,1.5), box-shadow 0.3s ease, border-color 0.3s ease',
-          boxShadow: plan.featured
-            ? `0 0 60px rgba(94,23,235,0.25), 0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08)`
-            : hover ? '0 20px 40px rgba(0,0,0,0.4), 0 0 30px rgba(94,23,235,0.1)' : 'none',
+          transition: hover ? 'transform 0.12s ease, border-color 0.3s' : 'transform 0.4s cubic-bezier(0.34,1.56,0.64,1), border-color 0.3s',
           position: 'relative', overflow: 'hidden',
           transformStyle: 'preserve-3d',
           cursor: 'pointer',
         }}
       >
         {plan.featured && (
-          <div style={{ position: 'absolute', top: '16px', right: '16px', background: `linear-gradient(135deg, ${P}, ${PL})`, padding: '4px 12px', borderRadius: '100px', fontFamily: "'Anton', sans-serif", fontSize: '10px', letterSpacing: '0.15em', color: '#fff', boxShadow: `0 0 16px rgba(94,23,235,0.4)` }}>POPULAR</div>
+          <div style={{ position: 'absolute', top: '16px', right: '16px', background: `linear-gradient(135deg, ${P}, ${PL})`, padding: '5px 14px', borderRadius: '100px', fontFamily: "'Anton', sans-serif", fontSize: '10px', letterSpacing: '0.2em', color: '#fff', boxShadow: `0 0 20px rgba(94,23,235,0.6)`, zIndex: 1 }}>
+            MÁS POPULAR
+          </div>
         )}
         {plan.featured && (
-          <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at 50% 0%, rgba(94,23,235,0.15) 0%, transparent 60%)`, pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at 50% 0%, rgba(94,23,235,0.2) 0%, transparent 65%)`, pointerEvents: 'none' }} />
         )}
-        <p style={{ fontFamily: "'Anton', sans-serif", fontSize: '13px', color: PL, letterSpacing: '0.25em', margin: '0 0 16px' }}>{plan.name}</p>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '8px' }}>
-          <span style={{ fontFamily: "'Anton', sans-serif", fontSize: '52px', color: '#fff', letterSpacing: '-0.02em', textShadow: plan.featured ? `0 0 40px rgba(94,23,235,0.5)` : 'none' }}>{plan.price}</span>
-          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.3)' }}>{plan.period}</span>
+        <p style={{ fontFamily: "'Anton', sans-serif", fontSize: '13px', color: plan.featured ? '#C084FC' : PL, letterSpacing: '0.25em', margin: '0 0 16px' }}>{plan.name}</p>
+        <div style={{ marginBottom: '4px' }}>
+          <span style={{ fontFamily: "'Anton', sans-serif", fontSize: plan.price === 'GRATIS' ? '44px' : '40px', color: '#F2EDE5', letterSpacing: '-0.02em', textShadow: plan.featured ? `0 0 40px rgba(94,23,235,0.6)` : 'none' }}>{plan.price}</span>
         </div>
-        <div style={{ height: '1px', background: plan.featured ? `linear-gradient(90deg, transparent, rgba(94,23,235,0.4), transparent)` : 'rgba(255,255,255,0.06)', margin: '20px 0' }} />
+        <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.35)', margin: '0 0 20px', letterSpacing: '0.05em' }}>{plan.cop}</p>
+        <div style={{ height: '1px', background: plan.featured ? `linear-gradient(90deg, transparent, rgba(94,23,235,0.5), transparent)` : 'rgba(255,255,255,0.06)', margin: '0 0 20px' }} />
         <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 28px' }}>
           {plan.features.map((f, i) => (
-            <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '7px 0', fontFamily: "'Space Grotesk', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.65)' }}>
-              <Check size={14} color={PL} style={{ flexShrink: 0 }} />{f}
+            <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '7px 0', fontFamily: "'Space Grotesk', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>
+              <Check size={15} color={plan.featured ? '#C084FC' : PL} style={{ flexShrink: 0 }} />{f}
             </li>
           ))}
         </ul>
-        <Btn3D fullWidth variant={plan.featured ? 'primary' : 'ghost'} onClick={onSelect}>{plan.cta}</Btn3D>
+        <div ref={btnRef}>
+          <Btn3D fullWidth variant={plan.featured ? 'primary' : 'ghost'} onClick={() => onSelect(btnRef.current ?? undefined)}>{plan.cta}</Btn3D>
+        </div>
       </div>
     </div>
   );
