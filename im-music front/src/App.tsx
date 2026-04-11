@@ -1049,6 +1049,40 @@ const MODULES = [
   { id: 'settings', label: 'Ajustes', icon: Settings, group: 'Gestión' },
 ];
 
+function SidebarItem({ m, isActive, onNav, onClose }: { m: typeof MODULES[0]; isActive: boolean; onNav: (id:string)=>void; onClose: ()=>void }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <button key={m.id} onClick={() => { onNav(m.id); onClose(); }}
+      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{
+        width: '100%', display: 'flex', alignItems: 'center', gap: '9px',
+        padding: '8px 10px', borderRadius: '10px', border: 'none', cursor: 'pointer',
+        background: isActive ? `rgba(94,23,235,0.18)` : hov ? 'rgba(255,255,255,0.04)' : 'transparent',
+        color: isActive ? '#fff' : hov ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.32)',
+        fontSize: '12px', fontFamily: "'Space Grotesk', sans-serif",
+        fontWeight: isActive ? 600 : 400,
+        transition: 'all 0.18s cubic-bezier(0.34,1.56,0.64,1)',
+        textAlign: 'left',
+        transform: isActive ? 'translateX(4px)' : hov ? 'translateX(2px)' : 'translateX(0)',
+        boxShadow: isActive ? `inset 3px 0 0 ${P}, inset 0 0 20px rgba(94,23,235,0.08)` : 'none',
+        position: 'relative',
+      }}>
+      <span style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        width: '26px', height: '26px', borderRadius: '7px', flexShrink: 0,
+        background: isActive ? `rgba(94,23,235,0.25)` : hov ? 'rgba(255,255,255,0.06)' : 'transparent',
+        transition: 'all 0.18s ease',
+        transform: hov || isActive ? 'scale(1.15)' : 'scale(1)',
+        boxShadow: isActive ? `0 0 12px rgba(94,23,235,0.4)` : 'none',
+      }}>
+        <m.icon size={13} color={isActive ? PL : hov ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.28)'} />
+      </span>
+      <span>{m.label}</span>
+      {isActive && <span style={{ marginLeft:'auto', width:'5px', height:'5px', borderRadius:'50%', background:PL, boxShadow:`0 0 8px ${PL}`, animation:'glowPulse 2s ease-in-out infinite' }} />}
+    </button>
+  );
+}
+
 function Sidebar({ active, onNav, user, onLogout, open, onClose }: {
   active: string; onNav: (id: string) => void; user: any; onLogout: () => void; open: boolean; onClose: () => void;
 }) {
@@ -1059,46 +1093,50 @@ function Sidebar({ active, onNav, user, onLogout, open, onClose }: {
   return (
     <>
       {open && <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 20 }} />}
-      <aside style={{ position: 'fixed', top: 0, left: 0, height: '100%', width: `${SIDEBAR_W}px`, background: '#080808', borderRight: '1px solid rgba(255,255,255,0.05)', zIndex: 30, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ padding: '18px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ width: '32px', height: '32px', background: `linear-gradient(135deg, ${P}, ${PL})`, borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 16px rgba(94,23,235,0.35)` }}>
-            <Music size={15} color="#fff" />
+      <aside style={{ position: 'fixed', top: 0, left: 0, height: '100%', width: `${SIDEBAR_W}px`, background: 'rgba(5,4,12,0.98)', backdropFilter: 'blur(24px)', borderRight: '1px solid rgba(94,23,235,0.12)', zIndex: 30, display: 'flex', flexDirection: 'column' }}>
+        {/* Logo header */}
+        <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '11px' }}>
+          <div style={{ width: '34px', height: '34px', background: `linear-gradient(135deg, ${P}, ${PL})`, borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 20px rgba(94,23,235,0.5), 0 0 40px rgba(94,23,235,0.2)`, animation: 'logoFloat 4s ease-in-out infinite', flexShrink: 0 }}>
+            <Music size={16} color="#fff" />
           </div>
-          <span style={{ fontFamily: "'Anton', sans-serif", fontSize: '17px', letterSpacing: '0.05em', color: '#fff' }}>IM MUSIC</span>
+          <div>
+            <span style={{ fontFamily: "'Anton', sans-serif", fontSize: '16px', letterSpacing: '0.08em', color: '#fff', display: 'block', lineHeight: 1 }}>IM MUSIC</span>
+            <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: '9px', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.18em', textTransform: 'uppercase' }}>Platform</span>
+          </div>
         </div>
-        <div style={{ flex: 1, overflowY: 'auto', padding: '10px 8px' }}>
+
+        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 8px 0', scrollbarWidth: 'none' }}>
           {groups.map(group => {
             const items = MODULES.filter(m => m.group === group);
             const isCollapsed = collapsed.has(group);
             return (
-              <div key={group}>
-                <button onClick={() => toggle(group)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 10px', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)', fontSize: '9px', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', marginTop: '6px' }}>
+              <div key={group} style={{ marginBottom: '2px' }}>
+                <button onClick={() => toggle(group)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px 4px', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.18)', fontSize: '9px', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase' }}>
                   <span>{group}</span>
-                  <ChevronDown size={9} style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.2s' }} />
+                  <ChevronDown size={9} style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.2s', opacity: 0.5 }} />
                 </button>
-                {!isCollapsed && items.map(m => {
-                  const isActive = active === m.id;
-                  return (
-                    <button key={m.id} onClick={() => { onNav(m.id); onClose(); }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '9px', padding: '8px 10px', borderRadius: '9px', border: 'none', cursor: 'pointer', background: isActive ? `rgba(94,23,235,0.16)` : 'transparent', color: isActive ? PL : 'rgba(255,255,255,0.35)', fontSize: '12px', fontFamily: "'Space Grotesk', sans-serif", fontWeight: isActive ? 600 : 400, transition: 'all 0.15s', textAlign: 'left', borderLeft: isActive ? `2px solid ${P}` : '2px solid transparent' }}>
-                      <m.icon size={13} /><span>{m.label}</span>
-                    </button>
-                  );
-                })}
+                {!isCollapsed && items.map(m => (
+                  <SidebarItem key={m.id} m={m} isActive={active === m.id} onNav={onNav} onClose={onClose} />
+                ))}
               </div>
             );
           })}
         </div>
-        <div style={{ padding: '12px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px', marginBottom: '4px' }}>
-            <div style={{ width: '30px', height: '30px', background: `rgba(94,23,235,0.2)`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <UserIcon size={13} color={PL} />
+
+        {/* User footer */}
+        <div style={{ padding: '10px 12px 14px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '8px 10px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '6px' }}>
+            <div style={{ width: '30px', height: '30px', background: `linear-gradient(135deg,${P},${PL})`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '13px', fontFamily: "'Anton',sans-serif", color: '#fff' }}>
+              {(user?.name || user?.email || 'U')[0].toUpperCase()}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ color: '#fff', fontSize: '12px', fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.name || user?.email}</p>
               <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '10px', margin: 0, textTransform: 'capitalize' }}>{user?.role || 'artist'}</p>
             </div>
           </div>
-          <button onClick={onLogout} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '7px', padding: '7px 10px', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.25)', fontSize: '11px', fontFamily: "'Space Grotesk', sans-serif", borderRadius: '8px' }}>
+          <button onClick={onLogout} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '7px', padding: '7px 10px', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.22)', fontSize: '11px', fontFamily: "'Space Grotesk', sans-serif", borderRadius: '8px', transition: 'all 0.15s' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#ef4444'; (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.06)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.22)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
             <LogOut size={12} /> Cerrar sesión
           </button>
         </div>
@@ -1111,11 +1149,38 @@ function Sidebar({ active, onNav, user, onLogout, open, onClose }: {
 type ToastType = 'success' | 'error' | 'info';
 interface Toast { id: number; msg: string; type: ToastType; }
 let _toastSetter: React.Dispatch<React.SetStateAction<Toast[]>> | null = null;
+const TOAST_DURATION = 3500;
 function toast(msg: string, type: ToastType = 'success') {
   if (!_toastSetter) return;
   const id = Date.now();
   _toastSetter(t => [...t, { id, msg, type }]);
-  setTimeout(() => _toastSetter!(t => t.filter(x => x.id !== id)), 3500);
+  setTimeout(() => _toastSetter!(t => t.filter(x => x.id !== id)), TOAST_DURATION);
+}
+function ToastItem({ t, color, icon }: { t: Toast; color: string; icon: string }) {
+  const [progress, setProgress] = useState(100);
+  useEffect(() => {
+    const start = Date.now();
+    const tick = () => {
+      const elapsed = Date.now() - start;
+      const pct = Math.max(0, 100 - (elapsed / TOAST_DURATION) * 100);
+      setProgress(pct);
+      if (pct > 0) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, []);
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0', background: 'rgba(8,6,18,0.97)', border: `1px solid ${color}33`, borderRadius: '14px', overflow: 'hidden', boxShadow: `0 0 40px ${color}18, 0 12px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06)`, backdropFilter: 'blur(24px)', animation: 'toastIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both', minWidth: '260px', maxWidth: '340px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '13px 16px' }}>
+        <div style={{ width: '28px', height: '28px', background: `${color}1a`, border: `1px solid ${color}44`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: `0 0 12px ${color}33` }}>
+          <span style={{ color, fontSize: '13px', fontWeight: 700 }}>{icon}</span>
+        </div>
+        <span style={{ color: '#fff', fontSize: '13px', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 500, lineHeight: 1.4 }}>{t.msg}</span>
+      </div>
+      <div style={{ height: '2px', background: `rgba(255,255,255,0.04)` }}>
+        <div style={{ height: '100%', width: `${progress}%`, background: `linear-gradient(90deg, ${color}88, ${color})`, transition: 'width 0.1s linear', boxShadow: `0 0 8px ${color}` }} />
+      </div>
+    </div>
+  );
 }
 function ToastContainer() {
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -1124,14 +1189,7 @@ function ToastContainer() {
   const icons = { success: '✓', error: '✕', info: '◆' };
   return (
     <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: '10px', pointerEvents: 'none' }}>
-      {toasts.map(t => (
-        <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(10,8,20,0.96)', border: `1px solid ${colors[t.type]}44`, borderRadius: '14px', padding: '12px 18px', boxShadow: `0 0 30px ${colors[t.type]}22, 0 8px 32px rgba(0,0,0,0.5)`, backdropFilter: 'blur(20px)', animation: 'toastIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both', minWidth: '240px' }}>
-          <div style={{ width: '24px', height: '24px', background: `${colors[t.type]}20`, border: `1px solid ${colors[t.type]}40`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <span style={{ color: colors[t.type], fontSize: '12px', fontWeight: 700 }}>{icons[t.type]}</span>
-          </div>
-          <span style={{ color: '#fff', fontSize: '13px', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 500 }}>{t.msg}</span>
-        </div>
-      ))}
+      {toasts.map(t => <ToastItem key={t.id} t={t} color={colors[t.type]} icon={icons[t.type]} />)}
     </div>
   );
 }
@@ -1152,45 +1210,111 @@ function SkeletonCard({ rows = 3 }: { rows?: number }) {
 // ─── APP SHELL PAGES ──────────────────────────────────────────────────────────
 function PageShell({ title, children, action }: { title: string; children: React.ReactNode; action?: React.ReactNode }) {
   return (
-    <div style={{ padding: '32px', maxWidth: '1100px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
-        <h1 style={{ fontFamily: "'Anton', sans-serif", fontSize: '28px', color: '#fff', letterSpacing: '0.02em', margin: 0 }}>{title}</h1>
-        {action}
-      </div>
+    <div style={{ padding: '32px', maxWidth: '1120px', margin: '0 auto', position: 'relative' }}>
+      {title && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
+          <h1 style={{ fontFamily: "'Anton', sans-serif", fontSize: '28px', background: `linear-gradient(135deg, #fff 40%, ${PL})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', letterSpacing: '0.04em', margin: 0 }}>{title}</h1>
+          {action}
+        </div>
+      )}
+      {!title && action && <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'32px' }}>{action}</div>}
       {children}
     </div>
   );
 }
 
+// 3D Tilt Card — tracks cursor for perspective rotation + inner glow
 function Card({ children, style = {}, glow = false }: { children: React.ReactNode; style?: React.CSSProperties; glow?: boolean }) {
-  const [hover, setHover] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const [tiltStyle, setTiltStyle] = useState<React.CSSProperties>({});
+  const [glowPos, setGlowPos] = useState({ x: 50, y: 50 });
+  const [isHov, setIsHov] = useState(false);
+
+  const onMouseMove = (e: React.MouseEvent) => {
+    const el = ref.current; if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const nx = (e.clientX - rect.left) / rect.width;
+    const ny = (e.clientY - rect.top) / rect.height;
+    const rx = (ny - 0.5) * -12;
+    const ry = (nx - 0.5) * 12;
+    setTiltStyle({ transform: `perspective(1000px) rotateX(${rx}deg) rotateY(${ry}deg) translateZ(12px)`, boxShadow: `${(0.5-nx)*-24}px ${(0.5-ny)*-24}px 60px rgba(94,23,235,0.28), 0 24px 60px rgba(0,0,0,0.5)`, borderColor: 'rgba(94,23,235,0.45)' });
+    setGlowPos({ x: nx * 100, y: ny * 100 });
+  };
+  const onMouseLeave = () => {
+    setIsHov(false);
+    setTiltStyle({ transform: 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateZ(0)', transition: 'all 0.6s cubic-bezier(0.34,1.56,0.64,1)', boxShadow: 'none', borderColor: glow ? 'rgba(94,23,235,0.3)' : 'rgba(255,255,255,0.07)' });
+  };
+
   return (
-    <div onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
-      style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${hover || glow ? 'rgba(94,23,235,0.4)' : 'rgba(255,255,255,0.07)'}`, borderRadius: '20px', padding: '24px', transition: 'all 0.22s ease', boxShadow: hover ? `0 0 48px rgba(94,23,235,0.12), 0 12px 40px rgba(0,0,0,0.35)` : 'none', transform: hover ? 'translateY(-4px)' : 'none', ...style }}>
-      {children}
+    <div ref={ref} onMouseMove={onMouseMove} onMouseEnter={() => setIsHov(true)} onMouseLeave={onMouseLeave}
+      style={{
+        background: 'rgba(255,255,255,0.03)',
+        backdropFilter: 'blur(20px) saturate(180%)',
+        border: `1px solid ${glow ? 'rgba(94,23,235,0.3)' : 'rgba(255,255,255,0.07)'}`,
+        borderRadius: '20px', padding: '24px',
+        transition: isHov ? 'border-color 0.15s ease' : 'all 0.6s cubic-bezier(0.34,1.56,0.64,1)',
+        position: 'relative', overflow: 'hidden',
+        ...tiltStyle, ...style,
+      }}>
+      {/* Inner mouse-follow glow */}
+      <div style={{ position: 'absolute', inset: 0, borderRadius: '20px', background: `radial-gradient(circle at ${glowPos.x}% ${glowPos.y}%, rgba(94,23,235,${isHov?'0.09':'0'}) 0%, transparent 60%)`, pointerEvents: 'none', transition: 'opacity 0.3s' }} />
+      <div style={{ position: 'relative', zIndex: 1 }}>{children}</div>
     </div>
   );
 }
 
-function StatCard({ label, value, icon: Icon, trend, sparkline }: { label: string; value: string | number; icon: any; key?: React.Key; trend?: 'up' | 'down'; sparkline?: number[] }) {
-  const [hover, setHover] = useState(false);
+// Icon circle — premium 52x52 with glow
+function IconCircle({ icon: Icon, color = PL, size = 52, iconSize = 20 }: { icon: any; color?: string; size?: number; iconSize?: number }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{ width: `${size}px`, height: `${size}px`, background: hov ? `${color}30` : `${color}15`, border: `1px solid ${color}${hov?'55':'28'}`, borderRadius: `${size*0.3}px`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.22s ease', boxShadow: hov ? `0 0 32px ${color}55` : `0 0 12px ${color}20`, transform: hov ? 'scale(1.12)' : 'scale(1)' }}>
+      <Icon size={iconSize} color={hov ? '#fff' : color} />
+    </div>
+  );
+}
+
+function StatCard({ label, value, icon: Icon, trend, sparkline, glowColor = PL }: { label: string; value: string | number; icon: any; key?: React.Key; trend?: 'up' | 'down'; sparkline?: number[]; glowColor?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [tiltStyle, setTiltStyle] = useState<React.CSSProperties>({});
+  const [isHov, setIsHov] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const bars = sparkline || [40, 55, 35, 70, 50, 80, 65, 90];
   const maxBar = Math.max(...bars, 1);
+
+  useEffect(() => { const t = setTimeout(() => setMounted(true), 50); return () => clearTimeout(t); }, []);
+
+  const onMouseMove = (e: React.MouseEvent) => {
+    const el = ref.current; if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const nx = (e.clientX - rect.left) / rect.width;
+    const ny = (e.clientY - rect.top) / rect.height;
+    setTiltStyle({ transform: `perspective(800px) rotateX(${(ny-0.5)*-14}deg) rotateY(${(nx-0.5)*14}deg) translateZ(16px)`, boxShadow: `0 0 60px ${glowColor}30, 0 20px 50px rgba(0,0,0,0.4)`, borderColor: `${glowColor}55` });
+  };
+  const onMouseLeave = () => {
+    setIsHov(false);
+    setTiltStyle({ transform: 'perspective(800px) rotateX(0) rotateY(0) translateZ(0)', transition: 'all 0.6s cubic-bezier(0.34,1.56,0.64,1)', boxShadow: 'none', borderColor: 'rgba(255,255,255,0.07)' });
+  };
+
   return (
-    <div onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
-      style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${hover ? 'rgba(94,23,235,0.45)' : 'rgba(255,255,255,0.07)'}`, borderRadius: '20px', padding: '22px', transition: 'all 0.22s ease', boxShadow: hover ? `0 0 48px rgba(94,23,235,0.18), 0 12px 40px rgba(0,0,0,0.3)` : 'none', transform: hover ? 'translateY(-5px) scale(1.02)' : 'none', position: 'relative', overflow: 'hidden' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-        <div style={{ width: '38px', height: '38px', background: `rgba(94,23,235,0.14)`, borderRadius: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(94,23,235,0.22)' }}>
-          <Icon size={17} color={PL} />
-        </div>
-        {trend && <span style={{ fontSize: '12px', color: trend === 'up' ? '#22c55e' : '#ef4444', display: 'flex', alignItems: 'center', gap: '2px', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700 }}>{trend === 'up' ? '▲' : '▼'}</span>}
+    <div ref={ref} onMouseMove={onMouseMove} onMouseEnter={() => setIsHov(true)} onMouseLeave={onMouseLeave}
+      style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '20px', padding: '22px', position: 'relative', overflow: 'hidden', transition: isHov ? 'border-color 0.15s' : 'all 0.6s cubic-bezier(0.34,1.56,0.64,1)', ...tiltStyle }}>
+      {/* Background glow orb */}
+      <div style={{ position: 'absolute', bottom: '-20px', right: '-20px', width: '100px', height: '100px', borderRadius: '50%', background: `radial-gradient(circle, ${glowColor}12, transparent 70%)`, pointerEvents: 'none' }} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px', position: 'relative', zIndex: 1 }}>
+        <IconCircle icon={Icon} color={glowColor} size={46} iconSize={18} />
+        {trend && (
+          <span style={{ fontSize: '11px', color: trend === 'up' ? '#22c55e' : '#ef4444', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, background: trend === 'up' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${trend === 'up' ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'}`, borderRadius: '6px', padding: '3px 7px' }}>
+            {trend === 'up' ? '▲ +12%' : '▼ -5%'}
+          </span>
+        )}
       </div>
-      <p style={{ fontFamily: "'Anton', sans-serif", fontSize: '26px', color: '#fff', margin: '0 0 3px', letterSpacing: '0.01em' }}>{value}</p>
-      <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', margin: '0 0 14px', fontFamily: "'Space Grotesk', sans-serif" }}>{label}</p>
+      <p style={{ fontFamily: "'Anton', sans-serif", fontSize: '30px', color: '#fff', margin: '0 0 3px', letterSpacing: '0.01em', textShadow: `0 0 30px ${glowColor}40`, position: 'relative', zIndex: 1 }}>{value}</p>
+      <p style={{ color: 'rgba(255,255,255,0.28)', fontSize: '11px', margin: '0 0 16px', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.06em', textTransform: 'uppercase', position: 'relative', zIndex: 1 }}>{label}</p>
       {/* Sparkline */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '28px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '30px', position: 'relative', zIndex: 1 }}>
         {bars.map((b, i) => (
-          <div key={i} style={{ flex: 1, height: `${(b / maxBar) * 28}px`, background: i === bars.length - 1 ? PL : `rgba(94,23,235,0.35)`, borderRadius: '2px', transition: `height 0.5s ease ${i * 0.04}s`, minWidth: '4px' }} />
+          <div key={i} style={{ flex: 1, height: mounted ? `${(b / maxBar) * 30}px` : '2px', background: i === bars.length - 1 ? glowColor : `${glowColor}40`, borderRadius: '2px 2px 0 0', transition: `height 0.6s cubic-bezier(0.34,1.56,0.64,1) ${i * 0.05}s`, minWidth: '4px', boxShadow: i === bars.length - 1 ? `0 0 8px ${glowColor}60` : 'none' }} />
         ))}
       </div>
     </div>
@@ -1233,86 +1357,115 @@ function DashboardPage() {
   }, []);
 
   const cards = [
-    { label: 'Ingresos totales', value: stats ? `$${Number(stats.totalRevenue || 0).toFixed(2)}` : '—', icon: DollarSign, trend: 'up' as const, sparkline: [30,45,38,60,52,74,68,85] },
-    { label: 'Tracks', value: tracks.length || 0, icon: Music, trend: 'up' as const, sparkline: [10,10,12,15,14,18,17,20] },
-    { label: 'Plataformas', value: stats ? Object.keys(stats.byPlatform || {}).length : 0, icon: Globe, sparkline: [4,4,5,5,5,6,6,6] },
-    { label: 'Streams', value: stats ? Number(stats.totalStreams || 0).toLocaleString() : '—', icon: TrendingUp, trend: 'up' as const, sparkline: [55,62,58,75,80,72,90,95] },
+    { label: 'Ingresos totales', value: stats ? `$${Number(stats.totalRevenue || 0).toFixed(2)}` : '—', icon: DollarSign, trend: 'up' as const, sparkline: [30,45,38,60,52,74,68,85], glowColor: '#22c55e' },
+    { label: 'Tracks', value: tracks.length || 0, icon: Music, trend: 'up' as const, sparkline: [10,10,12,15,14,18,17,20], glowColor: PL },
+    { label: 'Plataformas', value: stats ? Object.keys(stats.byPlatform || {}).length : 0, icon: Globe, sparkline: [4,4,5,5,5,6,6,6], glowColor: '#3b82f6' },
+    { label: 'Streams totales', value: stats ? Number(stats.totalStreams || 0).toLocaleString() : '—', icon: TrendingUp, trend: 'up' as const, sparkline: [55,62,58,75,80,72,90,95], glowColor: '#f59e0b' },
   ];
 
   const quickActions = [
     { label: 'Subir Track', icon: Upload, action: () => toast('Abre Catálogo para subir tu track', 'info') },
     { label: 'Nuevo Split', icon: Users, action: () => toast('Abre Splits para crear un nuevo split', 'info') },
-    { label: 'Ver Regalías', icon: DollarSign, action: () => toast('Revisa tus regalías en la sección de Regalías', 'info') },
+    { label: 'Ver Regalías', icon: DollarSign, action: () => toast('Revisa tus regalías', 'info') },
     { label: 'Preguntar IA', icon: Sparkles, action: () => toast('¡La IA está lista para ayudarte!', 'info') },
   ];
 
   return (
     <>
       <AppMarqueeStrip />
-      <PageShell title="">
-        {/* Greeting */}
-        <div style={{ marginBottom: '28px' }}>
-          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', fontFamily: "'Space Grotesk',sans-serif", margin: '0 0 4px' }}>{greeting} 👋</p>
-          <h1 style={{ fontFamily: "'Anton',sans-serif", fontSize: '32px', color: '#fff', margin: 0, letterSpacing: '0.02em' }}>DASHBOARD</h1>
-        </div>
+      <div style={{ position: 'relative', overflow: 'hidden' }}>
+        {/* Animated background orbs */}
+        <div style={{ position: 'absolute', top: '-100px', right: '-100px', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(94,23,235,0.07) 0%, transparent 70%)', pointerEvents: 'none', animation: 'orbFloat 18s ease-in-out infinite' }} />
+        <div style={{ position: 'absolute', bottom: '0', left: '-150px', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(123,63,255,0.05) 0%, transparent 70%)', pointerEvents: 'none', animation: 'orbFloat 24s ease-in-out infinite reverse' }} />
 
-        {/* Quick Actions */}
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '28px', flexWrap: 'wrap' }}>
-          {quickActions.map(qa => (
-            <button key={qa.label} onClick={qa.action} style={{ display: 'flex', alignItems: 'center', gap: '7px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '9px 16px', color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontFamily: "'Space Grotesk',sans-serif", cursor: 'pointer', transition: 'all 0.18s ease' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(94,23,235,0.15)'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(94,23,235,0.4)'; (e.currentTarget as HTMLElement).style.color = '#fff'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.7)'; }}>
-              <qa.icon size={13} /> {qa.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Stat Cards */}
-        {loadingData ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
-            {[0,1,2,3].map(i => <SkeletonCard key={i} rows={2} />)}
+        <PageShell title="">
+          {/* Greeting header */}
+          <div style={{ marginBottom: '32px' }}>
+            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '13px', fontFamily: "'Space Grotesk',sans-serif", margin: '0 0 6px', letterSpacing: '0.06em' }}>{greeting} 👋</p>
+            <h1 style={{ fontFamily: "'Anton',sans-serif", fontSize: '40px', background: `linear-gradient(135deg, #fff 30%, ${PL} 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', margin: 0, letterSpacing: '0.04em' }}>DASHBOARD</h1>
           </div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
-            {cards.map(c => <StatCard key={c.label} label={c.label} value={c.value} icon={c.icon} trend={c.trend} sparkline={c.sparkline} />)}
-          </div>
-        )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-          <Card>
-            <h3 style={{ fontFamily: "'Anton', sans-serif", fontSize: '15px', color: '#fff', letterSpacing: '0.06em', margin: '0 0 16px' }}>ÚLTIMOS TRACKS</h3>
-            {loadingData && [0,1,2].map(i => <div key={i} style={{ marginBottom: '10px' }}><Skeleton h="36px" radius="10px" /></div>)}
-            {!loadingData && tracks.length === 0 && <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '13px', fontFamily: "'Space Grotesk', sans-serif" }}>Sin tracks aún</p>}
-            {tracks.map(t => (
-              <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                <div style={{ width: '34px', height: '34px', background: `linear-gradient(135deg, rgba(94,23,235,0.3), rgba(123,63,255,0.2))`, borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid rgba(94,23,235,0.2)' }}>
-                  <Music size={13} color={PL} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <p style={{ color: '#fff', fontSize: '13px', fontWeight: 600, margin: 0, fontFamily: "'Space Grotesk', sans-serif" }}>{t.title}</p>
-                  <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', margin: 0, fontFamily: "'Space Grotesk', sans-serif" }}>{t.status}</p>
-                </div>
-              </div>
+          {/* Quick Actions */}
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '32px', flexWrap: 'wrap' }}>
+            {quickActions.map((qa, i) => (
+              <button key={qa.label} onClick={qa.action}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '100px', padding: '10px 18px', color: 'rgba(255,255,255,0.65)', fontSize: '12px', fontFamily: "'Space Grotesk',sans-serif", cursor: 'pointer', transition: 'all 0.25s cubic-bezier(0.34,1.56,0.64,1)', fontWeight: 500 }}
+                onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = `rgba(94,23,235,0.2)`; el.style.borderColor = `rgba(94,23,235,0.5)`; el.style.color = '#fff'; el.style.transform = 'translateY(-2px) scale(1.04)'; el.style.boxShadow = `0 8px 24px rgba(94,23,235,0.25)`; }}
+                onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(255,255,255,0.04)'; el.style.borderColor = 'rgba(255,255,255,0.08)'; el.style.color = 'rgba(255,255,255,0.65)'; el.style.transform = ''; el.style.boxShadow = ''; }}>
+                <qa.icon size={13} /> {qa.label}
+              </button>
             ))}
-          </Card>
-          <Card>
-            <h3 style={{ fontFamily: "'Anton', sans-serif", fontSize: '15px', color: '#fff', letterSpacing: '0.06em', margin: '0 0 16px' }}>PLATAFORMAS</h3>
-            {loadingData && [0,1,2,3].map(i => <div key={i} style={{ marginBottom: '12px' }}><Skeleton h="28px" radius="8px" /></div>)}
-            {!loadingData && stats?.byPlatform && Object.entries(stats.byPlatform).slice(0, 5).map(([plat, v]: any) => (
-              <div key={plat} style={{ marginBottom: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                  <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '12px', textTransform: 'capitalize', fontFamily: "'Space Grotesk', sans-serif" }}>{plat}</span>
-                  <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', fontFamily: "'Space Grotesk', sans-serif" }}>${Number(v).toFixed(2)}</span>
+          </div>
+
+          {/* Stat Cards */}
+          {loadingData ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
+              {[0,1,2,3].map(i => <SkeletonCard key={i} rows={2} />)}
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '28px' }}>
+              {cards.map(c => <StatCard key={c.label} label={c.label} value={c.value} icon={c.icon} trend={c.trend} sparkline={c.sparkline} glowColor={c.glowColor} />)}
+            </div>
+          )}
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+            <Card>
+              <h3 style={{ fontFamily: "'Anton', sans-serif", fontSize: '13px', background: `linear-gradient(90deg,#fff,${PL})`, WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text', letterSpacing: '0.1em', margin: '0 0 18px' }}>ÚLTIMOS TRACKS</h3>
+              {loadingData && [0,1,2].map(i => <div key={i} style={{ marginBottom: '10px' }}><Skeleton h="40px" radius="12px" /></div>)}
+              {!loadingData && tracks.length === 0 && (
+                <div style={{ textAlign:'center', padding:'32px 0' }}>
+                  <div style={{ fontSize:'32px', marginBottom:'8px', opacity:0.3 }}>🎵</div>
+                  <p style={{ color:'rgba(255,255,255,0.2)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif", margin:0 }}>Sin tracks aún</p>
                 </div>
-                <div style={{ height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '100px', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', background: `linear-gradient(90deg, ${P}, ${PL})`, borderRadius: '100px', width: `${Math.min(100, (v / Math.max(stats.totalRevenue, 1)) * 100)}%`, transition: 'width 1s cubic-bezier(0.22,1,0.36,1)' }} />
+              )}
+              {tracks.map(t => (
+                <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ width: '38px', height: '38px', background: COVER_GRADIENTS[t.id % COVER_GRADIENTS.length], borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: `0 4px 16px rgba(94,23,235,0.25)` }}>
+                    <Music size={14} color="rgba(255,255,255,0.8)" />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ color: '#fff', fontSize: '13px', fontWeight: 600, margin: 0, fontFamily: "'Space Grotesk', sans-serif", overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.title}</p>
+                    <p style={{ color: 'rgba(255,255,255,0.28)', fontSize: '11px', margin: 0, fontFamily: "'Space Grotesk', sans-serif", letterSpacing:'0.04em' }}>{t.status || 'draft'}</p>
+                  </div>
+                  {/* Mini waveform */}
+                  <div style={{ display:'flex', alignItems:'center', gap:'2px', height:'18px' }}>
+                    {[3,5,8,6,4,7,5,3].map((h,i) => (
+                      <div key={i} style={{ width:'2px', height:`${h*2}px`, background:PL, borderRadius:'1px', opacity:0.5, animation:`waveBar 1.2s ease-in-out ${i*0.1}s infinite`, '--h':`${h*2}px` } as React.CSSProperties} />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-            {!loadingData && !stats?.byPlatform && <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '13px', fontFamily: "'Space Grotesk', sans-serif" }}>Sin datos</p>}
-          </Card>
-        </div>
-      </PageShell>
+              ))}
+            </Card>
+
+            <Card>
+              <h3 style={{ fontFamily: "'Anton', sans-serif", fontSize: '13px', background: `linear-gradient(90deg,#fff,${PL})`, WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text', letterSpacing: '0.1em', margin: '0 0 18px' }}>INGRESOS POR PLATAFORMA</h3>
+              {loadingData && [0,1,2,3].map(i => <div key={i} style={{ marginBottom: '14px' }}><Skeleton h="32px" radius="8px" /></div>)}
+              {!loadingData && stats?.byPlatform && Object.entries(stats.byPlatform).slice(0, 5).map(([plat, v]: any, i) => {
+                const pct = Math.min(100, (v / Math.max(stats.totalRevenue, 1)) * 100);
+                const colors = [P, PL, '#3b82f6', '#22c55e', '#f59e0b'];
+                const c = colors[i % colors.length];
+                return (
+                  <div key={plat} style={{ marginBottom: '14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <span style={{ color: 'rgba(255,255,255,0.65)', fontSize: '12px', textTransform: 'capitalize', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 500 }}>{plat}</span>
+                      <span style={{ color: '#fff', fontSize: '12px', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700 }}>${Number(v).toFixed(2)}</span>
+                    </div>
+                    <div style={{ height: '5px', background: 'rgba(255,255,255,0.04)', borderRadius: '100px', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', background: `linear-gradient(90deg, ${c}88, ${c})`, borderRadius: '100px', width: `${pct}%`, transition: `width 1.2s cubic-bezier(0.22,1,0.36,1) ${i * 0.1}s`, boxShadow: `0 0 8px ${c}60` }} />
+                    </div>
+                  </div>
+                );
+              })}
+              {!loadingData && !stats?.byPlatform && (
+                <div style={{ textAlign:'center', padding:'32px 0' }}>
+                  <Globe size={28} color="rgba(255,255,255,0.1)" style={{ marginBottom:'8px' }} />
+                  <p style={{ color:'rgba(255,255,255,0.2)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif", margin:0 }}>Sin datos de plataformas</p>
+                </div>
+              )}
+            </Card>
+          </div>
+        </PageShell>
+      </div>
     </>
   );
 }
@@ -1445,16 +1598,25 @@ function RoyaltiesPage() {
 
   return (
     <PageShell title="Regalías">
-      {/* Hero balance */}
-      <div style={{ background:'linear-gradient(135deg, rgba(94,23,235,0.15), rgba(34,197,94,0.08))', border:'1px solid rgba(94,23,235,0.25)', borderRadius:'24px', padding:'32px 40px', marginBottom:'24px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-        <div>
-          <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif", margin:'0 0 8px', letterSpacing:'0.12em', textTransform:'uppercase' }}>Balance total</p>
-          <p style={{ fontFamily:"'Anton',sans-serif", fontSize:'52px', color:'#22c55e', margin:'0 0 4px', letterSpacing:'0.02em', textShadow:'0 0 40px rgba(34,197,94,0.3)' }}>
+      {/* Hero balance — massive and impressive */}
+      <div style={{ position:'relative', background:'linear-gradient(135deg, rgba(0,80,40,0.25) 0%, rgba(0,30,20,0.4) 50%, rgba(0,0,0,0) 100%)', border:'1px solid rgba(34,197,94,0.2)', borderRadius:'28px', padding:'40px 48px', marginBottom:'28px', minHeight:'200px', display:'flex', alignItems:'center', justifyContent:'space-between', overflow:'hidden', boxShadow:'inset 0 1px 0 rgba(255,255,255,0.06), 0 0 80px rgba(34,197,94,0.05)' }}>
+        {/* Animated green orb behind number */}
+        <div style={{ position:'absolute', left:'40px', top:'50%', transform:'translateY(-50%)', width:'300px', height:'300px', borderRadius:'50%', background:'radial-gradient(circle, rgba(34,197,94,0.08) 0%, transparent 65%)', animation:'orbFloat 10s ease-in-out infinite', pointerEvents:'none' }} />
+        {/* Faded $ watermark */}
+        <div style={{ position:'absolute', right:'-20px', top:'50%', transform:'translateY(-50%)', fontFamily:"'Anton',sans-serif", fontSize:'220px', color:'rgba(34,197,94,0.04)', lineHeight:1, userSelect:'none', pointerEvents:'none', letterSpacing:'-0.05em' }}>$</div>
+        <div style={{ position:'relative', zIndex:1 }}>
+          <p style={{ color:'rgba(34,197,94,0.6)', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif", margin:'0 0 10px', letterSpacing:'0.18em', textTransform:'uppercase', fontWeight:700 }}>◆ BALANCE TOTAL · USD</p>
+          <p style={{ fontFamily:"'Anton',sans-serif", fontSize:'72px', color:'#22c55e', margin:'0 0 6px', letterSpacing:'-0.02em', textShadow:'0 0 60px rgba(34,197,94,0.8), 0 0 120px rgba(34,197,94,0.3)', lineHeight:1 }}>
             ${loadingData ? '—' : totalRevenue.toFixed(2)}
           </p>
-          <p style={{ color:'rgba(255,255,255,0.3)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif", margin:0 }}>USD · Actualizado al {new Date().toLocaleDateString('es-CO')}</p>
+          <p style={{ color:'rgba(255,255,255,0.3)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif", margin:0 }}>Actualizado · {new Date().toLocaleDateString('es-CO', { day:'2-digit', month:'long', year:'numeric' })}</p>
         </div>
-        <DollarSign size={56} color="rgba(34,197,94,0.2)" />
+        <div style={{ position:'relative', zIndex:1, display:'flex', flexDirection:'column', alignItems:'flex-end', gap:'12px' }}>
+          <div style={{ width:'64px', height:'64px', background:'rgba(34,197,94,0.1)', border:'1px solid rgba(34,197,94,0.2)', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 30px rgba(34,197,94,0.2)' }}>
+            <DollarSign size={28} color="#22c55e" />
+          </div>
+          <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:'11px', color:'rgba(34,197,94,0.6)', background:'rgba(34,197,94,0.08)', border:'1px solid rgba(34,197,94,0.15)', borderRadius:'100px', padding:'4px 12px', fontWeight:700 }}>▲ EN CRECIMIENTO</span>
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px' }}>
@@ -3074,16 +3236,25 @@ export default function App() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050505' }}>
-      <div style={{ position: 'fixed', inset: 0, backgroundImage: `linear-gradient(rgba(94,23,235,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(94,23,235,0.03) 1px, transparent 1px)`, backgroundSize: '48px 48px', pointerEvents: 'none', zIndex: 0 }} />
-      <div style={{ position: 'fixed', top: '-200px', left: '-200px', width: '600px', height: '600px', background: `radial-gradient(circle, rgba(94,23,235,0.06) 0%, transparent 70%)`, pointerEvents: 'none', zIndex: 0 }} />
+    <div style={{ minHeight: '100vh', background: '#050308' }}>
+      {/* Fixed grid pattern */}
+      <div style={{ position: 'fixed', inset: 0, backgroundImage: `linear-gradient(rgba(94,23,235,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(94,23,235,0.025) 1px, transparent 1px)`, backgroundSize: '52px 52px', pointerEvents: 'none', zIndex: 0 }} />
+      {/* Global ambient orbs */}
+      <div style={{ position: 'fixed', top: '-300px', right: '-200px', width: '700px', height: '700px', background: `radial-gradient(circle, rgba(94,23,235,0.06) 0%, transparent 65%)`, pointerEvents: 'none', zIndex: 0, animation: 'orbFloat 20s ease-in-out infinite' }} />
+      <div style={{ position: 'fixed', bottom: '-200px', left: `${SIDEBAR_W - 100}px`, width: '500px', height: '500px', background: `radial-gradient(circle, rgba(123,63,255,0.04) 0%, transparent 65%)`, pointerEvents: 'none', zIndex: 0, animation: 'orbFloat 26s ease-in-out infinite reverse' }} />
+
       <ToastContainer />
       <Sidebar active={activePage} onNav={setActivePage} user={user} onLogout={handleLogout} open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div style={{ marginLeft: `${SIDEBAR_W}px`, position: 'relative', zIndex: 1 }}>
-        <div style={{ position: 'sticky', top: 0, background: 'rgba(5,5,5,0.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '12px 32px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', zIndex: 10 }}>
+        {/* Top bar */}
+        <div style={{ position: 'sticky', top: 0, background: 'rgba(5,3,8,0.88)', backdropFilter: 'blur(24px) saturate(160%)', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '12px 32px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', zIndex: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <Bell size={17} color="rgba(255,255,255,0.28)" style={{ cursor: 'pointer' }} />
-            <div style={{ width: '30px', height: '30px', background: `rgba(94,23,235,0.18)`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid rgba(94,23,235,0.28)` }}><UserIcon size={13} color={PL} /></div>
+            <button onClick={() => toast('Sin notificaciones nuevas', 'info')} style={{ background:'none', border:'none', cursor:'pointer', position:'relative', padding:'4px' }}>
+              <Bell size={17} color="rgba(255,255,255,0.28)" />
+            </button>
+            <div style={{ width: '32px', height: '32px', background: `linear-gradient(135deg,${P},${PL})`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 12px rgba(94,23,235,0.35)`, fontSize:'13px', fontFamily:"'Anton',sans-serif", color:'#fff' }}>
+              {(user?.name || user?.email || 'U')[0].toUpperCase()}
+            </div>
           </div>
         </div>
         <AnimatePresence mode="wait">
@@ -3093,26 +3264,72 @@ export default function App() {
         </AnimatePresence>
       </div>
       <style>{`
+        /* ── Core animations ─────────────────────────────────────── */
         @keyframes marqueeScroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
         @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+        @keyframes waveBar { 0%,100%{height:4px} 50%{height:var(--h,12px)} }
+        @keyframes spin { to{transform:rotate(360deg)} }
+        @keyframes dashFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+        @keyframes logoFloat { 0%,100%{transform:translateY(0) rotate(0deg)} 50%{transform:translateY(-3px) rotate(2deg)} }
+
+        /* ── Shimmer skeleton ────────────────────────────────────── */
         @keyframes shimmer {
-          0%   { background-position: -400px 0; }
-          100% { background-position: 400px 0; }
-        }
-        @keyframes toastIn {
-          from { opacity:0; transform:translateX(40px) scale(0.95); }
-          to   { opacity:1; transform:translateX(0) scale(1); }
+          0%   { background-position: -600px 0; }
+          100% { background-position: 600px 0; }
         }
         .skeleton-shimmer {
-          background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.09) 50%, rgba(255,255,255,0.04) 75%);
-          background-size: 800px 100%;
-          animation: shimmer 1.5s ease-in-out infinite;
+          background: linear-gradient(90deg,
+            rgba(255,255,255,0.03) 0%,
+            rgba(255,255,255,0.03) 25%,
+            rgba(255,255,255,0.08) 50%,
+            rgba(255,255,255,0.03) 75%,
+            rgba(255,255,255,0.03) 100%);
+          background-size: 1200px 100%;
+          animation: shimmer 1.8s ease-in-out infinite;
         }
+
+        /* ── Toast slide-in ──────────────────────────────────────── */
+        @keyframes toastIn {
+          from { opacity:0; transform:translateX(60px) scale(0.9); }
+          to   { opacity:1; transform:translateX(0) scale(1); }
+        }
+
+        /* ── Glow pulse (sidebar dot) ────────────────────────────── */
+        @keyframes glowPulse {
+          0%,100% { box-shadow: 0 0 6px currentColor; opacity:1; }
+          50%     { box-shadow: 0 0 16px currentColor, 0 0 30px currentColor; opacity:0.7; }
+        }
+
+        /* ── Ambient orb float ───────────────────────────────────── */
+        @keyframes orbFloat {
+          0%,100% { transform: translate(0,0) scale(1); }
+          33%     { transform: translate(25px,-20px) scale(1.06); }
+          66%     { transform: translate(-15px,15px) scale(0.94); }
+        }
+
+        /* ── Card ambient glow cycle ─────────────────────────────── */
+        @keyframes cardGlow {
+          0%,100% { box-shadow: 0 0 20px rgba(94,23,235,0.08); }
+          50%     { box-shadow: 0 0 40px rgba(94,23,235,0.22), 0 0 80px rgba(94,23,235,0.08); }
+        }
+
+        /* ── Number pulse ────────────────────────────────────────── */
+        @keyframes numberPulse {
+          0%,100% { opacity:1; }
+          50%     { opacity:0.75; }
+        }
+
+        /* ── Global resets ───────────────────────────────────────── */
         * { box-sizing: border-box; }
-        ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-track{background:#000} ::-webkit-scrollbar-thumb{background:${P};border-radius:4px}
-        input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.2)}
-        select{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:#fff}
-        select option{background:#1a1a1a}
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        ::-webkit-scrollbar-thumb { background: rgba(94,23,235,0.5); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: ${PL}; }
+        input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.18); }
+        select { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); color: #fff; }
+        select option { background: #0e0c1e; }
+        button { font-family: "'Space Grotesk', sans-serif"; }
+        aside::-webkit-scrollbar { width: 0; }
       `}</style>
     </div>
   );
