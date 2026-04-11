@@ -1,30 +1,5 @@
-import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Dither from './components/Dither';
-import CSSLightPillar from './components/CSSLightPillar';
-
-// Lazy-loaded heavy WebGL components
-const LightPillar = lazy(() =>
-  new Promise<{ default: React.ComponentType<any> }>(resolve =>
-    setTimeout(() => import('./components/LightPillar').then(resolve), 300)
-  )
-);
-const CircularGallery = lazy(() => import('./components/CircularGallery'));
-
-// ─── Error Boundary ───────────────────────────────────────────────────────────
-class WebGLErrorBoundary extends React.Component<
-  { children: React.ReactNode; fallback: React.ReactNode },
-  { hasError: boolean }
-> {
-  constructor(props: { children: React.ReactNode; fallback: React.ReactNode }) {
-    super(props);
-    this.state = { hasError: false };
-  }
-  static getDerivedStateFromError() { return { hasError: true }; }
-  componentDidCatch(error: Error) { console.warn('[WebGL component error]', error.message); }
-  render() {
-    return this.state.hasError ? this.props.fallback : this.props.children;
-  }
-}
 import Magnet from './components/Magnet';
 import SpotlightCard from './components/SpotlightCard';
 import BlurText from './components/BlurText';
@@ -268,43 +243,57 @@ function fireConfetti(originEl?: HTMLElement) {
 
 function LandingPage({ onEnter }: { onEnter: () => void }) {
   const [scrolled, setScrolled] = useState(false);
-  const [scrollProgress, setScrollProgress] = useState(0);
-  const [cursorPos, setCursorPos] = useState({ x: -100, y: -100 });
-  const [ringPos, setRingPos] = useState({ x: -100, y: -100 });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const ringRef = useRef<{ x: number; y: number }>({ x: -100, y: -100 });
-  const rafRef = useRef<number>(0);
+  const cursorDotRef = useRef<HTMLDivElement>(null);
+  const cursorRingRef = useRef<HTMLDivElement>(null);
+  const progressBarRef = useRef<HTMLDivElement>(null);
 
+  // Scroll: only trigger React re-render when threshold crosses, progress via direct DOM
   useEffect(() => {
+    let lastScrolled = false;
     const onScroll = () => {
-      setScrolled(window.scrollY > 50);
-      const doc = document.documentElement;
-      const prog = window.scrollY / (doc.scrollHeight - doc.clientHeight);
-      setScrollProgress(Math.min(prog, 1));
+      const isScrolled = window.scrollY > 50;
+      if (isScrolled !== lastScrolled) { setScrolled(isScrolled); lastScrolled = isScrolled; }
+      if (progressBarRef.current) {
+        const doc = document.documentElement;
+        const prog = Math.min(window.scrollY / (doc.scrollHeight - doc.clientHeight), 1);
+        progressBarRef.current.style.width = `${prog * 100}%`;
+      }
     };
-    window.addEventListener('scroll', onScroll);
+    window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  // Cursor dot: direct DOM mutation — zero React re-renders
   useEffect(() => {
-    const onMove = (e: MouseEvent) => setCursorPos({ x: e.clientX, y: e.clientY });
-    window.addEventListener('mousemove', onMove);
+    const onMove = (e: MouseEvent) => {
+      if (cursorDotRef.current) {
+        cursorDotRef.current.style.left = `${e.clientX - 4}px`;
+        cursorDotRef.current.style.top = `${e.clientY - 4}px`;
+      }
+    };
+    window.addEventListener('mousemove', onMove, { passive: true });
     return () => window.removeEventListener('mousemove', onMove);
   }, []);
 
-  // Ring lags behind cursor
+  // Cursor ring: lag via RAF, direct DOM mutation — zero React re-renders
   useEffect(() => {
     let target = { x: -100, y: -100 };
+    const pos = { x: -100, y: -100 };
     const onMove = (e: MouseEvent) => { target = { x: e.clientX, y: e.clientY }; };
-    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mousemove', onMove, { passive: true });
+    let rafId: number;
     const loop = () => {
-      ringRef.current.x += (target.x - ringRef.current.x) * 0.12;
-      ringRef.current.y += (target.y - ringRef.current.y) * 0.12;
-      setRingPos({ x: ringRef.current.x, y: ringRef.current.y });
-      rafRef.current = requestAnimationFrame(loop);
+      pos.x += (target.x - pos.x) * 0.12;
+      pos.y += (target.y - pos.y) * 0.12;
+      if (cursorRingRef.current) {
+        cursorRingRef.current.style.left = `${pos.x - 18}px`;
+        cursorRingRef.current.style.top = `${pos.y - 18}px`;
+      }
+      rafId = requestAnimationFrame(loop);
     };
-    rafRef.current = requestAnimationFrame(loop);
-    return () => { cancelAnimationFrame(rafRef.current); window.removeEventListener('mousemove', onMove); };
+    rafId = requestAnimationFrame(loop);
+    return () => { cancelAnimationFrame(rafId); window.removeEventListener('mousemove', onMove); };
   }, []);
 
   // Scroll reveal observer
@@ -329,6 +318,7 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
         @keyframes dashFloat { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-12px)} }
         @keyframes rotateCube { from{transform:rotateX(12deg) rotateY(0deg)} to{transform:rotateX(12deg) rotateY(360deg)} }
         @keyframes spin { to{transform:rotate(360deg)} }
+        @keyframes orbFloat { 0%,100%{transform:translateZ(0) translate(0,0)} 33%{transform:translateZ(0) translate(20px,-30px)} 66%{transform:translateZ(0) translate(-15px,20px)} }
 
         /* Hero headline staggered fade-up */
         @keyframes heroWord { from{opacity:0;transform:translateY(40px)} to{opacity:1;transform:translateY(0)} }
@@ -407,12 +397,12 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
         .mobile-nav a:hover{color:#fff}
       `}</style>
 
-      {/* ── CUSTOM CURSOR ── */}
-      <div style={{ position: 'fixed', left: cursorPos.x - 4, top: cursorPos.y - 4, width: '8px', height: '8px', background: '#fff', borderRadius: '50%', pointerEvents: 'none', zIndex: 99999, transition: 'transform 0.1s ease', mixBlendMode: 'difference' }} />
-      <div style={{ position: 'fixed', left: ringPos.x - 18, top: ringPos.y - 18, width: '36px', height: '36px', border: `1.5px solid rgba(94,23,235,0.8)`, borderRadius: '50%', pointerEvents: 'none', zIndex: 99998, transition: 'opacity 0.2s ease' }} />
+      {/* ── CUSTOM CURSOR — refs only, no React state ── */}
+      <div ref={cursorDotRef} style={{ position: 'fixed', left: '-100px', top: '-100px', width: '8px', height: '8px', background: '#fff', borderRadius: '50%', pointerEvents: 'none', zIndex: 99999, mixBlendMode: 'difference' }} />
+      <div ref={cursorRingRef} style={{ position: 'fixed', left: '-100px', top: '-100px', width: '36px', height: '36px', border: `1.5px solid rgba(94,23,235,0.8)`, borderRadius: '50%', pointerEvents: 'none', zIndex: 99998 }} />
 
-      {/* ── SCROLL PROGRESS BAR ── */}
-      <div style={{ position: 'fixed', top: 0, left: 0, height: '3px', background: `linear-gradient(90deg, ${P}, ${PL}, #C084FC)`, width: `${scrollProgress * 100}%`, zIndex: 9999, transition: 'width 0.1s linear', boxShadow: `0 0 8px rgba(94,23,235,0.8)` }} />
+      {/* ── SCROLL PROGRESS BAR — ref only, no React state ── */}
+      <div ref={progressBarRef} style={{ position: 'fixed', top: 0, left: 0, height: '3px', background: `linear-gradient(90deg, ${P}, ${PL}, #C084FC)`, width: '0%', zIndex: 9999, boxShadow: `0 0 8px rgba(94,23,235,0.8)` }} />
 
       {/* Purple grid */}
       <div style={{ position: 'fixed', inset: 0, backgroundImage: `linear-gradient(rgba(94,23,235,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(94,23,235,0.03) 1px, transparent 1px)`, backgroundSize: '56px 56px', pointerEvents: 'none', zIndex: 0 }} />
@@ -467,25 +457,9 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
       )}
 
       {/* ── HERO ── */}
-      <section className="landing-hero-section" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', padding: '100px 72px 80px', position: 'relative', zIndex: 1, overflow: 'hidden', background: '#000' }}>
-        {/* CSS animated background — always visible immediately */}
-        <CSSLightPillar />
-        {/* Purple radial glow blobs */}
-        <div style={{ position: 'absolute', top: '20%', right: '10%', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(94,23,235,0.18) 0%, transparent 70%)', pointerEvents: 'none', animation: 'heroWord 1s ease 0.2s both' }} />
-        <div style={{ position: 'absolute', bottom: '10%', right: '25%', width: '300px', height: '300px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(192,132,252,0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
-        {/* LightPillar WebGL background — lazy loaded, replaces CSS version if WebGL works */}
-        <WebGLErrorBoundary fallback={null}>
-          <Suspense fallback={null}>
-            <LightPillar
-              topColor="#5E17EB" bottomColor="#7B3FFF"
-              intensity={1} rotationSpeed={0.3} glowAmount={0.002}
-              pillarWidth={3} pillarHeight={0.4} noiseIntensity={0.5}
-              pillarRotation={25} interactive={false} mixBlendMode="screen" quality="high"
-            />
-          </Suspense>
-        </WebGLErrorBoundary>
-        {/* Readable overlay */}
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.52)', pointerEvents: 'none' }} />
+      <section className="landing-hero-section" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', padding: '100px 72px 80px', position: 'relative', zIndex: 1, overflow: 'hidden', background: '#000', contain: 'layout style paint', transform: 'translateZ(0)' }}>
+        {/* Pure CSS background — zero WebGL, zero JS overhead */}
+        <div style={{ position: 'absolute', inset: 0, background: "radial-gradient(ellipse 80% 60% at 20% 50%, rgba(94,23,235,0.25) 0%, transparent 60%), radial-gradient(ellipse 60% 80% at 80% 20%, rgba(123,63,255,0.15) 0%, transparent 60%), #000", pointerEvents: 'none' }} />
 
         <div className="landing-hero-grid" style={{ maxWidth: '1340px', margin: '0 auto', width: '100%', display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '80px', alignItems: 'center', position: 'relative' }}>
           {/* Left: text */}
@@ -656,27 +630,28 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
             <ServiceCard key={i} icon={s.icon} title={s.title} desc={s.desc} />
           ))}
         </div>
-        {/* CircularGallery — interactive scrollable showcase */}
-        <div className="reveal reveal-delay-3" style={{ width: '100%', height: '420px', background: '#050505', borderRadius: '24px', overflow: 'hidden', border: '1px solid rgba(94,23,235,0.12)' }}>
-          <WebGLErrorBoundary fallback={
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'rgba(255,255,255,0.3)', fontFamily: "'Space Grotesk', sans-serif", fontSize: '14px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-              Arrastra para explorar servicios
-            </div>
-          }>
-            <Suspense fallback={<div style={{ height: '100%', background: '#050505', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ width: '40px', height: '40px', border: `3px solid ${P}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /></div>}>
-              <CircularGallery
-                items={[
-                  { image: 'https://picsum.photos/seed/music1/800/600?grayscale', text: 'Distribución Digital' },
-                  { image: 'https://picsum.photos/seed/music2/800/600?grayscale', text: 'Marketing con IA' },
-                  { image: 'https://picsum.photos/seed/music3/800/600?grayscale', text: 'Agentes IA 24/7' },
-                  { image: 'https://picsum.photos/seed/music4/800/600?grayscale', text: 'Gestión de Regalías' },
-                  { image: 'https://picsum.photos/seed/music5/800/600?grayscale', text: 'Videos Musicales' },
-                  { image: 'https://picsum.photos/seed/music6/800/600?grayscale', text: 'Financiamiento' },
-                ]}
-                bend={1} textColor="#F2EDE5" borderRadius={0.05} scrollSpeed={2} scrollEase={0.05}
-              />
-            </Suspense>
-          </WebGLErrorBoundary>
+        {/* Pure CSS scroll-snap feature carousel — zero WebGL */}
+        <div className="reveal reveal-delay-3" style={{ width: '100%', background: '#050505', borderRadius: '24px', border: '1px solid rgba(94,23,235,0.12)', padding: '40px 0 32px', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', gap: '20px', overflowX: 'auto', scrollSnapType: 'x mandatory', padding: '0 40px 16px', scrollbarWidth: 'none' }}>
+            {[
+              { icon: Disc, label: 'Distribución Digital', sub: '150+ plataformas globales', color: '#5E17EB' },
+              { icon: Sparkles, label: 'Marketing con IA', sub: 'Estrategias automatizadas', color: '#7B3FFF' },
+              { icon: Users, label: 'Agentes IA 24/7', sub: 'Soporte inteligente siempre', color: '#C084FC' },
+              { icon: DollarSign, label: 'Gestión de Regalías', sub: 'Cobros en tiempo real', color: '#5E17EB' },
+              { icon: Video, label: 'Videos Musicales', sub: 'Producción y distribución', color: '#7B3FFF' },
+              { icon: CreditCard, label: 'Financiamiento', sub: 'Adelanto de regalías', color: '#C084FC' },
+            ].map((item, i) => (
+              <div key={i} style={{ flexShrink: 0, width: '220px', scrollSnapAlign: 'center', background: `linear-gradient(135deg, ${item.color}10 0%, transparent 100%)`, border: `1px solid ${item.color}30`, borderRadius: '20px', padding: '36px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px', transition: 'border-color 0.25s, box-shadow 0.25s' }}
+                onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor = item.color + '70'; el.style.boxShadow = `0 0 30px ${item.color}20`; }}
+                onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor = item.color + '30'; el.style.boxShadow = 'none'; }}>
+                <div style={{ width: '60px', height: '60px', borderRadius: '18px', background: `${item.color}20`, border: `1px solid ${item.color}50`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 20px ${item.color}20` }}>
+                  <item.icon size={26} color={item.color} />
+                </div>
+                <span style={{ fontFamily: "'Anton', sans-serif", fontSize: '15px', color: '#F2EDE5', letterSpacing: '0.04em' }}>{item.label}</span>
+                <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.38)', lineHeight: 1.5 }}>{item.sub}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
