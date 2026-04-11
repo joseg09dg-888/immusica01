@@ -13,7 +13,10 @@ import {
   MessageCircle, Lock, Video, Mic, Award, Link2, Store,
   Upload, Image, Scale, Lightbulb, ChevronDown, Send, Trash2,
   LogOut, BookOpen, Package, Users, Radio, Star, Check,
-  ArrowRight, Disc, Headphones, TrendingDown, Shield
+  ArrowRight, Disc, Headphones, TrendingDown, Shield,
+  Download, FileText, ExternalLink, Copy, RefreshCw,
+  Calendar, Clock, Eye, X, Edit2, ToggleLeft, ToggleRight,
+  FileAudio, FileVideo, FileImage, Percent
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -1289,6 +1292,945 @@ function AIChatPage() {
   );
 }
 
+// ─── SHARED INPUT STYLE ───────────────────────────────────────────────────────
+const IS: React.CSSProperties = { background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'10px', padding:'10px 14px', color:'#fff', fontFamily:"'Space Grotesk',sans-serif", fontSize:'13px', outline:'none', width:'100%' };
+function EmptyState({ icon: Icon, text }: { icon: any; text: string }) {
+  return <div style={{ textAlign:'center', padding:'48px 24px' }}><Icon size={32} color="rgba(255,255,255,0.1)" style={{ marginBottom:'12px' }} /><p style={{ color:'rgba(255,255,255,0.2)', fontFamily:"'Space Grotesk',sans-serif", fontSize:'13px', margin:0 }}>{text}</p></div>;
+}
+function Badge({ color, label }: { color: string; label: string }) {
+  return <span style={{ background:`${color}22`, color, border:`1px solid ${color}55`, borderRadius:'6px', padding:'2px 8px', fontSize:'10px', fontWeight:700, fontFamily:"'Space Grotesk',sans-serif", textTransform:'uppercase', letterSpacing:'0.08em' }}>{label}</span>;
+}
+
+// ─── PUBLISHING ───────────────────────────────────────────────────────────────
+function PublishingPage() {
+  const [items, setItems] = useState<any[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ title:'', composers:'', splits:'', iswc:'' });
+  const [loading, setLoading] = useState(false);
+  const load = () => apiFetch('/publishing').then(d => setItems(Array.isArray(d) ? d : [])).catch(() => {});
+  useEffect(() => { load(); }, []);
+  const save = async () => {
+    if (!form.title) return; setLoading(true);
+    try { await apiFetch('/publishing', { method:'POST', body: JSON.stringify(form) }); setForm({ title:'', composers:'', splits:'', iswc:'' }); setShowForm(false); load(); } catch {}
+    setLoading(false);
+  };
+  return (
+    <PageShell title="Publishing" action={<Btn3D small onClick={() => setShowForm(!showForm)}><Plus size={13}/> Nueva obra</Btn3D>}>
+      {showForm && <Card style={{ marginBottom:'20px' }}>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', marginBottom:'10px' }}>
+          <input style={IS} placeholder="Título de la obra" value={form.title} onChange={e => setForm(f=>({...f,title:e.target.value}))} />
+          <input style={IS} placeholder="ISWC (opcional)" value={form.iswc} onChange={e => setForm(f=>({...f,iswc:e.target.value}))} />
+          <input style={IS} placeholder="Compositores (separar con comas)" value={form.composers} onChange={e => setForm(f=>({...f,composers:e.target.value}))} />
+          <input style={IS} placeholder="Splits % (ej: 50/50)" value={form.splits} onChange={e => setForm(f=>({...f,splits:e.target.value}))} />
+        </div>
+        <div style={{ display:'flex', gap:'10px' }}>
+          <Btn3D small onClick={save} disabled={loading}>{loading?'Guardando...':'Registrar'}</Btn3D>
+          <Btn3D small variant="ghost" onClick={() => setShowForm(false)}>Cancelar</Btn3D>
+        </div>
+      </Card>}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'16px', marginBottom:'20px' }}>
+        {[{label:'Obras registradas',value:items.length,icon:BookOpen},{label:'Con ISWC',value:items.filter(i=>i.iswc).length,icon:Check},{label:'Regalías pub.',value:'$0.00',icon:DollarSign}].map(c=><StatCard key={c.label} label={c.label} value={c.value} icon={c.icon}/>)}
+      </div>
+      <Card>
+        {items.length===0 && <EmptyState icon={BookOpen} text="Sin obras registradas. Registra tu primera composición." />}
+        {items.map(it=>(
+          <div key={it.id} style={{ display:'flex', alignItems:'center', gap:'14px', padding:'12px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
+            <div style={{ width:'38px', height:'38px', background:'rgba(94,23,235,0.12)', borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><BookOpen size={15} color={PL}/></div>
+            <div style={{ flex:1 }}>
+              <p style={{ color:'#fff', fontSize:'13px', fontWeight:600, margin:'0 0 2px', fontFamily:"'Space Grotesk',sans-serif" }}>{it.title}</p>
+              <p style={{ color:'rgba(255,255,255,0.3)', fontSize:'11px', margin:0, fontFamily:"'Space Grotesk',sans-serif" }}>{it.composers || '—'}</p>
+            </div>
+            {it.iswc && <Badge color={PL} label={it.iswc}/>}
+            <span style={{ color:'rgba(255,255,255,0.3)', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif" }}>{it.splits || '—'}</span>
+          </div>
+        ))}
+      </Card>
+    </PageShell>
+  );
+}
+
+// ─── RELEASES ─────────────────────────────────────────────────────────────────
+function ReleasesPage() {
+  const [releases, setReleases] = useState<any[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ title:'', release_date:'', platforms:'Spotify,Apple Music,YouTube', status:'draft' });
+  const [loading, setLoading] = useState(false);
+  const load = () => apiFetch('/releases').then(d => setReleases(Array.isArray(d) ? d : [])).catch(() => {});
+  useEffect(() => { load(); }, []);
+  const save = async () => {
+    if (!form.title) return; setLoading(true);
+    try { await apiFetch('/releases', { method:'POST', body: JSON.stringify(form) }); setForm({ title:'', release_date:'', platforms:'Spotify,Apple Music,YouTube', status:'draft' }); setShowForm(false); load(); } catch {}
+    setLoading(false);
+  };
+  const statusColor: Record<string,string> = { draft:'#71717a', scheduled:'#3b82f6', published:'#22c55e' };
+  return (
+    <PageShell title="Releases" action={<Btn3D small onClick={() => setShowForm(!showForm)}><Plus size={13}/> Nuevo release</Btn3D>}>
+      {showForm && <Card style={{ marginBottom:'20px' }}>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', marginBottom:'10px' }}>
+          <input style={IS} placeholder="Título del release" value={form.title} onChange={e => setForm(f=>({...f,title:e.target.value}))} />
+          <input style={{...IS, colorScheme:'dark'}} type="date" value={form.release_date} onChange={e => setForm(f=>({...f,release_date:e.target.value}))} />
+          <input style={IS} placeholder="Plataformas (separar con comas)" value={form.platforms} onChange={e => setForm(f=>({...f,platforms:e.target.value}))} />
+          <select style={{...IS}} value={form.status} onChange={e => setForm(f=>({...f,status:e.target.value}))}>
+            <option value="draft">Borrador</option>
+            <option value="scheduled">Programado</option>
+            <option value="published">Publicado</option>
+          </select>
+        </div>
+        <div style={{ display:'flex', gap:'10px' }}>
+          <Btn3D small onClick={save} disabled={loading}>{loading?'Guardando...':'Programar'}</Btn3D>
+          <Btn3D small variant="ghost" onClick={() => setShowForm(false)}>Cancelar</Btn3D>
+        </div>
+      </Card>}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'16px', marginBottom:'20px' }}>
+        {[{label:'Total releases',value:releases.length,icon:Package},{label:'Programados',value:releases.filter(r=>r.status==='scheduled').length,icon:Calendar},{label:'Publicados',value:releases.filter(r=>r.status==='published').length,icon:Check}].map(c=><StatCard key={c.label} label={c.label} value={c.value} icon={c.icon}/>)}
+      </div>
+      <Card>
+        {releases.length===0 && <EmptyState icon={Calendar} text="Sin releases. Programa tu próximo lanzamiento." />}
+        {releases.map(r=>(
+          <div key={r.id} style={{ display:'flex', alignItems:'center', gap:'14px', padding:'12px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
+            <div style={{ width:'38px', height:'38px', background:'rgba(94,23,235,0.12)', borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><Calendar size={15} color={PL}/></div>
+            <div style={{ flex:1 }}>
+              <p style={{ color:'#fff', fontSize:'13px', fontWeight:600, margin:'0 0 2px', fontFamily:"'Space Grotesk',sans-serif" }}>{r.title}</p>
+              <p style={{ color:'rgba(255,255,255,0.3)', fontSize:'11px', margin:0, fontFamily:"'Space Grotesk',sans-serif" }}>{r.release_date ? new Date(r.release_date).toLocaleDateString('es-CO') : '—'} · {r.platforms}</p>
+            </div>
+            <Badge color={statusColor[r.status]||'#71717a'} label={r.status}/>
+          </div>
+        ))}
+      </Card>
+    </PageShell>
+  );
+}
+
+// ─── VIDEOS ───────────────────────────────────────────────────────────────────
+function VideosPage() {
+  const [videos, setVideos] = useState<any[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ title:'', description:'' });
+  const [loading, setLoading] = useState(false);
+  const load = () => apiFetch('/videos').then(d => setVideos(Array.isArray(d) ? d : [])).catch(() => {});
+  useEffect(() => { load(); }, []);
+  const save = async () => {
+    if (!form.title) return; setLoading(true);
+    try { await apiFetch('/videos', { method:'POST', body: JSON.stringify(form) }); setForm({ title:'', description:'' }); setShowForm(false); load(); } catch {}
+    setLoading(false);
+  };
+  return (
+    <PageShell title="Videos" action={<Btn3D small onClick={() => setShowForm(!showForm)}><Plus size={13}/> Subir video</Btn3D>}>
+      {showForm && <Card style={{ marginBottom:'20px' }}>
+        <div style={{ display:'flex', flexDirection:'column', gap:'10px', marginBottom:'10px' }}>
+          <input style={IS} placeholder="Título del video" value={form.title} onChange={e => setForm(f=>({...f,title:e.target.value}))} />
+          <textarea style={{...IS, resize:'vertical', minHeight:'72px'}} placeholder="Descripción" value={form.description} onChange={e => setForm(f=>({...f,description:e.target.value}))} />
+          <div style={{ border:'2px dashed rgba(255,255,255,0.1)', borderRadius:'10px', padding:'24px', textAlign:'center', color:'rgba(255,255,255,0.25)', fontSize:'13px', fontFamily:"'Space Grotesk',sans-serif" }}><Upload size={20} style={{ marginBottom:'8px', display:'block', margin:'0 auto 8px' }}/> Arrastra el archivo de video aquí</div>
+        </div>
+        <div style={{ display:'flex', gap:'10px' }}>
+          <Btn3D small onClick={save} disabled={loading}>{loading?'Guardando...':'Registrar'}</Btn3D>
+          <Btn3D small variant="ghost" onClick={() => setShowForm(false)}>Cancelar</Btn3D>
+        </div>
+      </Card>}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(220px,1fr))', gap:'16px' }}>
+        {videos.length===0 && <Card style={{ gridColumn:'1/-1' }}><EmptyState icon={Video} text="Sin videos. Sube tu primer video musical." /></Card>}
+        {videos.map(v=>(
+          <Card key={v.id} style={{ padding:'0', overflow:'hidden' }}>
+            <div style={{ height:'120px', background:'rgba(94,23,235,0.08)', display:'flex', alignItems:'center', justifyContent:'center', borderRadius:'20px 20px 0 0' }}><Video size={32} color="rgba(255,255,255,0.15)"/></div>
+            <div style={{ padding:'14px' }}>
+              <p style={{ color:'#fff', fontSize:'13px', fontWeight:600, margin:'0 0 4px', fontFamily:"'Space Grotesk',sans-serif" }}>{v.title}</p>
+              <p style={{ color:'rgba(255,255,255,0.3)', fontSize:'11px', margin:0, fontFamily:"'Space Grotesk',sans-serif" }}>{v.description||'Sin descripción'}</p>
+              <div style={{ marginTop:'10px' }}><Badge color="#22c55e" label={v.status||'pendiente'}/></div>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </PageShell>
+  );
+}
+
+// ─── LYRICS ───────────────────────────────────────────────────────────────────
+function LyricsPage() {
+  const [tracks, setTracks] = useState<any[]>([]);
+  const [selected, setSelected] = useState('');
+  const [lyrics, setLyrics] = useState('');
+  const [saved, setSaved] = useState(false);
+  useEffect(() => { apiFetch('/tracks').then(d => setTracks(Array.isArray(d)?d:[])).catch(()=>{}); }, []);
+  useEffect(() => {
+    if (!selected) return;
+    apiFetch(`/lyrics/${selected}`).then(d => setLyrics(d.lyrics||'')).catch(()=>{});
+  }, [selected]);
+  const save = async () => {
+    if (!selected) return;
+    await apiFetch('/lyrics', { method:'POST', body: JSON.stringify({ track_id: selected, lyrics }) }).catch(()=>{});
+    setSaved(true); setTimeout(()=>setSaved(false),2000);
+  };
+  const exportLRC = () => {
+    const blob = new Blob([lyrics], { type:'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download=`lyrics_${selected}.lrc`; a.click(); URL.revokeObjectURL(url);
+  };
+  return (
+    <PageShell title="Editor de Letras">
+      <div style={{ display:'grid', gridTemplateColumns:'220px 1fr', gap:'20px' }}>
+        <Card style={{ height:'fit-content' }}>
+          <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'13px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 12px' }}>TRACKS</h3>
+          {tracks.length===0 && <p style={{ color:'rgba(255,255,255,0.25)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif" }}>Sin tracks</p>}
+          {tracks.map(t=>(
+            <button key={t.id} onClick={() => setSelected(String(t.id))} style={{ width:'100%', textAlign:'left', background: selected===String(t.id)?'rgba(94,23,235,0.18)':'transparent', border:'none', borderRadius:'8px', padding:'8px 10px', color: selected===String(t.id)?PL:'rgba(255,255,255,0.5)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif", cursor:'pointer', marginBottom:'2px' }}>
+              {t.title}
+            </button>
+          ))}
+        </Card>
+        <Card>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'14px' }}>
+            <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'13px', color:'#fff', letterSpacing:'0.06em', margin:0 }}>EDITOR LRC</h3>
+            <div style={{ display:'flex', gap:'8px' }}>
+              <Btn3D small variant="ghost" onClick={exportLRC} disabled={!selected}><Download size={13}/> Exportar LRC</Btn3D>
+              <Btn3D small onClick={save} disabled={!selected}>{saved?<><Check size={13}/> Guardado</>:<><Send size={13}/> Guardar</>}</Btn3D>
+            </div>
+          </div>
+          <textarea value={lyrics} onChange={e => setLyrics(e.target.value)} placeholder={selected ? "[00:00.00] Escribe las letras en formato LRC...\n[00:05.00] Cada línea con timestamp\n[00:10.00] Segunda estrofa..." : "Selecciona un track para editar sus letras"} style={{ ...IS, resize:'vertical', minHeight:'380px', fontFamily:'monospace', fontSize:'13px', lineHeight:1.7 }} />
+        </Card>
+      </div>
+    </PageShell>
+  );
+}
+
+// ─── MARKETING IA ─────────────────────────────────────────────────────────────
+const ARCHETYPE_Q = [
+  { q:'¿Cómo describes tu sonido?', opts:['Oscuro y profundo','Alegre y positivo','Íntimo y vulnerable','Épico y poderoso','Experimental y extraño'] },
+  { q:'¿Qué emoción principal transmite tu música?', opts:['Melancolía','Euforia','Amor','Rabia','Introspección'] },
+  { q:'¿Cuál es tu referente artístico?', opts:['Bad Bunny','Billie Eilish','Coldplay','Kendrick Lamar','Björk'] },
+  { q:'¿Cómo te vistes en escena?', opts:['Streetwear','Minimalista','Elegante','Alternativo','Sin definir'] },
+  { q:'¿Qué red social dominas más?', opts:['TikTok','Instagram','YouTube','Twitter/X','Ninguna aún'] },
+];
+const ARCHETYPES: Record<string, { name:string; colors:string[]; personality:string; tribe:string; plan:string[] }> = {
+  '0-0': { name:'El Oscuro', colors:['#1a1a2e','#7B3FFF'], personality:'Misterioso, profundo, artístico', tribe:'Fans del dark-pop y alt-R&B', plan:['Lunes: Reel detrás de cámaras del estudio','Miércoles: Story con fragmento de letra','Viernes: Video lyric nuevo','Domingo: Live Q&A nocturno'] },
+  default: { name:'El Independiente', colors:['#5E17EB','#C084FC'], personality:'Auténtico, versátil, directo', tribe:'Fans del indie y artistas emergentes', plan:['Lunes: Contenido del proceso creativo','Martes: Colaboración con otro artista','Jueves: Release de contenido exclusivo','Sábado: Live acústico','Domingo: Recap de la semana'] },
+};
+function MarketingPage() {
+  const [step, setStep] = useState<'quiz'|'results'|'plan'>('quiz');
+  const [answers, setAnswers] = useState<number[]>([]);
+  const [current, setCurrent] = useState(0);
+  const [plan30, setPlan30] = useState<any[]>([]);
+  const [loadingPlan, setLoadingPlan] = useState(false);
+  const archKey = `${answers[0]??'x'}-${answers[1]??'x'}`;
+  const arch = ARCHETYPES[archKey] || ARCHETYPES.default;
+  const answer = (idx: number) => {
+    const next = [...answers]; next[current]=idx; setAnswers(next);
+    if (current < ARCHETYPE_Q.length-1) setCurrent(c=>c+1);
+    else setStep('results');
+  };
+  const genPlan = async () => {
+    setLoadingPlan(true); setStep('plan');
+    try { const d = await apiFetch('/ai/chat', { method:'POST', body: JSON.stringify({ message:`Genera un plan de contenido de 30 días para un artista con arquetipo "${arch.name}". Devuelve JSON array con {week,day,type,action}.`, history:[] }) }); const text = d.response||''; const match = text.match(/\[[\s\S]*\]/); if (match) { try { setPlan30(JSON.parse(match[0])); } catch { setPlan30(arch.plan.map((p,i)=>({week:1,day:i+1,type:'Post',action:p}))); } } else { setPlan30(arch.plan.map((p,i)=>({week:1,day:i+1,type:'Post',action:p}))); } } catch { setPlan30(arch.plan.map((p,i)=>({week:1,day:i+1,type:'Post',action:p}))); }
+    setLoadingPlan(false);
+  };
+  return (
+    <PageShell title="Marketing IA">
+      {step==='quiz' && <Card style={{ maxWidth:'560px', margin:'0 auto' }}>
+        <div style={{ marginBottom:'20px' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'8px' }}><span style={{ color:PL, fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif", fontWeight:700 }}>PREGUNTA {current+1} DE {ARCHETYPE_Q.length}</span></div>
+          <div style={{ height:'3px', background:'rgba(255,255,255,0.06)', borderRadius:'100px', overflow:'hidden' }}><div style={{ height:'100%', background:`linear-gradient(90deg,${P},${PL})`, width:`${((current+1)/ARCHETYPE_Q.length)*100}%`, transition:'width 0.3s' }}/></div>
+        </div>
+        <h2 style={{ fontFamily:"'Anton',sans-serif", fontSize:'20px', color:'#fff', margin:'0 0 20px', letterSpacing:'0.02em' }}>{ARCHETYPE_Q[current].q}</h2>
+        <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
+          {ARCHETYPE_Q[current].opts.map((o,i)=>(
+            <button key={i} onClick={()=>answer(i)} style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'10px', padding:'12px 16px', color:'rgba(255,255,255,0.7)', fontFamily:"'Space Grotesk',sans-serif", fontSize:'13px', cursor:'pointer', textAlign:'left', transition:'all 0.15s' }}
+              onMouseEnter={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor='rgba(94,23,235,0.5)';(e.currentTarget as HTMLButtonElement).style.color='#fff';}}
+              onMouseLeave={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor='rgba(255,255,255,0.08)';(e.currentTarget as HTMLButtonElement).style.color='rgba(255,255,255,0.7)';}}>
+              {o}
+            </button>
+          ))}
+        </div>
+      </Card>}
+      {step==='results' && <div>
+        <Card style={{ marginBottom:'20px', background:`linear-gradient(135deg,${arch.colors[0]}33,${arch.colors[1]}22)`, border:`1px solid ${arch.colors[1]}44` }}>
+          <div style={{ display:'flex', alignItems:'center', gap:'20px' }}>
+            <div style={{ display:'flex', gap:'8px' }}>
+              {arch.colors.map((c,i)=><div key={i} style={{ width:'40px', height:'40px', background:c, borderRadius:'50%', boxShadow:`0 0 20px ${c}88` }}/>)}
+            </div>
+            <div>
+              <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif", textTransform:'uppercase', letterSpacing:'0.15em', margin:'0 0 4px' }}>TU ARQUETIPO</p>
+              <h2 style={{ fontFamily:"'Anton',sans-serif", fontSize:'28px', color:'#fff', margin:0, letterSpacing:'0.02em' }}>{arch.name}</h2>
+            </div>
+          </div>
+        </Card>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'16px', marginBottom:'20px' }}>
+          <Card><p style={{ color:'rgba(255,255,255,0.35)', fontSize:'10px', fontFamily:"'Space Grotesk',sans-serif", textTransform:'uppercase', letterSpacing:'0.15em', margin:'0 0 8px' }}>PERSONALIDAD</p><p style={{ color:'#fff', fontSize:'13px', fontFamily:"'Space Grotesk',sans-serif", margin:0 }}>{arch.personality}</p></Card>
+          <Card><p style={{ color:'rgba(255,255,255,0.35)', fontSize:'10px', fontFamily:"'Space Grotesk',sans-serif", textTransform:'uppercase', letterSpacing:'0.15em', margin:'0 0 8px' }}>TU TRIBU</p><p style={{ color:'#fff', fontSize:'13px', fontFamily:"'Space Grotesk',sans-serif", margin:0 }}>{arch.tribe}</p></Card>
+          <Card><p style={{ color:'rgba(255,255,255,0.35)', fontSize:'10px', fontFamily:"'Space Grotesk',sans-serif", textTransform:'uppercase', letterSpacing:'0.15em', margin:'0 0 8px' }}>COLORES MARCA</p><div style={{ display:'flex', gap:'6px', marginTop:'4px' }}>{arch.colors.map((c,i)=><div key={i} style={{ width:'24px', height:'24px', background:c, borderRadius:'6px' }}/>)}</div></Card>
+        </div>
+        <div style={{ display:'flex', gap:'12px' }}>
+          <Btn3D onClick={genPlan}><Sparkles size={14}/> Generar plan 30 días</Btn3D>
+          <Btn3D variant="ghost" onClick={()=>{setStep('quiz');setAnswers([]);setCurrent(0);}}>Repetir test</Btn3D>
+        </div>
+      </div>}
+      {step==='plan' && <div>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'20px' }}>
+          <h2 style={{ fontFamily:"'Anton',sans-serif", fontSize:'18px', color:'#fff', margin:0 }}>PLAN 30 DÍAS — {arch.name.toUpperCase()}</h2>
+          <Btn3D small variant="ghost" onClick={()=>setStep('results')}>← Atrás</Btn3D>
+        </div>
+        {loadingPlan && <Card><div style={{ textAlign:'center', padding:'40px' }}><div style={{ width:'32px', height:'32px', border:`3px solid ${P}`, borderTopColor:'transparent', borderRadius:'50%', animation:'spin 0.8s linear infinite', margin:'0 auto 12px' }}/><p style={{ color:'rgba(255,255,255,0.4)', fontFamily:"'Space Grotesk',sans-serif" }}>Generando plan con IA...</p></div></Card>}
+        {!loadingPlan && <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))', gap:'14px' }}>
+          {plan30.map((item,i)=>(
+            <Card key={i} style={{ padding:'16px' }}>
+              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'8px' }}><Badge color={PL} label={`Semana ${item.week||Math.floor(i/7)+1}`}/><Badge color="#22c55e" label={item.type||'Post'}/></div>
+              <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'10px', fontFamily:"'Space Grotesk',sans-serif", margin:'0 0 4px' }}>DÍA {item.day||i+1}</p>
+              <p style={{ color:'#fff', fontSize:'13px', fontFamily:"'Space Grotesk',sans-serif", margin:0, lineHeight:1.5 }}>{item.action}</p>
+            </Card>
+          ))}
+        </div>}
+      </div>}
+    </PageShell>
+  );
+}
+
+// ─── SPOTLIGHT ────────────────────────────────────────────────────────────────
+function SpotlightPage() {
+  const [playlists, setPlaylists] = useState<any[]>([]);
+  const [subs, setSubs] = useState<any[]>([]);
+  const [genre, setGenre] = useState('');
+  const [tracks, setTracks] = useState<any[]>([]);
+  const [submitting, setSubmitting] = useState<number|null>(null);
+  useEffect(() => {
+    apiFetch('/playlists').then(d=>setPlaylists(Array.isArray(d)?d:[])).catch(()=>{});
+    apiFetch('/tracks').then(d=>setTracks(Array.isArray(d)?d:[])).catch(()=>{});
+  }, []);
+  const submit = async (playlistId: number) => {
+    if (!tracks[0]) return; setSubmitting(playlistId);
+    try { const d = await apiFetch('/playlists', { method:'POST', body: JSON.stringify({ playlist_id: playlistId, track_id: tracks[0].id }) }); setSubs(s=>[...s,d]); } catch {}
+    setSubmitting(null);
+  };
+  const filtered = genre ? playlists.filter(p=>(p.genre||'').toLowerCase().includes(genre.toLowerCase())) : playlists;
+  return (
+    <PageShell title="Spotlight Playlists">
+      <div style={{ display:'flex', gap:'12px', marginBottom:'20px', alignItems:'center' }}>
+        <input style={{...IS, maxWidth:'220px'}} placeholder="Filtrar por género..." value={genre} onChange={e=>setGenre(e.target.value)}/>
+        <span style={{ color:'rgba(255,255,255,0.3)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif" }}>{filtered.length} playlists</span>
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:'16px', marginBottom:'24px' }}>
+        {filtered.length===0 && <Card style={{ gridColumn:'1/-1' }}><EmptyState icon={Radio} text="Sin playlists disponibles." /></Card>}
+        {filtered.map(pl=>(
+          <Card key={pl.id}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'10px' }}>
+              <div>
+                <p style={{ color:'#fff', fontSize:'14px', fontWeight:600, margin:'0 0 3px', fontFamily:"'Space Grotesk',sans-serif" }}>{pl.name||pl.title||'Playlist'}</p>
+                <p style={{ color:'rgba(255,255,255,0.3)', fontSize:'11px', margin:0, fontFamily:"'Space Grotesk',sans-serif" }}>{pl.genre||'Varios géneros'} · {pl.followers||0} seguidores</p>
+              </div>
+              {pl.genre && <Badge color={PL} label={pl.genre}/>}
+            </div>
+            <Btn3D small onClick={()=>submit(pl.id)} disabled={submitting===pl.id}>{submitting===pl.id?'Enviando...':'Enviar track'}</Btn3D>
+          </Card>
+        ))}
+      </div>
+      {subs.length>0 && <Card>
+        <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'13px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 12px' }}>HISTORIAL DE ENVÍOS</h3>
+        {subs.map((s,i)=><div key={i} style={{ display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}><span style={{ color:'rgba(255,255,255,0.5)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif" }}>Playlist #{s.playlist_id||i+1}</span><Badge color="#3b82f6" label="Enviado"/></div>)}
+      </Card>}
+    </PageShell>
+  );
+}
+
+// ─── HYPERFOLLOW ──────────────────────────────────────────────────────────────
+function HyperfollowPage() {
+  const [releases, setReleases] = useState<any[]>([]);
+  const [selected, setSelected] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [pages, setPages] = useState<any[]>([]);
+  const [creating, setCreating] = useState(false);
+  useEffect(() => { apiFetch('/releases').then(d=>setReleases(Array.isArray(d)?d:[])).catch(()=>{}); }, []);
+  const create = async () => {
+    if (!selected) return; setCreating(true);
+    try { const d = await apiFetch('/releases', { method:'POST', body: JSON.stringify({ type:'hyperfollow', release_id: selected }) }); setPages(p=>[...p, { ...d, slug: `immusic.com/pre/${selected}`, leads: 0 }]); } catch { setPages(p=>[...p,{ slug:`immusic.com/pre/${selected}`, leads:0, release_id:selected }]); }
+    setCreating(false);
+  };
+  const copy = (slug: string) => { navigator.clipboard.writeText(`https://${slug}`); setCopied(true); setTimeout(()=>setCopied(false),2000); };
+  return (
+    <PageShell title="HyperFollow">
+      <Card style={{ marginBottom:'20px' }}>
+        <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'14px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 14px' }}>CREAR LANDING PAGE DE PRE-SAVE</h3>
+        <div style={{ display:'flex', gap:'10px', alignItems:'flex-end' }}>
+          <div style={{ flex:1 }}>
+            <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif", margin:'0 0 6px' }}>Release</p>
+            <select style={{...IS}} value={selected} onChange={e=>setSelected(e.target.value)}>
+              <option value="">Seleccionar release...</option>
+              {releases.map(r=><option key={r.id} value={r.id}>{r.title}</option>)}
+            </select>
+          </div>
+          <Btn3D small onClick={create} disabled={!selected||creating}>{creating?'Creando...':'Crear landing'}</Btn3D>
+        </div>
+      </Card>
+      <div style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
+        {pages.length===0 && <Card><EmptyState icon={Link2} text="Sin landing pages. Crea la primera para tu próximo lanzamiento." /></Card>}
+        {pages.map((pg,i)=>(
+          <Card key={i}>
+            <div style={{ display:'flex', alignItems:'center', gap:'16px' }}>
+              <div style={{ flex:1 }}>
+                <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'10px', fontFamily:"'Space Grotesk',sans-serif", textTransform:'uppercase', letterSpacing:'0.1em', margin:'0 0 4px' }}>URL DE PRE-SAVE</p>
+                <p style={{ color:PL, fontSize:'13px', fontFamily:'monospace', margin:0 }}>https://{pg.slug}</p>
+              </div>
+              <div style={{ textAlign:'center' }}>
+                <p style={{ fontFamily:"'Anton',sans-serif", fontSize:'24px', color:'#fff', margin:0 }}>{pg.leads||0}</p>
+                <p style={{ color:'rgba(255,255,255,0.3)', fontSize:'10px', fontFamily:"'Space Grotesk',sans-serif", margin:0 }}>Leads</p>
+              </div>
+              <Btn3D small variant="ghost" onClick={()=>copy(pg.slug)}><Copy size={13}/> {copied?'¡Copiado!':'Copiar link'}</Btn3D>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </PageShell>
+  );
+}
+
+// ─── COMMUNITY ────────────────────────────────────────────────────────────────
+function CommunityPage() {
+  const [messages, setMessages] = useState<any[]>([]);
+  const [input, setInput] = useState('');
+  const [sending, setSending] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const load = () => apiFetch('/chat/recent').then(d=>setMessages(Array.isArray(d)?d:[])).catch(()=>{});
+  useEffect(() => { load(); const t = setInterval(load, 5000); return ()=>clearInterval(t); }, []);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior:'smooth' }); }, [messages]);
+  const send = async () => {
+    if (!input.trim()||sending) return; const msg=input.trim(); setInput(''); setSending(true);
+    try { await apiFetch('/chat', { method:'POST', body: JSON.stringify({ message: msg }) }); load(); } catch {}
+    setSending(false);
+  };
+  return (
+    <PageShell title="Comunidad">
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 260px', gap:'20px' }}>
+        <Card style={{ display:'flex', flexDirection:'column', height:'540px' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'14px' }}>
+            <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'14px', color:'#fff', letterSpacing:'0.06em', margin:0 }}>CHAT EN VIVO</h3>
+            <div style={{ display:'flex', alignItems:'center', gap:'6px' }}><div style={{ width:'6px', height:'6px', background:'#22c55e', borderRadius:'50%', animation:'pulse 2s ease-in-out infinite' }}/><span style={{ color:'rgba(255,255,255,0.3)', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif" }}>En vivo · auto-actualiza</span></div>
+          </div>
+          <div style={{ flex:1, overflowY:'auto', display:'flex', flexDirection:'column', gap:'10px', paddingRight:'4px' }}>
+            {messages.length===0 && <EmptyState icon={MessageCircle} text="Sin mensajes aún. ¡Sé el primero!" />}
+            {messages.map((m,i)=>(
+              <div key={i} style={{ display:'flex', gap:'10px', alignItems:'flex-start' }}>
+                <div style={{ width:'28px', height:'28px', background:`rgba(94,23,235,0.2)`, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><UserIcon size={12} color={PL}/></div>
+                <div>
+                  <span style={{ color:PL, fontSize:'11px', fontWeight:700, fontFamily:"'Space Grotesk',sans-serif" }}>{m.user_name||m.author||'Artista'} </span>
+                  <span style={{ color:'rgba(255,255,255,0.2)', fontSize:'10px', fontFamily:"'Space Grotesk',sans-serif" }}>{m.created_at ? new Date(m.created_at).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}) : ''}</span>
+                  <p style={{ color:'rgba(255,255,255,0.7)', fontSize:'13px', margin:'3px 0 0', fontFamily:"'Space Grotesk',sans-serif", lineHeight:1.5 }}>{m.message||m.content}</p>
+                </div>
+              </div>
+            ))}
+            <div ref={bottomRef}/>
+          </div>
+          <div style={{ display:'flex', gap:'10px', marginTop:'14px', paddingTop:'14px', borderTop:'1px solid rgba(255,255,255,0.06)' }}>
+            <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&send()} placeholder="Escribe un mensaje..." style={{...IS,flex:1}}/>
+            <Btn3D small onClick={send} disabled={sending||!input.trim()}><Send size={13}/></Btn3D>
+          </div>
+        </Card>
+        <div style={{ display:'flex', flexDirection:'column', gap:'14px' }}>
+          <Card><h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'13px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 10px' }}>ACTIVOS AHORA</h3><p style={{ fontFamily:"'Anton',sans-serif", fontSize:'36px', color:PL, margin:'0 0 4px' }}>—</p><p style={{ color:'rgba(255,255,255,0.3)', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif", margin:0 }}>artistas online</p></Card>
+          <Card><h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'13px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 10px' }}>MENSAJES HOY</h3><p style={{ fontFamily:"'Anton',sans-serif", fontSize:'36px', color:'#fff', margin:'0 0 4px' }}>{messages.length}</p><p style={{ color:'rgba(255,255,255,0.3)', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif", margin:0 }}>en el feed</p></Card>
+        </div>
+      </div>
+    </PageShell>
+  );
+}
+
+// ─── MARKETPLACE ──────────────────────────────────────────────────────────────
+function MarketplacePage() {
+  const [beats, setBeats] = useState<any[]>([]);
+  const [playing, setPlaying] = useState<number|null>(null);
+  useEffect(() => { apiFetch('/marketplace/beats').then(d=>setBeats(Array.isArray(d)?d:[])).catch(()=>{}); }, []);
+  const DEMO_BEATS = [
+    { id:1, title:'Dark Trap 140bpm', producer:'ProducerX', price:49900, genre:'Trap', bpm:140 },
+    { id:2, title:'Reggaeton Loop Vol.3', producer:'BeatMaker', price:39900, genre:'Reggaeton', bpm:95 },
+    { id:3, title:'Afrobeats Groove', producer:'AfroStudio', price:59900, genre:'Afrobeats', bpm:108 },
+    { id:4, title:'Sad Piano RnB', producer:'EmotionBeat', price:44900, genre:'R&B', bpm:75 },
+    { id:5, title:'Cumbia Electrónica', producer:'LaBocha', price:34900, genre:'Cumbia', bpm:120 },
+    { id:6, title:'Perreo Intenso', producer:'UrbanProd', price:54900, genre:'Reggaeton', bpm:100 },
+  ];
+  const list = beats.length>0 ? beats : DEMO_BEATS;
+  return (
+    <PageShell title="Marketplace de Beats">
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))', gap:'16px' }}>
+        {list.map(b=>(
+          <Card key={b.id} style={{ position:'relative' }}>
+            <div style={{ height:'80px', background:`linear-gradient(135deg,rgba(94,23,235,0.15),rgba(123,63,255,0.1))`, borderRadius:'12px', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'14px', position:'relative', overflow:'hidden' }}>
+              {[...Array(12)].map((_,i)=><div key={i} style={{ width:'3px', background:playing===b.id?PL:'rgba(255,255,255,0.15)', borderRadius:'3px', height:`${20+Math.random()*40}px`, margin:'0 2px', animation: playing===b.id?`waveBar ${0.8+Math.random()*0.6}s ease-in-out ${i*0.06}s infinite`:'none' }}/>)}
+              <button onClick={()=>setPlaying(playing===b.id?null:b.id)} style={{ position:'absolute', width:'36px', height:'36px', background:`rgba(94,23,235,0.9)`, border:'none', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', boxShadow:`0 0 20px rgba(94,23,235,0.5)` }}>{playing===b.id?<div style={{ width:'10px', height:'10px', background:'#fff', borderRadius:'2px' }}/>:<Play size={14} color="#fff" style={{ marginLeft:'2px' }}/>}</button>
+            </div>
+            <p style={{ color:'#fff', fontSize:'14px', fontWeight:600, margin:'0 0 3px', fontFamily:"'Space Grotesk',sans-serif" }}>{b.title}</p>
+            <p style={{ color:'rgba(255,255,255,0.35)', fontSize:'11px', margin:'0 0 12px', fontFamily:"'Space Grotesk',sans-serif" }}>{b.producer} · {b.genre} · {b.bpm} BPM</p>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <span style={{ fontFamily:"'Anton',sans-serif", fontSize:'18px', color:PL }}>${(b.price/100).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}<span style={{ fontSize:'11px', color:'rgba(255,255,255,0.3)', fontFamily:"'Space Grotesk',sans-serif" }}> COP</span></span>
+              <Btn3D small><ShoppingBag size={12}/> Comprar</Btn3D>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </PageShell>
+  );
+}
+
+// ─── SPLITS ───────────────────────────────────────────────────────────────────
+function SplitsPage() {
+  const [splits, setSplits] = useState<any[]>([]);
+  const [tracks, setTracks] = useState<any[]>([]);
+  const [selectedTrack, setSelectedTrack] = useState('');
+  const [form, setForm] = useState({ name:'', email:'', percentage:'' });
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    apiFetch('/splits').then(d=>setSplits(Array.isArray(d)?d:[])).catch(()=>{});
+    apiFetch('/tracks').then(d=>setTracks(Array.isArray(d)?d:[])).catch(()=>{});
+  }, []);
+  const add = async () => {
+    if (!form.name||!form.percentage) return; setLoading(true);
+    try { const d = await apiFetch('/splits', { method:'POST', body: JSON.stringify({ ...form, track_id: selectedTrack }) }); setSplits(s=>[...s,d]); setForm({ name:'', email:'', percentage:'' }); } catch {}
+    setLoading(false);
+  };
+  const bySplit = splits.reduce((acc:any,s:any)=>{ const k=s.track_id||'general'; if(!acc[k])acc[k]=[]; acc[k].push(s); return acc; }, {});
+  return (
+    <PageShell title="Splits de Regalías">
+      <div style={{ display:'grid', gridTemplateColumns:'340px 1fr', gap:'20px' }}>
+        <div>
+          <Card style={{ marginBottom:'16px' }}>
+            <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'13px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 14px' }}>AGREGAR COLABORADOR</h3>
+            <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
+              <select style={IS} value={selectedTrack} onChange={e=>setSelectedTrack(e.target.value)}>
+                <option value="">Track general...</option>
+                {tracks.map(t=><option key={t.id} value={t.id}>{t.title}</option>)}
+              </select>
+              <input style={IS} placeholder="Nombre del colaborador" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))}/>
+              <input style={IS} placeholder="Email" type="email" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))}/>
+              <div style={{ position:'relative' }}>
+                <input style={IS} placeholder="Porcentaje" type="number" min="0" max="100" value={form.percentage} onChange={e=>setForm(f=>({...f,percentage:e.target.value}))}/>
+                <Percent size={13} color="rgba(255,255,255,0.3)" style={{ position:'absolute', right:'12px', top:'50%', transform:'translateY(-50%)' }}/>
+              </div>
+              <Btn3D small onClick={add} disabled={loading} fullWidth>{loading?'Guardando...':'Agregar split'}</Btn3D>
+            </div>
+          </Card>
+          <Card style={{ background:'rgba(94,23,235,0.08)', border:'1px solid rgba(94,23,235,0.2)' }}>
+            <p style={{ color:'rgba(255,255,255,0.35)', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif", lineHeight:1.6, margin:0 }}>💡 Los splits se calculan automáticamente. La suma de porcentajes no debe superar 100%.</p>
+          </Card>
+        </div>
+        <Card>
+          <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'13px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 16px' }}>SPLITS ACTIVOS</h3>
+          {splits.length===0 && <EmptyState icon={Users} text="Sin splits. Agrega colaboradores para dividir regalías." />}
+          {Object.entries(bySplit).map(([trackId, trackSplits]:any)=>(
+            <div key={trackId} style={{ marginBottom:'20px' }}>
+              <p style={{ color:PL, fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, textTransform:'uppercase', letterSpacing:'0.12em', margin:'0 0 10px' }}>{tracks.find(t=>String(t.id)===trackId)?.title||'General'}</p>
+              {trackSplits.map((s:any,i:number)=>(
+                <div key={i} style={{ display:'flex', alignItems:'center', gap:'12px', padding:'10px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ width:'32px', height:'32px', background:'rgba(94,23,235,0.12)', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><UserIcon size={13} color={PL}/></div>
+                  <div style={{ flex:1 }}><p style={{ color:'#fff', fontSize:'13px', margin:0, fontFamily:"'Space Grotesk',sans-serif" }}>{s.name}</p><p style={{ color:'rgba(255,255,255,0.3)', fontSize:'11px', margin:0, fontFamily:"'Space Grotesk',sans-serif" }}>{s.email||'Sin email'}</p></div>
+                  <div style={{ fontFamily:"'Anton',sans-serif", fontSize:'20px', color:PL }}>{s.percentage}%</div>
+                  <Badge color="#22c55e" label="Activo"/>
+                </div>
+              ))}
+            </div>
+          ))}
+        </Card>
+      </div>
+    </PageShell>
+  );
+}
+
+// ─── VAULT ────────────────────────────────────────────────────────────────────
+function VaultPage() {
+  const [files, setFiles] = useState<any[]>([]);
+  useEffect(() => { apiFetch('/vault/files').then(d=>setFiles(Array.isArray(d)?d:[])).catch(()=>{}); }, []);
+  const fileIcon = (type:string) => { if(type?.includes('audio')||type?.includes('mp3')||type?.includes('wav')) return FileAudio; if(type?.includes('video')) return FileVideo; if(type?.includes('image')) return FileImage; return FileText; };
+  const fileColor = (type:string) => { if(type?.includes('audio')) return '#22c55e'; if(type?.includes('video')) return '#3b82f6'; if(type?.includes('image')) return '#f59e0b'; return 'rgba(255,255,255,0.4)'; };
+  const formatSize = (bytes:number) => { if(!bytes) return '—'; if(bytes<1024) return `${bytes}B`; if(bytes<1048576) return `${(bytes/1024).toFixed(1)}KB`; return `${(bytes/1048576).toFixed(1)}MB`; };
+  return (
+    <PageShell title="Vault" action={<Btn3D small><Upload size={13}/> Subir archivo</Btn3D>}>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'14px', marginBottom:'20px' }}>
+        {[{label:'Archivos totales',value:files.length,icon:Lock},{label:'Audio',value:files.filter(f=>f.type?.includes('audio')).length,icon:FileAudio},{label:'Almacenamiento',value:'—',icon:BarChart3}].map(c=><StatCard key={c.label} label={c.label} value={c.value} icon={c.icon}/>)}
+      </div>
+      <Card>
+        {files.length===0 && <EmptyState icon={Lock} text="Tu vault está vacío. Sube contratos, masters y archivos importantes." />}
+        {files.map(f=>{const FIcon=fileIcon(f.type||f.mime_type); const col=fileColor(f.type||f.mime_type); return (
+          <div key={f.id} style={{ display:'flex', alignItems:'center', gap:'14px', padding:'12px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
+            <div style={{ width:'38px', height:'38px', background:`${col}18`, borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><FIcon size={16} color={col}/></div>
+            <div style={{ flex:1 }}><p style={{ color:'#fff', fontSize:'13px', margin:0, fontFamily:"'Space Grotesk',sans-serif", fontWeight:500 }}>{f.name||f.filename||'Archivo'}</p><p style={{ color:'rgba(255,255,255,0.3)', fontSize:'11px', margin:0, fontFamily:"'Space Grotesk',sans-serif" }}>{formatSize(f.size)} · {f.created_at?new Date(f.created_at).toLocaleDateString('es-CO'):'—'}</p></div>
+            <a href={f.url||'#'} download style={{ display:'flex', alignItems:'center', gap:'5px', color:'rgba(255,255,255,0.3)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif", textDecoration:'none', padding:'6px 10px', borderRadius:'8px', border:'1px solid rgba(255,255,255,0.08)' }}><Download size={12}/>Descargar</a>
+          </div>
+        );})}
+      </Card>
+    </PageShell>
+  );
+}
+
+// ─── BULK UPLOAD ──────────────────────────────────────────────────────────────
+function BulkUploadPage() {
+  const [files, setFiles] = useState<File[]>([]);
+  const [results, setResults] = useState<{name:string;status:'ok'|'error'|'uploading'}[]>([]);
+  const [dragging, setDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const onDrop = (e: React.DragEvent) => { e.preventDefault(); setDragging(false); setFiles(f=>[...f,...Array.from(e.dataTransfer.files)]); };
+  const onInput = (e: React.ChangeEvent<HTMLInputElement>) => { if(e.target.files) setFiles(f=>[...f,...Array.from(e.target.files!)]); };
+  const upload = async () => {
+    if(!files.length) return; setUploading(true);
+    const newResults = files.map(f=>({name:f.name, status:'uploading' as const})); setResults(newResults);
+    for (let i=0; i<files.length; i++) {
+      const fd = new FormData(); fd.append('file', files[i]);
+      try {
+        const res = await fetch(`${API}/upload`, { method:'POST', headers:{ Authorization:`Bearer ${token()}` }, body: fd });
+        setResults(r => r.map((x,idx)=>idx===i?{...x,status:res.ok?'ok':'error'}:x));
+      } catch { setResults(r=>r.map((x,idx)=>idx===i?{...x,status:'error'}:x)); }
+    }
+    setUploading(false); setFiles([]);
+  };
+  const statusIcon = (s:string) => s==='ok'?<Check size={13} color="#22c55e"/>:s==='error'?<X size={13} color="#ef4444"/>:<div style={{ width:'13px', height:'13px', border:`2px solid ${P}`, borderTopColor:'transparent', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>;
+  return (
+    <PageShell title="Subida Masiva">
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 340px', gap:'20px' }}>
+        <div>
+          <label onDragOver={e=>{e.preventDefault();setDragging(true)}} onDragLeave={()=>setDragging(false)} onDrop={onDrop}
+            style={{ display:'block', border:`2px dashed ${dragging?P:'rgba(255,255,255,0.12)'}`, borderRadius:'20px', padding:'60px 40px', textAlign:'center', cursor:'pointer', background: dragging?'rgba(94,23,235,0.08)':'transparent', transition:'all 0.2s', marginBottom:'16px' }}>
+            <Upload size={40} color={dragging?P:'rgba(255,255,255,0.2)'} style={{ marginBottom:'16px' }}/>
+            <p style={{ color:'#fff', fontSize:'15px', fontFamily:"'Space Grotesk',sans-serif", margin:'0 0 6px', fontWeight:600 }}>Arrastra archivos aquí</p>
+            <p style={{ color:'rgba(255,255,255,0.3)', fontSize:'13px', fontFamily:"'Space Grotesk',sans-serif", margin:0 }}>MP3, WAV, FLAC, ZIP · hasta 500MB por archivo</p>
+            <input type="file" multiple onChange={onInput} style={{ display:'none' }} accept=".mp3,.wav,.flac,.zip,.pdf"/>
+          </label>
+          {files.length>0 && <Card style={{ marginBottom:'14px' }}>
+            <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'13px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 12px' }}>EN COLA ({files.length})</h3>
+            {files.map((f,i)=><div key={i} style={{ display:'flex', justifyContent:'space-between', padding:'6px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}><span style={{ color:'rgba(255,255,255,0.6)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif" }}>{f.name}</span><span style={{ color:'rgba(255,255,255,0.3)', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif" }}>{(f.size/1048576).toFixed(1)}MB</span></div>)}
+            <div style={{ marginTop:'14px', display:'flex', gap:'10px' }}>
+              <Btn3D small onClick={upload} disabled={uploading}>{uploading?'Subiendo...':'Subir todo'}</Btn3D>
+              <Btn3D small variant="ghost" onClick={()=>setFiles([])}>Limpiar</Btn3D>
+            </div>
+          </Card>}
+        </div>
+        <div>
+          <Card>
+            <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'13px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 12px' }}>RESULTADOS</h3>
+            {results.length===0 && <EmptyState icon={Upload} text="Los resultados aparecerán aquí." />}
+            {results.map((r,i)=>(
+              <div key={i} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'8px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
+                {statusIcon(r.status)}
+                <span style={{ color:'rgba(255,255,255,0.6)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif", flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{r.name}</span>
+              </div>
+            ))}
+          </Card>
+        </div>
+      </div>
+    </PageShell>
+  );
+}
+
+// ─── STORE MAXIMIZER ──────────────────────────────────────────────────────────
+function StoreMaximizerPage() {
+  const [stats, setStats] = useState<any>(null);
+  const [enabled, setEnabled] = useState<Record<string,boolean>>({});
+  useEffect(() => { apiFetch('/stats').then(d=>{ setStats(d); const init: Record<string,boolean>={}; Object.keys(d?.byPlatform||{}).forEach(p=>{init[p]=true;}); setEnabled(init); }).catch(()=>{}); }, []);
+  const PLATFORMS = [
+    { key:'spotify', name:'Spotify', color:'#1DB954' },
+    { key:'apple', name:'Apple Music', color:'#FC3C44' },
+    { key:'youtube', name:'YouTube Music', color:'#FF0000' },
+    { key:'tiktok', name:'TikTok', color:'#69C9D0' },
+    { key:'amazon', name:'Amazon Music', color:'#00A8E0' },
+    { key:'deezer', name:'Deezer', color:'#A238FF' },
+    { key:'tidal', name:'Tidal', color:'#fff' },
+    { key:'pandora', name:'Pandora', color:'#3668FF' },
+  ];
+  const toggle = (key:string) => setEnabled(e=>({...e,[key]:!e[key]}));
+  return (
+    <PageShell title="Store Maximizer">
+      <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'13px', fontFamily:"'Space Grotesk',sans-serif", margin:'0 0 24px', lineHeight:1.6 }}>Activa o desactiva tu distribución en cada plataforma. Los cambios se aplican en el próximo ciclo de distribución.</p>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))', gap:'14px' }}>
+        {PLATFORMS.map(pl=>{
+          const rev = stats?.byPlatform?.[pl.key] || 0;
+          const isOn = enabled[pl.key]!==false;
+          return (
+            <Card key={pl.key} style={{ display:'flex', alignItems:'center', gap:'14px' }}>
+              <div style={{ width:'40px', height:'40px', background:`${pl.color}20`, borderRadius:'12px', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, border:`1px solid ${pl.color}40` }}>
+                <Globe size={18} color={pl.color}/>
+              </div>
+              <div style={{ flex:1 }}>
+                <p style={{ color:'#fff', fontSize:'13px', fontWeight:600, margin:'0 0 2px', fontFamily:"'Space Grotesk',sans-serif" }}>{pl.name}</p>
+                <p style={{ color:'rgba(255,255,255,0.3)', fontSize:'11px', margin:0, fontFamily:"'Space Grotesk',sans-serif" }}>${Number(rev).toFixed(2)} esta semana</p>
+              </div>
+              <button onClick={()=>toggle(pl.key)} style={{ background:'none', border:'none', cursor:'pointer', padding:0, flexShrink:0 }}>
+                {isOn ? <ToggleRight size={28} color="#22c55e"/> : <ToggleLeft size={28} color="rgba(255,255,255,0.2)"/>}
+              </button>
+            </Card>
+          );
+        })}
+      </div>
+    </PageShell>
+  );
+}
+
+// ─── RIAA CERTIFICATIONS ──────────────────────────────────────────────────────
+function RIAAPage() {
+  const [data, setData] = useState<any>(null);
+  const [streams, setStreams] = useState(0);
+  useEffect(() => {
+    apiFetch('/riaa').then(setData).catch(()=>{});
+    apiFetch('/royalties/summary').then(d=>setStreams(Number(d?.totalStreams||0))).catch(()=>{});
+  }, []);
+  const LEVELS = [
+    { name:'Oro', threshold:500000, color:'#F59E0B', icon:'🥇' },
+    { name:'Platino', threshold:1000000, color:'#94A3B8', icon:'🥈' },
+    { name:'Diamante', threshold:10000000, color:'#67E8F9', icon:'💎' },
+  ];
+  const current = LEVELS.filter(l=>streams>=l.threshold).pop();
+  const next = LEVELS.find(l=>streams<l.threshold);
+  const progress = next ? Math.min((streams/next.threshold)*100,100) : 100;
+  return (
+    <PageShell title="Certificaciones RIAA">
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'20px', marginBottom:'20px' }}>
+        <Card style={{ textAlign:'center', padding:'40px 24px' }}>
+          <div style={{ fontSize:'64px', marginBottom:'12px' }}>{current?.icon||'🎵'}</div>
+          <h2 style={{ fontFamily:"'Anton',sans-serif", fontSize:'32px', color: current?.color||'rgba(255,255,255,0.3)', margin:'0 0 8px', letterSpacing:'0.02em' }}>{current?.name?.toUpperCase()||'SIN CERT.'}</h2>
+          <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'13px', fontFamily:"'Space Grotesk',sans-serif", margin:0 }}>Certificación actual</p>
+        </Card>
+        <Card>
+          <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'14px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 20px' }}>PRÓXIMO NIVEL</h3>
+          {next ? <>
+            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'8px' }}><span style={{ color:'rgba(255,255,255,0.5)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif" }}>{streams.toLocaleString()} streams</span><span style={{ color:next.color, fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif", fontWeight:700 }}>{next.name} — {next.threshold.toLocaleString()}</span></div>
+            <div style={{ height:'8px', background:'rgba(255,255,255,0.06)', borderRadius:'100px', overflow:'hidden', marginBottom:'16px' }}><div style={{ height:'100%', background:`linear-gradient(90deg,${P},${next.color})`, borderRadius:'100px', width:`${progress}%`, transition:'width 1s' }}/></div>
+            <p style={{ color:'rgba(255,255,255,0.3)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif", margin:0 }}>Faltan {(next.threshold-streams).toLocaleString()} streams para {next.name}</p>
+          </> : <p style={{ color:'#22c55e', fontSize:'13px', fontFamily:"'Space Grotesk',sans-serif" }}>¡Máximo nivel alcanzado! 💎</p>}
+        </Card>
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'14px' }}>
+        {LEVELS.map(l=>{
+          const reached = streams>=l.threshold;
+          return (
+            <Card key={l.name} style={{ textAlign:'center', opacity: reached?1:0.45 }}>
+              <div style={{ fontSize:'32px', marginBottom:'10px' }}>{l.icon}</div>
+              <p style={{ fontFamily:"'Anton',sans-serif", fontSize:'16px', color:reached?l.color:'rgba(255,255,255,0.3)', margin:'0 0 4px' }}>{l.name.toUpperCase()}</p>
+              <p style={{ color:'rgba(255,255,255,0.25)', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif", margin:0 }}>{l.threshold.toLocaleString()} streams</p>
+              {reached && <div style={{ marginTop:'10px' }}><Badge color={l.color} label="✓ Alcanzado"/></div>}
+            </Card>
+          );
+        })}
+      </div>
+    </PageShell>
+  );
+}
+
+// ─── TEAM ────────────────────────────────────────────────────────────────────
+function TeamPage() {
+  const [members, setMembers] = useState<any[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ name:'', email:'', role:'collaborator' });
+  const [loading, setLoading] = useState(false);
+  const load = () => apiFetch('/artists').then(d=>setMembers(Array.isArray(d)?d:[])).catch(()=>{});
+  useEffect(() => { load(); }, []);
+  const invite = async () => {
+    if (!form.name||!form.email) return; setLoading(true);
+    try { await apiFetch('/artists', { method:'POST', body: JSON.stringify(form) }); setForm({ name:'', email:'', role:'collaborator' }); setShowForm(false); load(); } catch {}
+    setLoading(false);
+  };
+  const ROLES: Record<string,string> = { artist:'#7B3FFF', collaborator:'#3b82f6', producer:'#22c55e', manager:'#f59e0b', admin:'#ef4444' };
+  return (
+    <PageShell title="Equipo" action={<Btn3D small onClick={()=>setShowForm(!showForm)}><Plus size={13}/> Invitar miembro</Btn3D>}>
+      {showForm && <Card style={{ marginBottom:'20px' }}>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', marginBottom:'10px' }}>
+          <input style={IS} placeholder="Nombre" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))}/>
+          <input style={IS} placeholder="Email" type="email" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))}/>
+          <select style={IS} value={form.role} onChange={e=>setForm(f=>({...f,role:e.target.value}))}>
+            <option value="collaborator">Colaborador</option>
+            <option value="artist">Artista</option>
+            <option value="producer">Productor</option>
+            <option value="manager">Manager</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div style={{ display:'flex', gap:'10px' }}>
+          <Btn3D small onClick={invite} disabled={loading}>{loading?'Invitando...':'Enviar invitación'}</Btn3D>
+          <Btn3D small variant="ghost" onClick={()=>setShowForm(false)}>Cancelar</Btn3D>
+        </div>
+      </Card>}
+      <Card>
+        {members.length===0 && <EmptyState icon={Users} text="Sin miembros de equipo. Invita a tus colaboradores." />}
+        {members.map(m=>(
+          <div key={m.id} style={{ display:'flex', alignItems:'center', gap:'14px', padding:'12px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
+            <div style={{ width:'38px', height:'38px', background:'rgba(94,23,235,0.12)', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><UserIcon size={15} color={PL}/></div>
+            <div style={{ flex:1 }}>
+              <p style={{ color:'#fff', fontSize:'13px', fontWeight:600, margin:'0 0 2px', fontFamily:"'Space Grotesk',sans-serif" }}>{m.name}</p>
+              <p style={{ color:'rgba(255,255,255,0.3)', fontSize:'11px', margin:0, fontFamily:"'Space Grotesk',sans-serif" }}>{m.email}</p>
+            </div>
+            <Badge color={ROLES[m.role]||'#71717a'} label={m.role||'miembro'}/>
+          </div>
+        ))}
+      </Card>
+    </PageShell>
+  );
+}
+
+// ─── STATS ────────────────────────────────────────────────────────────────────
+function StatsPage() {
+  const [stats, setStats] = useState<any>(null);
+  const [monthly, setMonthly] = useState<any[]>([]);
+  useEffect(() => {
+    apiFetch('/stats').then(setStats).catch(()=>{});
+    apiFetch('/royalties/monthly').then(d=>setMonthly(Array.isArray(d)?d:[])).catch(()=>{});
+  }, []);
+  const platforms = Object.entries(stats?.byPlatform||{});
+  const maxRev = Math.max(...platforms.map(([,v]:any)=>Number(v)),1);
+  const maxMonth = Math.max(...monthly.map((m:any)=>Number(m.revenue||0)),1);
+  return (
+    <PageShell title="Estadísticas">
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'14px', marginBottom:'24px' }}>
+        {[{label:'Streams totales',value:stats?Number(stats.totalStreams||0).toLocaleString():'—',icon:TrendingUp},{label:'Ingresos totales',value:stats?`$${Number(stats.totalRevenue||0).toFixed(2)}`:'—',icon:DollarSign},{label:'Plataformas',value:platforms.length||'—',icon:Globe},{label:'Meses de datos',value:monthly.length||'—',icon:Calendar}].map(c=><StatCard key={c.label} label={c.label} value={c.value} icon={c.icon}/>)}
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'20px' }}>
+        <Card>
+          <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'14px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 20px' }}>INGRESOS POR PLATAFORMA</h3>
+          {platforms.length===0 && <EmptyState icon={BarChart3} text="Sin datos de plataformas." />}
+          {platforms.map(([name,rev]:any)=>(
+            <div key={name} style={{ marginBottom:'14px' }}>
+              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'5px' }}>
+                <span style={{ color:'rgba(255,255,255,0.6)', fontSize:'12px', textTransform:'capitalize', fontFamily:"'Space Grotesk',sans-serif" }}>{name}</span>
+                <span style={{ color:'#fff', fontSize:'12px', fontWeight:600, fontFamily:"'Space Grotesk',sans-serif" }}>${Number(rev).toFixed(2)}</span>
+              </div>
+              <div style={{ height:'6px', background:'rgba(255,255,255,0.05)', borderRadius:'100px', overflow:'hidden' }}>
+                <div style={{ height:'100%', background:`linear-gradient(90deg,${P},${PL})`, borderRadius:'100px', width:`${(Number(rev)/maxRev)*100}%` }}/>
+              </div>
+            </div>
+          ))}
+        </Card>
+        <Card>
+          <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'14px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 20px' }}>INGRESOS MENSUALES</h3>
+          {monthly.length===0 && <EmptyState icon={TrendingUp} text="Sin historial mensual." />}
+          <div style={{ display:'flex', alignItems:'flex-end', gap:'6px', height:'140px' }}>
+            {monthly.slice(-12).map((m:any,i:number)=>{
+              const h = Math.max((Number(m.revenue||0)/maxMonth)*120,4);
+              return (
+                <div key={i} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:'4px' }}>
+                  <div style={{ width:'100%', background:`linear-gradient(to top,${P},${PL})`, borderRadius:'4px 4px 0 0', height:`${h}px`, transition:'height 0.5s ease', minWidth:'8px' }}/>
+                  <span style={{ color:'rgba(255,255,255,0.2)', fontSize:'9px', fontFamily:"'Space Grotesk',sans-serif", textAlign:'center', writingMode:'vertical-rl', transform:'rotate(180deg)', maxHeight:'30px', overflow:'hidden' }}>{(m.month||'').slice(-5)}</span>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      </div>
+    </PageShell>
+  );
+}
+
+// ─── FEEDBACK ────────────────────────────────────────────────────────────────
+function FeedbackPage() {
+  const [list, setList] = useState<any[]>([]);
+  const [form, setForm] = useState({ category:'bug', subject:'', message:'' });
+  const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
+  const load = () => apiFetch('/feedback').then(d=>setList(Array.isArray(d)?d:[])).catch(()=>{});
+  useEffect(() => { load(); }, []);
+  const submit = async () => {
+    if (!form.subject||!form.message) return; setLoading(true);
+    try { await apiFetch('/feedback', { method:'POST', body: JSON.stringify(form) }); setForm({ category:'bug', subject:'', message:'' }); setSent(true); setTimeout(()=>setSent(false),3000); load(); } catch {}
+    setLoading(false);
+  };
+  const catColor: Record<string,string> = { bug:'#ef4444', feature:'#3b82f6', improvement:'#22c55e', other:'#71717a' };
+  return (
+    <PageShell title="Feedback">
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'20px' }}>
+        <Card>
+          <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'14px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 16px' }}>ENVIAR FEEDBACK</h3>
+          <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
+            <select style={IS} value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))}>
+              <option value="bug">🐛 Bug / Error</option>
+              <option value="feature">✨ Nueva función</option>
+              <option value="improvement">⚡ Mejora</option>
+              <option value="other">💬 Otro</option>
+            </select>
+            <input style={IS} placeholder="Asunto" value={form.subject} onChange={e=>setForm(f=>({...f,subject:e.target.value}))}/>
+            <textarea style={{...IS,resize:'vertical',minHeight:'120px'}} placeholder="Describe tu feedback..." value={form.message} onChange={e=>setForm(f=>({...f,message:e.target.value}))}/>
+            <Btn3D onClick={submit} disabled={loading||!form.subject||!form.message}>{loading?'Enviando...':sent?<><Check size={14}/> ¡Enviado!</>:<><Send size={14}/> Enviar feedback</>}</Btn3D>
+          </div>
+        </Card>
+        <Card>
+          <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'14px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 16px' }}>MIS REPORTES</h3>
+          {list.length===0 && <EmptyState icon={Star} text="Sin reportes enviados." />}
+          {list.map(fb=>(
+            <div key={fb.id} style={{ padding:'12px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
+              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'4px' }}><p style={{ color:'#fff', fontSize:'13px', fontWeight:600, margin:0, fontFamily:"'Space Grotesk',sans-serif" }}>{fb.subject}</p><Badge color={catColor[fb.category]||'#71717a'} label={fb.category}/></div>
+              <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'12px', margin:0, fontFamily:"'Space Grotesk',sans-serif", lineHeight:1.5 }}>{fb.message}</p>
+            </div>
+          ))}
+        </Card>
+      </div>
+    </PageShell>
+  );
+}
+
+// ─── SETTINGS ────────────────────────────────────────────────────────────────
+function SettingsPage({ user }: { user: any }) {
+  const [profile, setProfile] = useState({ name: user?.name||'', email: user?.email||'' });
+  const [pw, setPw] = useState({ current:'', next:'', confirm:'' });
+  const [saving, setSaving] = useState(false);
+  const [pwSaving, setPwSaving] = useState(false);
+  const [msg, setMsg] = useState('');
+  const saveProfile = async () => {
+    setSaving(true);
+    try { await apiFetch('/auth/profile', { method:'PUT', body: JSON.stringify(profile) }); setMsg('Perfil guardado ✓'); } catch(e:any) { setMsg(e.message); }
+    setSaving(false); setTimeout(()=>setMsg(''),3000);
+  };
+  const savePassword = async () => {
+    if (pw.next!==pw.confirm) { setMsg('Las contraseñas no coinciden'); return; }
+    setPwSaving(true);
+    try { await apiFetch('/auth/profile', { method:'PUT', body: JSON.stringify({ password: pw.next, currentPassword: pw.current }) }); setMsg('Contraseña actualizada ✓'); setPw({ current:'', next:'', confirm:'' }); } catch(e:any) { setMsg(e.message); }
+    setPwSaving(false); setTimeout(()=>setMsg(''),3000);
+  };
+  const INTEGRATIONS = [
+    { name:'Spotify for Artists', color:'#1DB954', connected: false },
+    { name:'Apple Music Connect', color:'#FC3C44', connected: false },
+    { name:'YouTube Studio', color:'#FF0000', connected: false },
+    { name:'Instagram', color:'#E1306C', connected: false },
+  ];
+  return (
+    <PageShell title="Ajustes">
+      {msg && <div style={{ background: msg.includes('✓')?'rgba(34,197,94,0.1)':'rgba(239,68,68,0.1)', border:`1px solid ${msg.includes('✓')?'rgba(34,197,94,0.3)':'rgba(239,68,68,0.3)'}`, borderRadius:'10px', padding:'10px 16px', marginBottom:'16px', color: msg.includes('✓')?'#22c55e':'#f87171', fontSize:'13px', fontFamily:"'Space Grotesk',sans-serif" }}>{msg}</div>}
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'20px' }}>
+        <div style={{ display:'flex', flexDirection:'column', gap:'16px' }}>
+          <Card>
+            <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'14px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 16px' }}>PERFIL</h3>
+            <div style={{ display:'flex', flexDirection:'column', gap:'10px', marginBottom:'14px' }}>
+              <div>
+                <p style={{ color:'rgba(255,255,255,0.35)', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif", margin:'0 0 5px', textTransform:'uppercase', letterSpacing:'0.1em' }}>Nombre artístico</p>
+                <input style={IS} value={profile.name} onChange={e=>setProfile(p=>({...p,name:e.target.value}))}/>
+              </div>
+              <div>
+                <p style={{ color:'rgba(255,255,255,0.35)', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif", margin:'0 0 5px', textTransform:'uppercase', letterSpacing:'0.1em' }}>Email</p>
+                <input style={IS} type="email" value={profile.email} onChange={e=>setProfile(p=>({...p,email:e.target.value}))}/>
+              </div>
+            </div>
+            <Btn3D small onClick={saveProfile} disabled={saving}>{saving?'Guardando...':'Guardar perfil'}</Btn3D>
+          </Card>
+          <Card>
+            <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'14px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 16px' }}>CAMBIAR CONTRASEÑA</h3>
+            <div style={{ display:'flex', flexDirection:'column', gap:'10px', marginBottom:'14px' }}>
+              <input style={IS} type="password" placeholder="Contraseña actual" value={pw.current} onChange={e=>setPw(p=>({...p,current:e.target.value}))}/>
+              <input style={IS} type="password" placeholder="Nueva contraseña" value={pw.next} onChange={e=>setPw(p=>({...p,next:e.target.value}))}/>
+              <input style={IS} type="password" placeholder="Confirmar contraseña" value={pw.confirm} onChange={e=>setPw(p=>({...p,confirm:e.target.value}))}/>
+            </div>
+            <Btn3D small onClick={savePassword} disabled={pwSaving}>{pwSaving?'Guardando...':'Actualizar contraseña'}</Btn3D>
+          </Card>
+        </div>
+        <div style={{ display:'flex', flexDirection:'column', gap:'16px' }}>
+          <Card>
+            <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'14px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 16px' }}>PLAN ACTUAL</h3>
+            <div style={{ background:`linear-gradient(135deg,rgba(94,23,235,0.2),rgba(123,63,255,0.1))`, border:'1px solid rgba(94,23,235,0.4)', borderRadius:'14px', padding:'20px' }}>
+              <p style={{ fontFamily:"'Anton',sans-serif", fontSize:'24px', color:PL, margin:'0 0 4px' }}>{user?.plan?.toUpperCase()||'FREE'}</p>
+              <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif", margin:'0 0 14px' }}>Tu plan actual</p>
+              <Btn3D small><Zap size={13}/> Actualizar plan</Btn3D>
+            </div>
+          </Card>
+          <Card>
+            <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'14px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 16px' }}>INTEGRACIONES</h3>
+            {INTEGRATIONS.map(ig=>(
+              <div key={ig.name} style={{ display:'flex', alignItems:'center', gap:'12px', padding:'10px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
+                <div style={{ width:'32px', height:'32px', background:`${ig.color}20`, borderRadius:'9px', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, border:`1px solid ${ig.color}40` }}><Globe size={14} color={ig.color}/></div>
+                <div style={{ flex:1 }}><p style={{ color:'#fff', fontSize:'13px', margin:0, fontFamily:"'Space Grotesk',sans-serif" }}>{ig.name}</p></div>
+                <Btn3D small variant="ghost"><Link2 size={12}/> Conectar</Btn3D>
+              </div>
+            ))}
+          </Card>
+        </div>
+      </div>
+    </PageShell>
+  );
+}
+
 function GenericPage({ moduleId }: { moduleId: string }) {
   const mod = MODULES.find(m => m.id === moduleId);
   const Icon = mod?.icon || Zap;
@@ -1334,11 +2276,29 @@ export default function App() {
 
   const renderPage = () => {
     switch (activePage) {
-      case 'dashboard': return <DashboardPage />;
-      case 'catalog': return <CatalogPage />;
-      case 'royalties': return <RoyaltiesPage />;
-      case 'ai-chat': return <AIChatPage />;
-      default: return <GenericPage moduleId={activePage} />;
+      case 'dashboard':      return <DashboardPage />;
+      case 'catalog':        return <CatalogPage />;
+      case 'royalties':      return <RoyaltiesPage />;
+      case 'ai-chat':        return <AIChatPage />;
+      case 'publishing':     return <PublishingPage />;
+      case 'releases':       return <ReleasesPage />;
+      case 'videos':         return <VideosPage />;
+      case 'lyrics':         return <LyricsPage />;
+      case 'marketing':      return <MarketingPage />;
+      case 'spotlight':      return <SpotlightPage />;
+      case 'hyperfollow':    return <HyperfollowPage />;
+      case 'community':      return <CommunityPage />;
+      case 'marketplace':    return <MarketplacePage />;
+      case 'splits':         return <SplitsPage />;
+      case 'vault':          return <VaultPage />;
+      case 'bulk-upload':    return <BulkUploadPage />;
+      case 'store-maximizer':return <StoreMaximizerPage />;
+      case 'riaa':           return <RIAAPage />;
+      case 'team':           return <TeamPage />;
+      case 'stats':          return <StatsPage />;
+      case 'feedback':       return <FeedbackPage />;
+      case 'settings':       return <SettingsPage user={user} />;
+      default:               return <GenericPage moduleId={activePage} />;
     }
   };
 
