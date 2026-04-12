@@ -66,6 +66,60 @@ function AnimatedCounter({ target, suffix = '' }: { target: number; suffix?: str
   return <span ref={ref}>{count}{suffix}</span>;
 }
 
+// ─── useTilt hook ────────────────────────────────────────────────────────────
+function useTilt() {
+  const ref = useRef<HTMLDivElement>(null);
+  const onMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!ref.current) return;
+    const r = ref.current.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - 0.5;
+    const y = (e.clientY - r.top) / r.height - 0.5;
+    ref.current.style.transform = `perspective(900px) rotateX(${-y * 10}deg) rotateY(${x * 10}deg) translateZ(12px)`;
+    ref.current.style.boxShadow = `${-x * 25}px ${-y * 25}px 60px rgba(94,23,235,0.25), 0 25px 50px rgba(0,0,0,0.5)`;
+    ref.current.style.borderColor = 'rgba(94,23,235,0.45)';
+  };
+  const onMouseLeave = () => {
+    if (!ref.current) return;
+    ref.current.style.transform = '';
+    ref.current.style.boxShadow = '';
+    ref.current.style.borderColor = '';
+    ref.current.style.transition = 'transform 0.6s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.6s ease, border-color 0.4s ease';
+    setTimeout(() => { if (ref.current) ref.current.style.transition = ''; }, 600);
+  };
+  return { ref, onMouseMove, onMouseLeave };
+}
+
+// ─── Cursor Trail ────────────────────────────────────────────────────────────
+function CursorTrail() {
+  const [dots, setDots] = useState<{ x: number; y: number; id: number }[]>([]);
+  const idRef = useRef(0);
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const id = idRef.current++;
+      setDots(prev => [...prev.slice(-6), { x: e.clientX, y: e.clientY, id }]);
+      setTimeout(() => setDots(prev => prev.filter(d => d.id !== id)), 500);
+    };
+    window.addEventListener('mousemove', handler);
+    return () => window.removeEventListener('mousemove', handler);
+  }, []);
+  return (
+    <>
+      {dots.map((d, i) => (
+        <div key={d.id} style={{
+          position: 'fixed', left: d.x - 4, top: d.y - 4,
+          width: `${4 + i * 1.2}px`, height: `${4 + i * 1.2}px`,
+          borderRadius: '50%',
+          background: `rgba(94,23,235,${0.08 + i * 0.06})`,
+          boxShadow: `0 0 ${6 + i * 2}px rgba(94,23,235,${0.2 + i * 0.04})`,
+          pointerEvents: 'none', zIndex: 9999,
+          transform: 'translate(-50%,-50%)',
+          transition: 'opacity 0.5s ease',
+        }} />
+      ))}
+    </>
+  );
+}
+
 // ─── 3D Button ───────────────────────────────────────────────────────────────
 function Btn3D({ children, onClick, disabled = false, type = 'button', variant = 'primary', small = false, fullWidth = false }: {
   children: React.ReactNode; onClick?: () => void; disabled?: boolean;
@@ -88,8 +142,27 @@ function Btn3D({ children, onClick, disabled = false, type = 'button', variant =
   if (pressed)  translateY = '6px';
   else if (hovered) translateY = '-3px';
 
+  const createRipple = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const btn = e.currentTarget;
+    const circle = document.createElement('span');
+    const diameter = Math.max(btn.clientWidth, btn.clientHeight);
+    const radius = diameter / 2;
+    circle.style.cssText = `
+      width:${diameter}px;height:${diameter}px;
+      left:${e.clientX - btn.getBoundingClientRect().left - radius}px;
+      top:${e.clientY - btn.getBoundingClientRect().top - radius}px;
+      position:absolute;border-radius:50%;
+      background:rgba(255,255,255,0.28);
+      transform:scale(0);animation:ripple 0.6s linear;
+      pointer-events:none;
+    `;
+    btn.appendChild(circle);
+    setTimeout(() => circle.remove(), 600);
+    onClick?.();
+  };
+
   return (
-    <button type={type} onClick={onClick} disabled={disabled}
+    <button type={type} onClick={createRipple} disabled={disabled}
       onMouseDown={() => setPressed(true)}
       onMouseUp={() => { setPressed(false); }}
       onMouseEnter={() => setHovered(true)}
@@ -116,6 +189,8 @@ function Btn3D({ children, onClick, disabled = false, type = 'button', variant =
           : `transform 0.35s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s ease`,
         width: fullWidth ? '100%' : undefined,
         whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        position: 'relative',
       }}>
       {children}
     </button>
@@ -961,7 +1036,7 @@ function LoginPage({ onLogin, onBack }: { onLogin: (u: any) => void; onBack: () 
     e.preventDefault(); setError(''); setLoading(true);
     try {
       const body = tab === 'login' ? { email, password } : { email, password, name };
-      const endpoint = tab === 'login' ? '/auth/login-email' : '/auth/register';
+      const endpoint = tab === 'login' ? '/auth/login' : '/auth/register';
       const data = await apiFetch(endpoint, { method: 'POST', body: JSON.stringify(body) });
       localStorage.setItem('im_token', data.token);
       onLogin(data.user);
@@ -1073,7 +1148,7 @@ function SidebarItem({ m, isActive, onNav, onClose }: { m: typeof MODULES[0]; is
       }}>
       <m.icon size={16} color={isActive ? PL : hov ? 'rgba(94,23,235,0.7)' : 'rgba(255,255,255,0.25)'} style={{ flexShrink: 0, transition: 'all 0.18s ease', transform: hov || isActive ? 'scale(1.1)' : 'scale(1)' }} />
       <span style={{ flex: 1 }}>{m.label}</span>
-      {isActive && <span style={{ width:'6px', height:'6px', borderRadius:'50%', background: P, boxShadow:`0 0 8px ${P}, 0 0 16px ${P}55`, animation:'glowPulse 2s ease-in-out infinite', flexShrink: 0 }} />}
+      {isActive && <span style={{ width:'6px', height:'6px', borderRadius:'50%', background: P, boxShadow:`0 0 8px ${P}, 0 0 16px ${P}55`, animation:'activePulse 2s ease-in-out infinite', flexShrink: 0 }} />}
     </button>
   );
 }
@@ -1223,39 +1298,32 @@ function PageShell({ title, children, action }: { title: string; children: React
 
 // 3D Tilt Card — tracks cursor for perspective rotation + inner glow
 function Card({ children, style = {}, glow = false }: { children: React.ReactNode; style?: React.CSSProperties; glow?: boolean }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [tiltStyle, setTiltStyle] = useState<React.CSSProperties>({});
+  const tilt = useTilt();
   const [glowPos, setGlowPos] = useState({ x: 50, y: 50 });
   const [isHov, setIsHov] = useState(false);
 
-  const onMouseMove = (e: React.MouseEvent) => {
-    const el = ref.current; if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const nx = (e.clientX - rect.left) / rect.width;
-    const ny = (e.clientY - rect.top) / rect.height;
-    const rx = (ny - 0.5) * -12;
-    const ry = (nx - 0.5) * 12;
-    setTiltStyle({ transform: `perspective(1000px) rotateX(${rx}deg) rotateY(${ry}deg) translateZ(12px)`, boxShadow: `${(0.5-nx)*-24}px ${(0.5-ny)*-24}px 60px rgba(94,23,235,0.28), 0 24px 60px rgba(0,0,0,0.5)`, borderColor: 'rgba(94,23,235,0.45)' });
-    setGlowPos({ x: nx * 100, y: ny * 100 });
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    tilt.onMouseMove(e);
+    const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+    setGlowPos({ x: ((e.clientX - rect.left) / rect.width) * 100, y: ((e.clientY - rect.top) / rect.height) * 100 });
   };
-  const onMouseLeave = () => {
+  const handleMouseLeave = (e: React.MouseEvent<HTMLDivElement>) => {
+    tilt.onMouseLeave();
     setIsHov(false);
-    setTiltStyle({ transform: 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateZ(0)', transition: 'all 0.6s cubic-bezier(0.34,1.56,0.64,1)', boxShadow: 'none', borderColor: glow ? 'rgba(94,23,235,0.3)' : 'rgba(255,255,255,0.07)' });
   };
 
   return (
-    <div ref={ref} onMouseMove={onMouseMove} onMouseEnter={() => setIsHov(true)} onMouseLeave={onMouseLeave}
+    <div ref={tilt.ref} onMouseMove={handleMouseMove} onMouseEnter={() => setIsHov(true)} onMouseLeave={handleMouseLeave}
       style={{
         background: 'rgba(255,255,255,0.03)',
         backdropFilter: 'blur(20px) saturate(180%)',
         border: `1px solid ${glow ? 'rgba(94,23,235,0.3)' : 'rgba(255,255,255,0.07)'}`,
         borderRadius: '20px', padding: '24px',
-        transition: isHov ? 'border-color 0.15s ease' : 'all 0.6s cubic-bezier(0.34,1.56,0.64,1)',
         position: 'relative', overflow: 'hidden',
-        ...tiltStyle, ...style,
+        ...style,
       }}>
       {/* Inner mouse-follow glow */}
-      <div style={{ position: 'absolute', inset: 0, borderRadius: '20px', background: `radial-gradient(circle at ${glowPos.x}% ${glowPos.y}%, rgba(94,23,235,${isHov?'0.09':'0'}) 0%, transparent 60%)`, pointerEvents: 'none', transition: 'opacity 0.3s' }} />
+      <div style={{ position: 'absolute', inset: 0, borderRadius: '20px', background: `radial-gradient(circle at ${glowPos.x}% ${glowPos.y}%, rgba(94,23,235,${isHov ? '0.09' : '0'}) 0%, transparent 60%)`, pointerEvents: 'none', transition: 'opacity 0.3s' }} />
       <div style={{ position: 'relative', zIndex: 1 }}>{children}</div>
     </div>
   );
@@ -1273,8 +1341,7 @@ function IconCircle({ icon: Icon, color = PL, size = 52, iconSize = 20 }: { icon
 }
 
 function StatCard({ label, value, icon: Icon, trend, sparkline, glowColor = PL }: { label: string; value: string | number; icon: any; key?: React.Key; trend?: 'up' | 'down'; sparkline?: number[]; glowColor?: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [tiltStyle, setTiltStyle] = useState<React.CSSProperties>({});
+  const tilt = useTilt();
   const [isHov, setIsHov] = useState(false);
   const [mounted, setMounted] = useState(false);
   const bars = sparkline || [40, 55, 35, 70, 50, 80, 65, 90];
@@ -1282,21 +1349,9 @@ function StatCard({ label, value, icon: Icon, trend, sparkline, glowColor = PL }
 
   useEffect(() => { const t = setTimeout(() => setMounted(true), 50); return () => clearTimeout(t); }, []);
 
-  const onMouseMove = (e: React.MouseEvent) => {
-    const el = ref.current; if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const nx = (e.clientX - rect.left) / rect.width;
-    const ny = (e.clientY - rect.top) / rect.height;
-    setTiltStyle({ transform: `perspective(800px) rotateX(${(ny-0.5)*-14}deg) rotateY(${(nx-0.5)*14}deg) translateZ(16px)`, boxShadow: `0 0 60px ${glowColor}30, 0 20px 50px rgba(0,0,0,0.4)`, borderColor: `${glowColor}55` });
-  };
-  const onMouseLeave = () => {
-    setIsHov(false);
-    setTiltStyle({ transform: 'perspective(800px) rotateX(0) rotateY(0) translateZ(0)', transition: 'all 0.6s cubic-bezier(0.34,1.56,0.64,1)', boxShadow: 'none', borderColor: 'rgba(255,255,255,0.07)' });
-  };
-
   return (
-    <div ref={ref} onMouseMove={onMouseMove} onMouseEnter={() => setIsHov(true)} onMouseLeave={onMouseLeave}
-      style={{ background: 'rgba(10,6,18,0.85)', backdropFilter: 'blur(40px) saturate(200%)', border: `1px solid rgba(94,23,235,0.2)`, borderRadius: '24px', padding: '22px', position: 'relative', overflow: 'hidden', transition: isHov ? 'border-color 0.15s' : 'all 0.65s cubic-bezier(0.34,1.56,0.64,1)', minHeight: '160px', display:'flex', flexDirection:'column', justifyContent:'space-between', ...tiltStyle }}>
+    <div ref={tilt.ref} onMouseMove={tilt.onMouseMove} onMouseEnter={() => setIsHov(true)} onMouseLeave={() => { tilt.onMouseLeave(); setIsHov(false); }}
+      style={{ background: 'rgba(10,6,18,0.85)', backdropFilter: 'blur(40px) saturate(200%)', border: `1px solid rgba(94,23,235,0.2)`, borderRadius: '24px', padding: '22px', position: 'relative', overflow: 'hidden', minHeight: '160px', display:'flex', flexDirection:'column', justifyContent:'space-between' }}>
       {/* Large faded background icon watermark */}
       <div style={{ position: 'absolute', right: '-16px', bottom: '-16px', opacity: 0.04, pointerEvents: 'none' }}>
         <Icon size={120} color={glowColor} />
@@ -1313,7 +1368,16 @@ function StatCard({ label, value, icon: Icon, trend, sparkline, glowColor = PL }
             </span>
           )}
         </div>
-        <p style={{ fontFamily: "'Anton', sans-serif", fontSize: '44px', color: '#fff', margin: '0 0 2px', letterSpacing: '-0.01em', textShadow: `0 0 40px ${glowColor}55`, lineHeight: 1, animation: 'countUp 0.5s ease both' }}>{value}</p>
+        <p style={{ fontFamily: "'Anton', sans-serif", fontSize: '44px', color: '#fff', margin: '0 0 2px', letterSpacing: '-0.01em', textShadow: `0 0 40px ${glowColor}55`, lineHeight: 1 }}>
+          {(()=>{
+            if (typeof value === 'number') return <AnimatedCounter target={value} />;
+            if (typeof value === 'string' && value.startsWith('$')) {
+              const num = parseFloat(value.replace(/[$,]/g, ''));
+              return <><span>$</span><AnimatedCounter target={isNaN(num) ? 0 : num} /></>;
+            }
+            return value;
+          })()}
+        </p>
         <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '10px', margin: '0', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.1em', textTransform: 'uppercase' }}>{label}</p>
       </div>
 
@@ -1423,7 +1487,7 @@ function DashboardPage() {
               {loadingData && [0,1,2].map(i => <div key={i} style={{ marginBottom: '10px' }}><Skeleton h="40px" radius="12px" /></div>)}
               {!loadingData && tracks.length === 0 && (
                 <div style={{ textAlign:'center', padding:'32px 0' }}>
-                  <div style={{ fontSize:'32px', marginBottom:'8px', opacity:0.3 }}>🎵</div>
+                  <div style={{ fontSize:'36px', marginBottom:'10px', display:'inline-block', animation:'dashFloat 3s ease-in-out infinite', filter:'drop-shadow(0 0 12px rgba(94,23,235,0.35))' }}>🎵</div>
                   <p style={{ color:'rgba(255,255,255,0.2)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif", margin:0 }}>Sin tracks aún</p>
                 </div>
               )}
@@ -1466,10 +1530,7 @@ function DashboardPage() {
                 );
               })}
               {!loadingData && !stats?.byPlatform && (
-                <div style={{ textAlign:'center', padding:'32px 0' }}>
-                  <Globe size={28} color="rgba(255,255,255,0.1)" style={{ marginBottom:'8px' }} />
-                  <p style={{ color:'rgba(255,255,255,0.2)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif", margin:0 }}>Sin datos de plataformas</p>
-                </div>
+                <EmptyState icon={Globe} text="Sin datos de plataformas" emoji="🌍" />
               )}
             </Card>
           </div>
@@ -1593,8 +1654,8 @@ function CatalogPage() {
       ) : tracks.length === 0 ? (
         <Card>
           <div style={{ textAlign:'center', padding:'56px 24px' }}>
-            <div style={{ fontSize:'48px', marginBottom:'16px', animation:'dashFloat 3s ease-in-out infinite' }}>🎵</div>
-            <p style={{ color:'#fff', fontFamily:"'Anton',sans-serif", fontSize:'18px', letterSpacing:'0.06em', margin:'0 0 8px' }}>TU CATÁLOGO ESTÁ VACÍO</p>
+            <div style={{ fontSize:'56px', marginBottom:'20px', display:'inline-block', animation:'dashFloat 3s ease-in-out infinite', filter:'drop-shadow(0 0 20px rgba(94,23,235,0.4))' }}>🎵</div>
+            <p style={{ color:'#F2EDE5', fontFamily:"'Anton',sans-serif", fontSize:'20px', letterSpacing:'0.06em', margin:'0 0 8px' }}>TU CATÁLOGO ESTÁ VACÍO</p>
             <p style={{ color:'rgba(255,255,255,0.3)', fontFamily:"'Space Grotesk',sans-serif", fontSize:'13px', margin:'0 0 24px' }}>Sube tu primer tema y empieza a crecer</p>
             <Btn3D small onClick={() => setShowForm(true)}><Plus size={13}/> Crear primer track</Btn3D>
           </div>
@@ -1840,8 +1901,17 @@ function AIChatPage() {
 
 // ─── SHARED INPUT STYLE ───────────────────────────────────────────────────────
 const IS: React.CSSProperties = { background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'10px', padding:'10px 14px', color:'#fff', fontFamily:"'Space Grotesk',sans-serif", fontSize:'13px', outline:'none', width:'100%' };
-function EmptyState({ icon: Icon, text }: { icon: any; text: string }) {
-  return <div style={{ textAlign:'center', padding:'48px 24px' }}><Icon size={32} color="rgba(255,255,255,0.1)" style={{ marginBottom:'12px' }} /><p style={{ color:'rgba(255,255,255,0.2)', fontFamily:"'Space Grotesk',sans-serif", fontSize:'13px', margin:0 }}>{text}</p></div>;
+function EmptyState({ icon: Icon, text, emoji }: { icon: any; text: string; emoji?: string }) {
+  return (
+    <div style={{ textAlign:'center', padding:'56px 24px' }}>
+      {emoji ? (
+        <div style={{ fontSize:'48px', marginBottom:'16px', display:'inline-block', animation:'dashFloat 3s ease-in-out infinite' }}>{emoji}</div>
+      ) : (
+        <Icon size={36} color="rgba(94,23,235,0.25)" style={{ marginBottom:'16px', display:'block', margin:'0 auto 16px' }} />
+      )}
+      <p style={{ color:'rgba(255,255,255,0.2)', fontFamily:"'Space Grotesk',sans-serif", fontSize:'13px', margin:0 }}>{text}</p>
+    </div>
+  );
 }
 function Badge({ color, label }: { color: string; label: string }) {
   return <span style={{ background:`${color}22`, color, border:`1px solid ${color}55`, borderRadius:'6px', padding:'2px 8px', fontSize:'10px', fontWeight:700, fontFamily:"'Space Grotesk',sans-serif", textTransform:'uppercase', letterSpacing:'0.08em' }}>{label}</span>;
@@ -3337,14 +3407,19 @@ export default function App() {
       <div style={{ position: 'fixed', top: '-300px', right: '-200px', width: '700px', height: '700px', background: `radial-gradient(circle, rgba(94,23,235,0.06) 0%, transparent 65%)`, pointerEvents: 'none', zIndex: 0, animation: 'orbFloat 20s ease-in-out infinite' }} />
       <div style={{ position: 'fixed', bottom: '-200px', left: `${SIDEBAR_W - 100}px`, width: '500px', height: '500px', background: `radial-gradient(circle, rgba(123,63,255,0.04) 0%, transparent 65%)`, pointerEvents: 'none', zIndex: 0, animation: 'orbFloat 26s ease-in-out infinite reverse' }} />
 
+      <CursorTrail />
       <ToastContainer />
       <Sidebar active={activePage} onNav={setActivePage} user={user} onLogout={handleLogout} open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div style={{ marginLeft: `${SIDEBAR_W}px`, position: 'relative', zIndex: 1 }}>
         {/* Top bar */}
         <div style={{ position: 'sticky', top: 0, height: '56px', background: 'rgba(5,3,8,0.88)', backdropFilter: 'blur(24px) saturate(160%)', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '0 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 10 }}>
-          <span style={{ fontFamily: "'Anton', sans-serif", fontSize: '22px', letterSpacing: '0.05em', color: '#F2EDE5' }}>
-            {MODULES.find(m => m.id === activePage)?.label || 'Dashboard'}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '11px', fontFamily: "'Space Grotesk',sans-serif", letterSpacing: '0.06em' }}>IM MUSIC</span>
+            <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '11px' }}>/</span>
+            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '13px', fontWeight: 600, letterSpacing: '0.03em', color: 'rgba(255,255,255,0.55)' }}>
+              {MODULES.find(m => m.id === activePage)?.label || 'Dashboard'}
+            </span>
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <button onClick={() => toast('Sin notificaciones nuevas', 'info')} style={{ width:'36px', height:'36px', display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'10px', cursor:'pointer', backdropFilter:'blur(12px)', transition:'all 0.2s' }}
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background='rgba(94,23,235,0.12)'; (e.currentTarget as HTMLElement).style.borderColor='rgba(94,23,235,0.3)'; }}
@@ -3371,20 +3446,29 @@ export default function App() {
         @keyframes dashFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
         @keyframes logoFloat { 0%,100%{transform:translateY(0) rotate(0deg)} 50%{transform:translateY(-3px) rotate(2deg)} }
 
-        /* ── Shimmer skeleton ────────────────────────────────────── */
+        /* ── Shimmer skeleton (purple tinted) ───────────────────── */
         @keyframes shimmer {
-          0%   { background-position: -600px 0; }
-          100% { background-position: 600px 0; }
+          0%   { background-position: -800px 0; }
+          100% { background-position: 800px 0; }
         }
         .skeleton-shimmer {
           background: linear-gradient(90deg,
             rgba(255,255,255,0.03) 0%,
-            rgba(255,255,255,0.03) 25%,
-            rgba(255,255,255,0.08) 50%,
-            rgba(255,255,255,0.03) 75%,
+            rgba(94,23,235,0.08) 50%,
             rgba(255,255,255,0.03) 100%);
-          background-size: 1200px 100%;
-          animation: shimmer 1.8s ease-in-out infinite;
+          background-size: 800px 100%;
+          animation: shimmer 1.8s infinite;
+        }
+
+        /* ── Ripple ─────────────────────────────────────────────── */
+        @keyframes ripple {
+          to { transform: scale(4); opacity: 0; }
+        }
+
+        /* ── Active sidebar pulse ────────────────────────────────── */
+        @keyframes activePulse {
+          0%,100% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(94,23,235,0.4); }
+          50%      { transform: scale(1.3); opacity: 0.8; box-shadow: 0 0 0 4px rgba(94,23,235,0); }
         }
 
         /* ── Toast slide-in ──────────────────────────────────────── */
