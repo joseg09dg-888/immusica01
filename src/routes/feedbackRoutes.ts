@@ -1,5 +1,6 @@
 import express from 'express';
 import { authenticate } from '../middleware/auth';
+import { validate, schemas } from '../middleware/validate';
 import {
   createFeedback,
   getMyFeedback,
@@ -14,7 +15,7 @@ const router = express.Router();
 router.use(authenticate);
 
 // Enviar feedback (cualquier usuario autenticado)
-router.post('/', createFeedback);
+router.post('/', validate(schemas.createFeedback), createFeedback);
 
 // Obtener mis feedbacks
 router.get('/my', getMyFeedback);

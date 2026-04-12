@@ -8,3 +8,5 @@ dist/
 *.jpeg
 sceageus/
 im-music front/%USERPROFILE%/
+im-music front/playwright-report/
+im-music front/test-results/

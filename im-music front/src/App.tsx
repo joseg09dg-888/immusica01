@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, memo, createContext, useContext } from 'react';
+import { useTranslation, type Lang } from './i18n';
 import Magnet from './components/Magnet';
 import SpotlightCard from './components/SpotlightCard';
 import RotatingText from './components/RotatingText';
@@ -27,13 +28,35 @@ const SIDEBAR_W = 280;
 const API = '/api';
 const token = () => localStorage.getItem('im_token') || '';
 
+// ─── Language Context ─────────────────────────────────────────────────────────
+const LangContext = createContext<{ lang: Lang; setLang: (l: Lang) => void }>({ lang: 'es', setLang: () => {} });
+const useLang = () => useContext(LangContext);
+
+function LangToggleButton() {
+  const { lang, setLang } = useLang();
+  return (
+    <button
+      onClick={() => { const next: Lang = lang === 'es' ? 'en' : 'es'; setLang(next); localStorage.setItem('im_lang', next); }}
+      style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '5px 12px', color: 'rgba(255,255,255,0.7)', fontFamily: "'Space Grotesk',sans-serif", fontSize: '11px', fontWeight: 700, letterSpacing: '0.1em', cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap' }}
+      onMouseEnter={e => { (e.currentTarget).style.background = 'rgba(94,23,235,0.15)'; (e.currentTarget).style.borderColor = 'rgba(94,23,235,0.4)'; }}
+      onMouseLeave={e => { (e.currentTarget).style.background = 'rgba(255,255,255,0.06)'; (e.currentTarget).style.borderColor = 'rgba(255,255,255,0.12)'; }}>
+      {lang === 'es' ? '🇺🇸 EN' : '🇨🇴 ES'}
+    </button>
+  );
+}
+
 async function apiFetch(path: string, opts: RequestInit = {}) {
   const res = await fetch(`${API}${path}`, {
     ...opts,
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}`, ...(opts.headers || {}) },
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || 'Error');
+  if (!res.ok) {
+    const err = new Error(data.error || 'Error') as Error & { status?: number; requiredPlan?: string };
+    err.status = res.status;
+    err.requiredPlan = data.requiredPlan;
+    throw err;
+  }
   return data;
 }
 
@@ -449,6 +472,8 @@ class LightPillarBoundary extends React.Component<{children:React.ReactNode},{er
 }
 
 function LandingPage({ onEnter, onNav }: { onEnter: () => void; onNav?: (s: Screen) => void }) {
+  const { lang } = useLang();
+  const t = useTranslation(lang);
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showBg, setShowBg] = useState(false);
@@ -601,12 +626,13 @@ function LandingPage({ onEnter, onNav }: { onEnter: () => void; onNav?: (s: Scre
         </div>
         {/* Desktop links */}
         <div className="landing-nav-links" style={{ display: 'flex', alignItems: 'center', gap: '36px' }}>
-          {[['Servicios','#servicios'], ['Precios','#precios'], ['Artistas','#artistas']].map(([l, href]) => (
+          {[[t.nav.services,'#servicios'], [t.nav.pricing,'#precios'], [t.nav.artists,'#artistas']].map(([l, href]) => (
             <a key={l} href={href} style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11px', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', cursor: 'pointer', transition: 'color 0.2s', textDecoration: 'none' }}
               onMouseEnter={e => (e.currentTarget.style.color = '#F2EDE5')} onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.45)')}>
               {l}
             </a>
           ))}
+          <LangToggleButton />
           <Magnet padding={40} magnetStrength={3}>
             <Btn3D small onClick={onEnter}>Entrar</Btn3D>
           </Magnet>
@@ -671,28 +697,28 @@ function LandingPage({ onEnter, onNav }: { onEnter: () => void; onNav?: (s: Scre
 
             {/* Headline — staggered animation */}
             <h1 className="landing-hero-h1" style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(3.5rem, 7vw, 6rem)', lineHeight: 0.92, margin: '0 0 28px', letterSpacing: '-0.01em' }}>
-              <span className="hero-line-1" style={{ display: 'block', color: '#F2EDE5' }}>DISTRIBUYE.</span>
-              <span className="hero-line-2" style={{ display: 'block', background: `linear-gradient(130deg, ${P} 0%, ${PL} 50%, #C084FC 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>MONETIZA.</span>
-              <span className="hero-line-3" style={{ display: 'block', color: '#F2EDE5' }}>DOMINA.</span>
+              <span className="hero-line-1" style={{ display: 'block', color: '#F2EDE5' }}>{t.hero.title1}</span>
+              <span className="hero-line-2" style={{ display: 'block', background: `linear-gradient(130deg, ${P} 0%, ${PL} 50%, #C084FC 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{t.hero.title2}</span>
+              <span className="hero-line-3" style={{ display: 'block', color: '#F2EDE5' }}>{t.hero.title3}</span>
             </h1>
 
             {/* Rotating tagline */}
             <div className="hero-body" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', fontFamily: "'Space Grotesk', sans-serif", fontSize: '14px', fontWeight: 600, letterSpacing: '0.06em' }}>
               <span style={{ color: PL, fontSize: '12px' }}>▸</span>
               <RotatingText
-                texts={['DISTRIBUCIÓN EN 150+ PLATAFORMAS', 'REGALÍAS EN TIEMPO REAL', 'MARKETING CON IA', 'SPLITS AUTOMÁTICOS', 'PUBLISHING & REGISTRO']}
+                texts={t.hero.rotatingWords}
                 rotationInterval={2500} splitBy="words" staggerDuration={0.04} staggerFrom="first"
                 style={{ color: 'rgba(242,237,229,0.55)', fontFamily: "'Space Grotesk', sans-serif", fontSize: '13px', letterSpacing: '0.06em' }}
               />
             </div>
 
             <p className="hero-body" style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '17px', color: 'rgba(242,237,229,0.5)', lineHeight: 1.75, margin: '0 0 44px', maxWidth: '480px' }}>
-              La plataforma todo-en-uno para artistas independientes. Distribución en 150+ tiendas, regalías en tiempo real, marketing con IA y herramientas de crecimiento profesional.
+              {t.hero.subtitle}
             </p>
 
             <div className="hero-cta landing-hero-cta" style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '52px', flexWrap: 'wrap' }}>
               <Magnet padding={60} magnetStrength={3}>
-                <Btn3D onClick={onEnter}>COMENZAR GRATIS <ArrowRight size={16} /></Btn3D>
+                <Btn3D onClick={onEnter}>{t.hero.cta} <ArrowRight size={16} /></Btn3D>
               </Magnet>
               <Magnet padding={60} magnetStrength={4}>
                 <Btn3D variant="ghost" onClick={onEnter}><Play size={14} /> VER DEMO</Btn3D>
@@ -3736,14 +3762,15 @@ export default function App() {
   });
   const [activePage, setActivePage] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [lang, setLang] = useState<Lang>(() => (localStorage.getItem('im_lang') as Lang) || 'es');
 
   const handleLogin = (u: any) => { setUser(u); setScreen('app'); };
   const handleLogout = () => { localStorage.removeItem('im_token'); setUser(null); setScreen('landing'); };
 
-  if (screen === 'terms') return <><TermsPage onBack={() => setScreen('landing')} /><CookieConsent /></>;
-  if (screen === 'privacy') return <><PrivacyPage onBack={() => setScreen('landing')} /><CookieConsent /></>;
-  if (screen === 'landing') return <><LandingPage onEnter={() => setScreen('login')} onNav={(s: Screen) => setScreen(s)} /><CookieConsent /></>;
-  if (screen === 'login') return <><LoginPage onLogin={handleLogin} onBack={() => setScreen('landing')} /><CookieConsent /></>;
+  if (screen === 'terms') return <LangContext.Provider value={{ lang, setLang }}><TermsPage onBack={() => setScreen('landing')} /><CookieConsent /></LangContext.Provider>;
+  if (screen === 'privacy') return <LangContext.Provider value={{ lang, setLang }}><PrivacyPage onBack={() => setScreen('landing')} /><CookieConsent /></LangContext.Provider>;
+  if (screen === 'landing') return <LangContext.Provider value={{ lang, setLang }}><LandingPage onEnter={() => setScreen('login')} onNav={(s: Screen) => setScreen(s)} /><CookieConsent /></LangContext.Provider>;
+  if (screen === 'login') return <LangContext.Provider value={{ lang, setLang }}><LoginPage onLogin={handleLogin} onBack={() => setScreen('landing')} /><CookieConsent /></LangContext.Provider>;
 
   const renderPage = () => {
     switch (activePage) {
@@ -3778,6 +3805,7 @@ export default function App() {
   };
 
   return (
+    <LangContext.Provider value={{ lang, setLang }}>
     <div style={{ minHeight: '100vh', background: '#050308' }}>
       {/* Fixed grid pattern */}
       <div style={{ position: 'fixed', inset: 0, backgroundImage: `linear-gradient(rgba(94,23,235,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(94,23,235,0.025) 1px, transparent 1px)`, backgroundSize: '52px 52px', pointerEvents: 'none', zIndex: 0 }} />
@@ -3803,7 +3831,8 @@ export default function App() {
               {MODULES.find(m => m.id === activePage)?.label || 'Dashboard'}
             </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <LangToggleButton />
             <button onClick={() => toast('Sin notificaciones nuevas', 'info')} style={{ width:'36px', height:'36px', display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'10px', cursor:'pointer', backdropFilter:'blur(12px)', transition:'all 0.2s' }}
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background='rgba(94,23,235,0.12)'; (e.currentTarget as HTMLElement).style.borderColor='rgba(94,23,235,0.3)'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background='rgba(255,255,255,0.05)'; (e.currentTarget as HTMLElement).style.borderColor='rgba(255,255,255,0.08)'; }}>
@@ -3820,5 +3849,6 @@ export default function App() {
       </div>
       {/* All keyframes are in index.css */}
     </div>
+    </LangContext.Provider>
   );
 }

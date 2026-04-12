@@ -1,5 +1,5 @@
 import express from 'express';
-import { authenticate } from '../middleware/auth';
+import { authenticate, requirePlan } from '../middleware/auth';
 import {
   activateAutoDistribute,
   deactivateAutoDistribute,
@@ -12,8 +12,8 @@ const router = express.Router();
 // Todas las rutas requieren autenticación
 router.use(authenticate);
 
-// Activar distribución automática para un track
-router.post('/track/:trackId/activate', activateAutoDistribute);
+// Activar distribución automática (requiere plan pro)
+router.post('/track/:trackId/activate', requirePlan('pro'), activateAutoDistribute);
 
 // Desactivar distribución automática
 router.post('/track/:trackId/deactivate', deactivateAutoDistribute);

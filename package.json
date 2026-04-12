@@ -47,7 +47,8 @@
     "socket.io": "^4.8.3",
     "spotify-web-api-node": "^5.0.2",
     "stripe": "^20.4.1",
-    "ws": "^8.19.0"
+    "ws": "^8.19.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",

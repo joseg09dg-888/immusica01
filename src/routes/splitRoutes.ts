@@ -9,11 +9,12 @@ import {
   getAllSplitsByArtist
 } from '../controllers/splitController';
 import { authenticate } from '../middleware/auth';
+import { validate, schemas } from '../middleware/validate';
 
 const router = Router();
 
 router.get('/splits', authenticate, getAllSplitsByArtist);
-router.post('/tracks/:trackId/splits', addSplit);
+router.post('/tracks/:trackId/splits', authenticate, validate(schemas.createSplit), addSplit);
 router.get('/tracks/:trackId/splits', getSplits);
 router.get('/tracks/:trackId/splits/pending', getPendingSplits);
 router.delete('/splits/:splitId', deleteSplit);
