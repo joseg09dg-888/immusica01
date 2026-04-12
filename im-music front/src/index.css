@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* ─── Sidebar scroll ────────────────────────────────────────── */
+.sidebar-scroll { scrollbar-width: thin; scrollbar-color: rgba(94,23,235,0.5) transparent; }
+.sidebar-scroll::-webkit-scrollbar { width: 3px; }
+.sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+.sidebar-scroll::-webkit-scrollbar-thumb { background: rgba(94,23,235,0.5); border-radius: 3px; }
+.sidebar-scroll::-webkit-scrollbar-thumb:hover { background: rgba(94,23,235,0.8); }
+
 /* ============================================================
    IM MUSIC — AWWWARDS-LEVEL DESIGN SYSTEM
    Inspired by: Lusion.co · Josh W. Comeau · Awwwards 2026

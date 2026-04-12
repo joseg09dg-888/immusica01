@@ -1389,30 +1389,29 @@ function LoginPage({ onLogin, onBack }: { onLogin: (u: any) => void; onBack: () 
 
 // ─── SIDEBAR ─────────────────────────────────────────────────────────────────
 const MODULES = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, group: 'General' },
-  { id: 'catalog', label: 'Catálogo', icon: Music, group: 'Música' },
-  { id: 'royalties', label: 'Regalías', icon: DollarSign, group: 'Música' },
-  { id: 'publishing', label: 'Publishing', icon: BookOpen, group: 'Música' },
-  { id: 'releases', label: 'Releases', icon: Package, group: 'Música' },
-  { id: 'videos', label: 'Videos', icon: Video, group: 'Contenido' },
-  { id: 'lyrics', label: 'Letras', icon: Mic, group: 'Contenido' },
-  { id: 'marketing-suite', label: 'Marketing Suite', icon: Sparkles, group: 'Marketing' },
-  { id: 'community', label: 'Comunidad', icon: MessageCircle, group: 'Social' },
-  { id: 'marketplace', label: 'Marketplace', icon: ShoppingBag, group: 'Social' },
-  { id: 'playlists', label: 'Playlists', icon: Play, group: 'Social' },
-  { id: 'ai-chat', label: 'IA Chat', icon: Zap, group: 'IA' },
-  { id: 'legal', label: 'Legal IA', icon: Scale, group: 'IA' },
-  { id: 'financing', label: 'Financiamiento', icon: CreditCard, group: 'Finanzas' },
-  { id: 'splits', label: 'Splits', icon: Users, group: 'Finanzas' },
-  { id: 'vault', label: 'Vault', icon: Lock, group: 'Archivos' },
-  { id: 'bulk-upload', label: 'Subida Masiva', icon: Upload, group: 'Archivos' },
-  { id: 'store-maximizer', label: 'Store Maximizer', icon: Store, group: 'Distribución' },
-  { id: 'riaa', label: 'Certificaciones', icon: Award, group: 'Distribución' },
-  { id: 'label', label: 'Mi Sello', icon: Award, group: 'Gestión' },
-  { id: 'team', label: 'Equipo', icon: Users, group: 'Gestión' },
-  { id: 'stats', label: 'Estadísticas', icon: BarChart3, group: 'Gestión' },
-  { id: 'feedback', label: 'Feedback', icon: Star, group: 'Gestión' },
-  { id: 'settings', label: 'Ajustes', icon: Settings, group: 'Gestión' },
+  { id: 'dashboard',       label: 'Dashboard',       icon: LayoutDashboard, group: 'General' },
+  // MÚSICA
+  { id: 'catalog',         label: 'Catálogo',         icon: Music,           group: 'Música' },
+  { id: 'royalties',       label: 'Regalías',         icon: DollarSign,      group: 'Música' },
+  { id: 'splits',          label: 'Splits',           icon: Users,           group: 'Música' },
+  { id: 'releases',        label: 'Releases',         icon: Package,         group: 'Música' },
+  { id: 'videos',          label: 'Videos & YouTube', icon: Video,           group: 'Música' },
+  // MARKETING
+  { id: 'marketing-suite', label: 'Marketing Suite',  icon: Sparkles,        group: 'Marketing' },
+  { id: 'community',       label: 'Comunidad',        icon: MessageCircle,   group: 'Marketing' },
+  { id: 'marketplace',     label: 'Marketplace',      icon: ShoppingBag,     group: 'Marketing' },
+  // IA
+  { id: 'ai-chat',         label: 'IA Chat',          icon: Zap,             group: 'IA' },
+  { id: 'legal',           label: 'Legal IA',         icon: Scale,           group: 'IA' },
+  // FINANZAS
+  { id: 'financing',       label: 'Financiamiento',   icon: CreditCard,      group: 'Finanzas' },
+  // DISTRIBUCIÓN
+  { id: 'store-maximizer', label: 'Store Maximizer',  icon: Store,           group: 'Distribución' },
+  // GESTIÓN
+  { id: 'label',           label: 'Mi Sello',         icon: Award,           group: 'Gestión' },
+  { id: 'team',            label: 'Equipo',           icon: Users,           group: 'Gestión' },
+  { id: 'stats',           label: 'Estadísticas',     icon: BarChart3,       group: 'Gestión' },
+  { id: 'settings',        label: 'Ajustes',          icon: Settings,        group: 'Gestión' },
 ];
 
 function SidebarItem({ m, isActive, onNav, onClose }: { m: typeof MODULES[0]; isActive: boolean; onNav: (id:string)=>void; onClose: ()=>void }) {
@@ -1475,7 +1474,7 @@ const Sidebar = memo(function Sidebar({ active, onNav, user, onLogout, open, onC
           </div>
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '10px 8px 0', scrollbarWidth: 'none' }}>
+        <div className="sidebar-scroll" style={{ flex: 1, overflowY: 'scroll', overflowX: 'hidden', padding: '8px 8px', scrollbarWidth: 'thin', scrollbarColor: 'rgba(94,23,235,0.5) transparent', height: 0, minHeight: 0 }}>
           {groups.map((group, gi) => {
             const items = MODULES.filter(m => m.group === group);
             const isCollapsed = collapsed.has(group);
@@ -1788,6 +1787,7 @@ function DashboardPage({ onNav }: { onNav?: (id: string) => void }) {
   const [stats, setStats] = useState<any>(null);
   const [tracks, setTracks] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+  const [vaultCount, setVaultCount] = useState<number|null>(null);
 
   const hour = new Date().getHours();
   const greeting = hour < 6 ? '🌙 Buenas noches' : hour < 12 ? '☀️ Buenos días' : hour < 18 ? '🌤️ Buenas tardes' : '🌙 Buenas noches';
@@ -1797,6 +1797,7 @@ function DashboardPage({ onNav }: { onNav?: (id: string) => void }) {
     Promise.all([
       apiFetch('/royalties/summary').then(setStats).catch(() => {}),
       apiFetch('/tracks').then(d => setTracks(Array.isArray(d) ? d.slice(0, 5) : [])).catch(() => {}),
+      apiFetch('/vault/files').then(d => setVaultCount(Array.isArray(d)?d.length:0)).catch(()=>{}),
     ]).finally(() => setLoadingData(false));
   }, []);
 
@@ -1913,6 +1914,21 @@ function DashboardPage({ onNav }: { onNav?: (id: string) => void }) {
               )}
             </Card>
           </div>
+
+          {/* Vault summary widget */}
+          {vaultCount !== null && (
+            <div style={{marginTop:20,background:'rgba(94,23,235,0.06)',border:'1px solid rgba(94,23,235,0.15)',borderRadius:16,padding:'14px 20px',display:'flex',alignItems:'center',gap:14,cursor:'pointer'}}
+              onClick={()=>onNav?.('catalog')}>
+              <div style={{width:36,height:36,background:'rgba(94,23,235,0.15)',borderRadius:10,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                <Lock size={16} color={PL}/>
+              </div>
+              <div style={{flex:1}}>
+                <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:12,fontWeight:600,color:'rgba(255,255,255,0.6)',margin:0}}>Vault automático activo</p>
+                <p style={{fontFamily:"'Anton',sans-serif",fontSize:14,color:'#F2EDE5',margin:0}}>{vaultCount} archivos protegidos · última actualización hoy</p>
+              </div>
+              <span style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:PL,fontWeight:700}}>VER →</span>
+            </div>
+          )}
         </PageShell>
       </div>
     </>
@@ -2007,18 +2023,36 @@ function TrackGridCard({ track: t, onDel }: { track: any; onDel: () => void }) {
 }
 
 function CatalogPage() {
+  const [catalogTab, setCatalogTab] = useState<'tracks'|'bulk'|'lyrics'>('tracks');
   const [tracks, setTracks] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState(''); const [genre, setGenre] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  // Bulk upload state
+  const [bulkFiles, setBulkFiles] = useState<File[]>([]);
+  const [bulkResults, setBulkResults] = useState<{name:string;status:'ok'|'error'|'uploading'}[]>([]);
+  const [bulkDragging, setBulkDragging] = useState(false);
+  const [bulkUploading, setBulkUploading] = useState(false);
+  // Lyrics state
+  const [lyricsSelected, setLyricsSelected] = useState('');
+  const [lyrics, setLyrics] = useState('');
+  const [lyricsSaved, setLyricsSaved] = useState(false);
+
   const load = () => apiFetch('/tracks').then(d => { setTracks(Array.isArray(d) ? d : []); setLoadingData(false); }).catch(() => setLoadingData(false));
   useEffect(() => { load(); }, []);
+  useEffect(() => {
+    if (!lyricsSelected) return;
+    apiFetch(`/lyrics/${lyricsSelected}`).then(d => setLyrics(d.lyrics||'')).catch(()=>{});
+  }, [lyricsSelected]);
+
   const create = async () => {
     if (!title) return; setLoading(true);
     try {
-      await apiFetch('/tracks', { method: 'POST', body: JSON.stringify({ title, genre }) });
+      const track = await apiFetch('/tracks', { method: 'POST', body: JSON.stringify({ title, genre }) });
+      // Auto-vault
+      apiFetch('/vault/files', { method: 'POST', body: JSON.stringify({ name: title, type: 'audio', metadata: { genre, track_id: track?.id } }) }).catch(()=>{});
       setTitle(''); setGenre(''); setShowForm(false); load();
       toast('Track creado exitosamente');
     } catch(e: any) { toast(e.message, 'error'); }
@@ -2029,69 +2063,155 @@ function CatalogPage() {
     await apiFetch(`/tracks/${id}`, { method: 'DELETE' }).catch(() => {});
     load(); toast('Track eliminado', 'info');
   };
-  const statusColors: Record<string, string> = { draft: '#52525b', published: '#16a34a', scheduled: '#1d4ed8' };
-  const inputStyle: React.CSSProperties = { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '10px 14px', color: '#fff', fontFamily: "'Space Grotesk',sans-serif", fontSize: '13px', outline: 'none' };
+  const saveLyrics = async () => {
+    if (!lyricsSelected) return;
+    await apiFetch('/lyrics', { method:'POST', body: JSON.stringify({ track_id: lyricsSelected, lyrics }) }).catch(()=>{});
+    // Auto-register in publishing
+    const t = tracks.find(t=>String(t.id)===lyricsSelected);
+    if (t) apiFetch('/publishing', { method:'POST', body: JSON.stringify({ title: t.title, lyrics, track_id: lyricsSelected }) }).catch(()=>{});
+    // Auto-vault lyrics
+    apiFetch('/vault/files', { method:'POST', body: JSON.stringify({ name: `Letra - ${t?.title||lyricsSelected}`, type: 'text', metadata: { track_id: lyricsSelected } }) }).catch(()=>{});
+    setLyricsSaved(true); setTimeout(()=>setLyricsSaved(false),2000);
+    toast('Letra guardada y registrada en Publishing');
+  };
+  const bulkUpload = async () => {
+    if(!bulkFiles.length) return; setBulkUploading(true);
+    const newResults = bulkFiles.map(f=>({name:f.name,status:'uploading' as const})); setBulkResults(newResults);
+    for (let i=0; i<bulkFiles.length; i++) {
+      const fd = new FormData(); fd.append('file', bulkFiles[i]);
+      try {
+        const res = await fetch(`${API}/upload`, { method:'POST', headers:{ Authorization:`Bearer ${token()}` }, body: fd });
+        setBulkResults(r => r.map((x,idx)=>idx===i?{...x,status:res.ok?'ok':'error'}:x));
+      } catch { setBulkResults(r=>r.map((x,idx)=>idx===i?{...x,status:'error'}:x)); }
+    }
+    setBulkUploading(false); setBulkFiles([]); load();
+  };
 
-  const ViewToggle = () => (
-    <div style={{ display:'flex', gap:'4px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'10px', padding:'4px' }}>
-      {(['list','grid'] as const).map(mode => (
-        <button key={mode} onClick={() => setViewMode(mode)} style={{ background: viewMode===mode ? 'rgba(94,23,235,0.4)' : 'transparent', border:'none', borderRadius:'7px', padding:'6px 12px', color: viewMode===mode ? '#fff' : 'rgba(255,255,255,0.3)', cursor:'pointer', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif", transition:'all 0.15s' }}>
-          {mode === 'list' ? '☰ Lista' : '⊞ Grid'}
-        </button>
-      ))}
-    </div>
-  );
+  const statusColors: Record<string, string> = { draft: '#52525b', published: '#16a34a', scheduled: '#1d4ed8' };
+  const CATALOG_TABS = [{id:'tracks',label:'Tracks',icon:Music},{id:'bulk',label:'Subida Masiva',icon:Upload},{id:'lyrics',label:'Letras',icon:Mic}] as const;
 
   return (
     <>
     <PageBackground color="#7B3FFF" />
-    <PageShell title="Catálogo" action={
-      <div style={{ display:'flex', gap:'10px', alignItems:'center' }}>
-        <ViewToggle />
-        <Btn3D small onClick={() => setShowForm(!showForm)}><Plus size={13} /> Nuevo track</Btn3D>
+    <PageShell title="Catálogo" action={catalogTab==='tracks' ? <Btn3D small onClick={() => setShowForm(!showForm)}><Plus size={13} /> Nuevo track</Btn3D> : undefined}>
+      {/* Tabs */}
+      <div style={{display:'flex',gap:4,marginBottom:20,background:'rgba(255,255,255,0.03)',borderRadius:12,padding:4}}>
+        {CATALOG_TABS.map(t=>(
+          <button key={t.id} onClick={()=>setCatalogTab(t.id)}
+            style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'9px 12px',borderRadius:9,border:'none',cursor:'pointer',background:catalogTab===t.id?'rgba(94,23,235,0.25)':'transparent',color:catalogTab===t.id?'#C084FC':'rgba(255,255,255,0.35)',fontFamily:"'Space Grotesk',sans-serif",fontSize:12,fontWeight:700,transition:'all 0.2s'}}>
+            <t.icon size={13}/>{t.label}
+          </button>
+        ))}
       </div>
-    }>
-      {showForm && <Card style={{ marginBottom: '20px' }}>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Título" style={{ ...inputStyle, flex: 1, minWidth: '140px' }} />
-          <input value={genre} onChange={e => setGenre(e.target.value)} placeholder="Género" style={{ ...inputStyle, width: '110px' }} />
-          <Btn3D small onClick={create} disabled={loading}>{loading ? 'Creando...' : 'Crear'}</Btn3D>
-          <Btn3D small variant="ghost" onClick={() => setShowForm(false)}>Cancelar</Btn3D>
-        </div>
-      </Card>}
 
-      {loadingData ? (
-        <div style={{ display:'grid', gridTemplateColumns: viewMode==='grid' ? 'repeat(auto-fill,minmax(180px,1fr))' : '1fr', gap:'14px' }}>
-          {[0,1,2,3,4].map(i => <SkeletonCard key={i} rows={2} />)}
+      {/* TRACKS tab */}
+      {catalogTab === 'tracks' && <>
+        {showForm && <Card style={{ marginBottom: '20px' }}>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Título" style={{...IS, flex: 1, minWidth: '140px'}} />
+            <input value={genre} onChange={e => setGenre(e.target.value)} placeholder="Género" style={{...IS, width: '110px'}} />
+            <Btn3D small onClick={create} disabled={loading}>{loading ? 'Creando...' : 'Crear'}</Btn3D>
+            <Btn3D small variant="ghost" onClick={() => setShowForm(false)}>Cancelar</Btn3D>
+          </div>
+        </Card>}
+        <div style={{display:'flex',gap:'4px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'10px',padding:'4px',marginBottom:16,width:'fit-content'}}>
+          {(['list','grid'] as const).map(mode => (
+            <button key={mode} onClick={() => setViewMode(mode)} style={{ background: viewMode===mode ? 'rgba(94,23,235,0.4)' : 'transparent', border:'none', borderRadius:'7px', padding:'6px 12px', color: viewMode===mode ? '#fff' : 'rgba(255,255,255,0.3)', cursor:'pointer', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif", transition:'all 0.15s' }}>
+              {mode === 'list' ? '☰ Lista' : '⊞ Grid'}
+            </button>
+          ))}
         </div>
-      ) : tracks.length === 0 ? (
-        <Card>
-          <div style={{ textAlign:'center', padding:'56px 24px' }}>
-            <div style={{ fontSize:'56px', marginBottom:'20px', display:'inline-block', animation:'dashFloat 3s ease-in-out infinite', filter:'drop-shadow(0 0 20px rgba(94,23,235,0.4))' }}>🎵</div>
+        {loadingData ? (
+          <div style={{ display:'grid', gridTemplateColumns: viewMode==='grid' ? 'repeat(auto-fill,minmax(180px,1fr))' : '1fr', gap:'14px' }}>
+            {[0,1,2,3,4].map(i => <SkeletonCard key={i} rows={2} />)}
+          </div>
+        ) : tracks.length === 0 ? (
+          <Card><div style={{ textAlign:'center', padding:'56px 24px' }}>
+            <div style={{ fontSize:'56px', marginBottom:'20px' }}>🎵</div>
             <p style={{ color:'#F2EDE5', fontFamily:"'Anton',sans-serif", fontSize:'20px', letterSpacing:'0.06em', margin:'0 0 8px' }}>TU CATÁLOGO ESTÁ VACÍO</p>
             <p style={{ color:'rgba(255,255,255,0.3)', fontFamily:"'Space Grotesk',sans-serif", fontSize:'13px', margin:'0 0 24px' }}>Sube tu primer tema y empieza a crecer</p>
             <Btn3D small onClick={() => setShowForm(true)}><Plus size={13}/> Crear primer track</Btn3D>
-          </div>
-        </Card>
-      ) : viewMode === 'list' ? (
-        <Card>
-          {tracks.map(t => (
+          </div></Card>
+        ) : viewMode === 'list' ? (
+          <Card>{tracks.map(t => (
             <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '14px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
               <div style={{ width: '42px', height: '42px', background: COVER_GRADIENTS[t.id % COVER_GRADIENTS.length], borderRadius: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Music size={15} color="rgba(255,255,255,0.8)" /></div>
               <div style={{ flex: 1 }}><p style={{ color: '#fff', fontSize: '13px', fontWeight: 600, margin: 0, fontFamily: "'Space Grotesk',sans-serif" }}>{t.title}</p><p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', margin: 0, fontFamily: "'Space Grotesk',sans-serif" }}>{t.genre || 'Sin género'}</p></div>
               <span style={{ background: statusColors[t.status] || '#52525b', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '3px 7px', borderRadius: '5px', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{t.status}</span>
               <button onClick={() => del(t.id, t.title)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)', padding: '4px', borderRadius: '5px' }}><Trash2 size={14} /></button>
             </div>
-          ))}
-        </Card>
-      ) : (
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'16px' }}>
-          {tracks.map(t => {
-            const statusDot: Record<string,string> = { draft:'#71717a', published:'#22c55e', scheduled:'#3b82f6' };
-            return (
-              <TrackGridCard key={t.id} track={t} onDel={() => del(t.id, t.title)} />
-            );
-          })}
+          ))}</Card>
+        ) : (
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'16px' }}>
+            {tracks.map(t => <TrackGridCard key={t.id} track={t} onDel={() => del(t.id, t.title)} />)}
+          </div>
+        )}
+      </>}
+
+      {/* BULK UPLOAD tab */}
+      {catalogTab === 'bulk' && (
+        <div>
+          <div onDragOver={e=>{e.preventDefault();setBulkDragging(true)}} onDragLeave={()=>setBulkDragging(false)} onDrop={e=>{e.preventDefault();setBulkDragging(false);setBulkFiles(f=>[...f,...Array.from(e.dataTransfer.files)])}}
+            style={{border:`2px dashed ${bulkDragging?P:'rgba(255,255,255,0.15)'}`,borderRadius:16,padding:'48px 24px',textAlign:'center',cursor:'pointer',background:bulkDragging?`rgba(94,23,235,0.08)`:'rgba(255,255,255,0.02)',transition:'all 0.2s',marginBottom:20}}>
+            <Upload size={32} color={bulkDragging?P:'rgba(255,255,255,0.2)'} style={{marginBottom:12}}/>
+            <p style={{fontFamily:"'Anton',sans-serif",fontSize:16,color:'#F2EDE5',margin:'0 0 8px'}}>ARRASTRA ARCHIVOS AQUÍ</p>
+            <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,color:'rgba(255,255,255,0.35)',margin:'0 0 16px'}}>MP3, WAV, FLAC — múltiples archivos a la vez</p>
+            <label style={{cursor:'pointer'}}>
+              <input type="file" multiple accept="audio/*" style={{display:'none'}} onChange={e=>{if(e.target.files)setBulkFiles(f=>[...f,...Array.from(e.target.files!)])}}/>
+              <span style={{background:'rgba(94,23,235,0.2)',border:'1px solid rgba(94,23,235,0.4)',color:PL,padding:'8px 20px',borderRadius:8,fontFamily:"'Space Grotesk',sans-serif",fontSize:13,fontWeight:600}}>Seleccionar archivos</span>
+            </label>
+          </div>
+          {bulkFiles.length > 0 && (
+            <Card style={{marginBottom:16}}>
+              <h3 style={{fontFamily:"'Anton',sans-serif",fontSize:14,color:'#F2EDE5',margin:'0 0 14px'}}>ARCHIVOS SELECCIONADOS ({bulkFiles.length})</h3>
+              {bulkFiles.map((f,i)=>(
+                <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 0',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
+                  <span style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,color:'rgba(255,255,255,0.7)'}}>{f.name}</span>
+                  <div style={{display:'flex',alignItems:'center',gap:8}}>
+                    <span style={{fontSize:11,color:'rgba(255,255,255,0.3)'}}>{(f.size/1048576).toFixed(1)}MB</span>
+                    {bulkResults[i] && <span style={{fontSize:11,color:bulkResults[i].status==='ok'?'#22c55e':bulkResults[i].status==='error'?'#ef4444':'#f59e0b'}}>{bulkResults[i].status==='ok'?'✓ Listo':bulkResults[i].status==='error'?'✗ Error':'↑ Subiendo'}</span>}
+                  </div>
+                </div>
+              ))}
+              <div style={{display:'flex',gap:10,marginTop:14}}>
+                <Btn3D small onClick={bulkUpload} disabled={bulkUploading}>{bulkUploading?'Subiendo...':'Subir todo'}</Btn3D>
+                <Btn3D small variant="ghost" onClick={()=>{setBulkFiles([]);setBulkResults([])}}>Limpiar</Btn3D>
+              </div>
+            </Card>
+          )}
+          {bulkResults.length>0 && bulkResults.every(r=>r.status!=='uploading') && (
+            <div style={{background:'rgba(34,197,94,0.08)',border:'1px solid rgba(34,197,94,0.2)',borderRadius:12,padding:16,textAlign:'center'}}>
+              <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,color:'#22c55e',margin:0}}>
+                ✓ {bulkResults.filter(r=>r.status==='ok').length} archivos subidos · {bulkResults.filter(r=>r.status==='error').length} errores
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* LYRICS tab */}
+      {catalogTab === 'lyrics' && (
+        <div style={{ display:'grid', gridTemplateColumns:'220px 1fr', gap:'20px' }}>
+          <Card style={{ height:'fit-content' }}>
+            <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'13px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 12px' }}>TRACKS</h3>
+            {tracks.length===0 && <p style={{ color:'rgba(255,255,255,0.25)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif" }}>Sin tracks</p>}
+            {tracks.map(t=>(
+              <button key={t.id} onClick={() => setLyricsSelected(String(t.id))} style={{ width:'100%', textAlign:'left', background: lyricsSelected===String(t.id)?'rgba(94,23,235,0.18)':'transparent', border:'none', borderRadius:'8px', padding:'8px 10px', color: lyricsSelected===String(t.id)?PL:'rgba(255,255,255,0.5)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif", cursor:'pointer', marginBottom:'2px' }}>
+                {t.title}
+              </button>
+            ))}
+          </Card>
+          <Card>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'14px' }}>
+              <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'13px', color:'#fff', letterSpacing:'0.06em', margin:0 }}>EDITOR DE LETRAS</h3>
+              <div style={{ display:'flex', gap:'8px' }}>
+                <Btn3D small variant="ghost" onClick={()=>{const blob=new Blob([lyrics],{type:'text/plain'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`lyrics_${lyricsSelected}.lrc`;a.click();URL.revokeObjectURL(url)}} disabled={!lyricsSelected}><Download size={13}/> LRC</Btn3D>
+                <Btn3D small onClick={saveLyrics} disabled={!lyricsSelected}>{lyricsSaved?<><Check size={13}/> Guardado</>:<><Send size={13}/> Guardar + Publishing</>}</Btn3D>
+              </div>
+            </div>
+            <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:'rgba(255,255,255,0.3)',margin:'0 0 10px'}}>💡 Al guardar, las letras se registran automáticamente en Publishing y en el Vault.</p>
+            <textarea value={lyrics} onChange={e => setLyrics(e.target.value)} placeholder={lyricsSelected ? "[00:00.00] Escribe las letras en formato LRC...\n[00:05.00] Cada línea con timestamp" : "Selecciona un track para editar sus letras"} style={{ ...IS, resize:'vertical', minHeight:'340px', fontFamily:'monospace', fontSize:'13px', lineHeight:1.7 }} />
+          </Card>
         </div>
       )}
     </PageShell>
@@ -2101,18 +2221,27 @@ function CatalogPage() {
 
 // ─── ROYALTIES ───────────────────────────────────────────────────────────────
 function RoyaltiesPage() {
+  const [tab, setTab] = useState<'overview'|'master'|'publishing'|'history'>('overview');
   const [summary, setSummary] = useState<any>(null);
   const [monthly, setMonthly] = useState<any[]>([]);
+  const [publishing, setPublishing] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   useEffect(() => {
     Promise.all([
       apiFetch('/royalties/summary').then(setSummary).catch(()=>{}),
       apiFetch('/royalties/monthly').then(setMonthly).catch(()=>{}),
+      apiFetch('/publishing').then(d => setPublishing(Array.isArray(d)?d:[])).catch(()=>{}),
     ]).finally(()=>setLoadingData(false));
   }, []);
 
+  const TABS = [
+    { id: 'overview',   label: 'Resumen General',        icon: BarChart3 },
+    { id: 'master',     label: 'Master (Grabación)',      icon: Music },
+    { id: 'publishing', label: 'Publishing (Composición)',icon: BookOpen },
+    { id: 'history',    label: 'Historial',               icon: TrendingUp },
+  ] as const;
+
   const totalRevenue = summary ? Number(summary.totalRevenue||0) : 0;
-  const maxMonth = monthly.length > 0 ? Math.max(...monthly.map((m:any)=>Number(m.revenue||0)), 1) : 1;
   const platforms = summary?.byPlatform ? Object.entries(summary.byPlatform) : [];
   const maxPlatform = platforms.length > 0 ? Math.max(...platforms.map(([,v]:any)=>Number(v)), 1) : 1;
 
@@ -2120,105 +2249,132 @@ function RoyaltiesPage() {
     <>
     <PageBackground color="#22c55e" />
     <PageShell title="Regalías">
-      {/* Hero balance — 280px flagship card */}
-      <div style={{ position:'relative', background:'linear-gradient(135deg, #000d08 0%, #001a10 50%, #000d08 100%)', border:'1px solid rgba(34,197,94,0.15)', borderRadius:'28px', padding:'44px 52px', marginBottom:'28px', height:'280px', display:'flex', alignItems:'center', justifyContent:'space-between', overflow:'hidden', boxShadow:'inset 0 1px 0 rgba(255,255,255,0.05), 0 0 120px rgba(34,197,94,0.08)', animation:'holoBorder 4s ease-in-out infinite' }}>
-        {/* Matrix falling numbers */}
-        {['14','$','82','05','$','37'].map((digit, col) => (
-          <div key={col} style={{ position:'absolute', top:0, left:`${8 + col * 16}%`, width:'20px', overflow:'hidden', height:'100%', pointerEvents:'none', zIndex:1 }}>
-            {[0,1,2,3].map(row => (
-              <div key={row} style={{ position:'absolute', top:0, left:0, width:'100%', fontFamily:"'Space Grotesk',sans-serif", fontSize:'11px', color:'rgba(34,197,94,1)', textAlign:'center', animation:`matrixFall ${2.5 + (col+row)*0.4}s linear ${(col*0.3 + row*0.7)}s infinite`, userSelect:'none' }}>
-                {digit}
-              </div>
-            ))}
+      {/* Tabs */}
+      <div style={{display:'flex',gap:4,marginBottom:24,background:'rgba(255,255,255,0.03)',borderRadius:14,padding:4}}>
+        {TABS.map(t => (
+          <button key={t.id} onClick={()=>setTab(t.id)}
+            style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'10px 8px',borderRadius:10,border:'none',cursor:'pointer',background:tab===t.id?'rgba(94,23,235,0.25)':'transparent',color:tab===t.id?'#C084FC':'rgba(255,255,255,0.35)',fontFamily:"'Space Grotesk',sans-serif",fontSize:11,fontWeight:700,transition:'all 0.2s',boxShadow:tab===t.id?'0 0 20px rgba(94,23,235,0.2)':'none',whiteSpace:'nowrap'}}>
+            <t.icon size={13}/>{t.label}
+          </button>
+        ))}
+      </div>
+      {/* Hero balance card */}
+      <div style={{position:'relative',background:'linear-gradient(135deg,#000d08,#001a10,#000d08)',border:'1px solid rgba(34,197,94,0.15)',borderRadius:'24px',padding:'36px 48px',marginBottom:'24px',overflow:'hidden',minHeight:180,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <div style={{position:'absolute',right:40,top:'50%',transform:'translateY(-50%)',fontFamily:"'Anton',sans-serif",fontSize:280,color:'rgba(34,197,94,0.03)',lineHeight:1,pointerEvents:'none'}}>$</div>
+        <div style={{position:'relative',zIndex:1}}>
+          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
+            <div style={{width:7,height:7,borderRadius:'50%',background:'#22c55e',animation:'pulse 1.5s infinite'}}/>
+            <span style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,fontWeight:700,letterSpacing:'0.25em',textTransform:'uppercase',color:'rgba(34,197,94,0.7)'}}>BALANCE TOTAL DISPONIBLE</span>
           </div>
-        ))}
-        {/* Scan line moving top→bottom */}
-        <div style={{ position:'absolute', left:0, right:0, height:'2px', background:'linear-gradient(90deg, transparent, rgba(34,197,94,0.35), transparent)', animation:'scanLine 3s ease-in-out infinite', pointerEvents:'none', zIndex:2 }} />
-        {/* Money float particles — 8 dots */}
-        {[
-          { s:5, x:'12%', y:'25%', delay:'0s',   dur:'3.8s' },
-          { s:3, x:'22%', y:'65%', delay:'0.7s',  dur:'5s'   },
-          { s:6, x:'38%', y:'15%', delay:'0.3s',  dur:'4.2s' },
-          { s:4, x:'55%', y:'72%', delay:'1.2s',  dur:'3.5s' },
-          { s:5, x:'68%', y:'20%', delay:'0.9s',  dur:'4.8s' },
-          { s:3, x:'78%', y:'58%', delay:'1.8s',  dur:'5.2s' },
-          { s:6, x:'88%', y:'35%', delay:'0.5s',  dur:'3.9s' },
-          { s:4, x:'48%', y:'82%', delay:'1.5s',  dur:'4.5s' },
-        ].map((p,i) => (
-          <div key={i} style={{ position:'absolute', left:p.x, top:p.y, width:`${p.s}px`, height:`${p.s}px`, borderRadius:'50%', background:'rgba(34,197,94,0.6)', boxShadow:'0 0 10px rgba(34,197,94,0.9)', animation:`moneyFloat ${p.dur} ease-in-out ${p.delay} infinite`, pointerEvents:'none', filter:'blur(0.5px)' }} />
-        ))}
-        {/* Large faded $ watermark */}
-        <div style={{ position:'absolute', right:'-30px', bottom:'-60px', fontFamily:"'Anton',sans-serif", fontSize:'300px', color:'rgba(34,197,94,0.03)', lineHeight:1, userSelect:'none', pointerEvents:'none', letterSpacing:'-0.05em' }}>$</div>
-        {/* Ambient green orb */}
-        <div style={{ position:'absolute', left:'-50px', top:'50%', transform:'translateY(-50%)', width:'400px', height:'400px', borderRadius:'50%', background:'radial-gradient(circle, rgba(34,197,94,0.06) 0%, transparent 65%)', animation:'orbFloat 12s ease-in-out infinite', pointerEvents:'none' }} />
-
-        <div style={{ position:'relative', zIndex:1 }}>
-          <p style={{ color:'rgba(34,197,94,0.55)', fontSize:'10px', fontFamily:"'Space Grotesk',sans-serif", margin:'0 0 12px', letterSpacing:'0.22em', textTransform:'uppercase', fontWeight:700 }}>◆ BALANCE DISPONIBLE · USD</p>
-          <p style={{ fontFamily:"'Anton',sans-serif", fontSize:'clamp(3.5rem,6vw,5.5rem)', color:'#22c55e', margin:'0 0 8px', letterSpacing:'-0.02em', textShadow:'0 0 80px rgba(34,197,94,1), 0 0 160px rgba(34,197,94,0.4)', lineHeight:1 }}>
+          <div style={{fontFamily:"'Anton',sans-serif",fontSize:'clamp(3rem,6vw,5rem)',color:'#22c55e',lineHeight:1,letterSpacing:'-0.02em',textShadow:'0 0 60px rgba(34,197,94,0.8)'}}>
             ${loadingData ? '—' : totalRevenue.toFixed(2)}
-          </p>
-          <p style={{ color:'rgba(255,255,255,0.25)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif", margin:0 }}>Actualizado · {new Date().toLocaleDateString('es-CO', { day:'2-digit', month:'long', year:'numeric' })}</p>
-        </div>
-        <div style={{ position:'relative', zIndex:1, display:'flex', flexDirection:'column', alignItems:'flex-end', gap:'14px' }}>
-          <div style={{ width:'70px', height:'70px', background:'rgba(34,197,94,0.08)', border:'1px solid rgba(34,197,94,0.18)', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 40px rgba(34,197,94,0.2)' }}>
-            <DollarSign size={32} color="#22c55e" />
           </div>
-          <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:'10px', color:'rgba(34,197,94,0.7)', background:'rgba(34,197,94,0.08)', border:'1px solid rgba(34,197,94,0.18)', borderRadius:'100px', padding:'5px 14px', fontWeight:700, letterSpacing:'0.1em' }}>▲ EN CRECIMIENTO</span>
+          <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,color:'rgba(255,255,255,0.3)',marginTop:8}}>
+            Master: ${Number(summary?.masterRevenue||totalRevenue).toFixed(2)} · Publishing: ${Number(summary?.publishingRevenue||0).toFixed(2)}
+          </p>
         </div>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px' }}>
-        {loadingData ? [0,1,2].map(i=><SkeletonCard key={i} rows={2}/>) : [
-          { label: 'Total ingresos', value: `$${totalRevenue.toFixed(2)}`, icon: DollarSign, trend: 'up' as const },
-          { label: 'Total streams', value: summary ? Number(summary.totalStreams||0).toLocaleString() : '—', icon: TrendingUp, trend: 'up' as const },
-          { label: 'Plataformas', value: summary ? Object.keys(summary.byPlatform||{}).length : 0, icon: Globe },
-        ].map(c => <StatCard key={c.label} label={c.label} value={c.value} icon={c.icon} trend={c.trend} />)}
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-        <Card>
-          <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'15px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 18px' }}>POR PLATAFORMA</h3>
-          {loadingData && [0,1,2].map(i=><div key={i} style={{marginBottom:'14px'}}><Skeleton h="32px" radius="8px"/></div>)}
-          {!loadingData && platforms.length === 0 && <p style={{color:'rgba(255,255,255,0.25)',fontSize:'13px',fontFamily:"'Space Grotesk',sans-serif"}}>Sin datos</p>}
-          {platforms.map(([p,v]:any, pi:number) => {
-            const pct = Math.min(100,(Number(v)/maxPlatform)*100);
-            const platColors = [P, PL, '#3b82f6', '#22c55e', '#f59e0b', '#ec4899'];
-            const c = platColors[pi % platColors.length];
-            return (
-            <div key={p} style={{ marginBottom:'14px', background:'rgba(255,255,255,0.02)', border:'1px solid rgba(255,255,255,0.05)', borderRadius:'12px', padding:'12px 14px' }}>
-              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'8px' }}>
-                <span style={{color:'rgba(255,255,255,0.75)',textTransform:'capitalize',fontSize:'13px',fontFamily:"'Space Grotesk',sans-serif",fontWeight:600}}>{p}</span>
-                <span style={{color:'#22c55e',fontWeight:700,fontSize:'13px',fontFamily:"'Space Grotesk',sans-serif"}}>${Number(v).toFixed(2)}</span>
-              </div>
-              <div style={{ height:'5px', background:'rgba(255,255,255,0.05)', borderRadius:'100px', overflow:'hidden' }}>
-                <div style={{ height:'100%', background:`linear-gradient(90deg, ${c}88, ${c})`, borderRadius:'100px', width:'0%', animation:`barFill 1.2s cubic-bezier(0.34,1.56,0.64,1) ${pi*0.15}s forwards`, '--target-width':`${pct}%`, boxShadow:`0 0 8px ${c}60` } as React.CSSProperties} />
-              </div>
-            </div>
-            );
-          })}
-        </Card>
-        <Card>
-          <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'15px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 18px' }}>HISTORIAL MENSUAL</h3>
-          {loadingData && [0,1,2,3].map(i=><div key={i} style={{marginBottom:'10px'}}><Skeleton h="24px" radius="6px"/></div>)}
-          {/* Mini area chart: vertical bars */}
-          {!loadingData && monthly.length > 0 && (
-            <div style={{ display:'flex', alignItems:'flex-end', gap:'5px', height:'80px', marginBottom:'16px' }}>
-              {monthly.slice(-12).map((m:any,i:number) => (
-                <div key={i} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'flex-end', height:'100%' }}>
-                  <div style={{ width:'100%', background:`linear-gradient(to top, ${P}, ${PL})`, borderRadius:'3px 3px 0 0', height:`${(Number(m.revenue||0)/maxMonth)*100}%`, minHeight:'4px', opacity:0.8, transition:`height 1s ease ${i*0.05}s` }} />
-                </div>
-              ))}
-            </div>
-          )}
-          {monthly.slice(0,8).map((m:any)=>(
-            <div key={m.month} style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
-              <span style={{color:'rgba(255,255,255,0.55)',fontSize:'12px',fontFamily:"'Space Grotesk',sans-serif"}}>{m.month}</span>
-              <span style={{color:'#fff',fontWeight:600,fontSize:'13px',fontFamily:"'Space Grotesk',sans-serif"}}>${Number(m.revenue||0).toFixed(2)}</span>
+        <div style={{display:'flex',flexDirection:'column',gap:10,alignItems:'flex-end',position:'relative',zIndex:1}}>
+          {loadingData ? null : [
+            {label:'Streams',value:Number(summary?.totalStreams||0).toLocaleString(),icon:TrendingUp},
+            {label:'Plataformas',value:Object.keys(summary?.byPlatform||{}).length,icon:Globe},
+          ].map(s=>(
+            <div key={s.label} style={{display:'flex',alignItems:'center',gap:6,background:'rgba(34,197,94,0.08)',border:'1px solid rgba(34,197,94,0.15)',borderRadius:8,padding:'6px 12px'}}>
+              <s.icon size={12} color="#22c55e"/>
+              <span style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:12,color:'rgba(255,255,255,0.6)'}}>{s.label}:</span>
+              <span style={{fontFamily:"'Anton',sans-serif",fontSize:13,color:'#22c55e'}}>{s.value}</span>
             </div>
           ))}
-          {!loadingData && monthly.length===0 && <p style={{color:'rgba(255,255,255,0.25)',fontSize:'13px',fontFamily:"'Space Grotesk',sans-serif"}}>Sin datos</p>}
-        </Card>
+        </div>
       </div>
+
+      {/* Overview tab */}
+      {tab === 'overview' && (
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20}}>
+          <Card>
+            <h3 style={{fontFamily:"'Anton',sans-serif",fontSize:15,color:'#F2EDE5',letterSpacing:'0.06em',margin:'0 0 16px'}}>POR PLATAFORMA</h3>
+            {loadingData && [0,1,2].map(i=><div key={i} style={{marginBottom:14}}><Skeleton h="32px" radius="8px"/></div>)}
+            {!loadingData && platforms.length===0 && <p style={{color:'rgba(255,255,255,0.25)',fontSize:13,fontFamily:"'Space Grotesk',sans-serif"}}>Sin datos de plataformas aún.</p>}
+            {platforms.map(([p,v]:any,pi:number)=>{
+              const pct=Math.min(100,(Number(v)/maxPlatform)*100);
+              const c=[P,PL,'#3b82f6','#22c55e','#f59e0b','#ec4899'][pi%6];
+              return <div key={p} style={{marginBottom:12,background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.05)',borderRadius:12,padding:'10px 14px'}}>
+                <div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}><span style={{color:'rgba(255,255,255,0.7)',textTransform:'capitalize',fontSize:13,fontFamily:"'Space Grotesk',sans-serif"}}>{p}</span><span style={{color:'#22c55e',fontWeight:700,fontSize:13,fontFamily:"'Space Grotesk',sans-serif"}}>${Number(v).toFixed(2)}</span></div>
+                <div style={{height:5,background:'rgba(255,255,255,0.05)',borderRadius:100,overflow:'hidden'}}><div style={{height:'100%',background:`linear-gradient(90deg,${c}88,${c})`,borderRadius:100,width:`${pct}%`,boxShadow:`0 0 8px ${c}60`,transition:'width 1s ease'}}/></div>
+              </div>;
+            })}
+          </Card>
+          <Card>
+            <h3 style={{fontFamily:"'Anton',sans-serif",fontSize:15,color:'#F2EDE5',letterSpacing:'0.06em',margin:'0 0 16px'}}>MASTER vs PUBLISHING</h3>
+            {[
+              {label:'Master (Grabación)',value:summary?.masterRevenue||totalRevenue,color:P,pct:70},
+              {label:'Publishing (Composición)',value:summary?.publishingRevenue||0,color:'#C084FC',pct:30},
+            ].map((item,i)=>(
+              <div key={i} style={{marginBottom:20}}>
+                <div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}>
+                  <span style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,color:'rgba(255,255,255,0.6)'}}>{item.label}</span>
+                  <span style={{fontFamily:"'Anton',sans-serif",fontSize:13,color:item.color}}>${Number(item.value).toFixed(2)}</span>
+                </div>
+                <div style={{height:8,background:'rgba(255,255,255,0.05)',borderRadius:100,overflow:'hidden'}}>
+                  <div style={{height:'100%',width:`${item.pct}%`,background:item.color,borderRadius:100,boxShadow:`0 0 8px ${item.color}80`,transition:'width 1s ease'}}/>
+                </div>
+              </div>
+            ))}
+          </Card>
+        </div>
+      )}
+
+      {/* Master tab */}
+      {tab === 'master' && (
+        <Card>
+          <h3 style={{fontFamily:"'Anton',sans-serif",fontSize:16,color:'#F2EDE5',margin:'0 0 8px'}}>REGALÍAS DE MASTER</h3>
+          <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,color:'rgba(255,255,255,0.4)',margin:'0 0 20px'}}>Ingresos por reproducción de tus grabaciones en plataformas de streaming.</p>
+          {platforms.length===0 && <p style={{color:'rgba(255,255,255,0.25)',fontFamily:"'Space Grotesk',sans-serif",fontSize:13}}>Sin datos de master aún.</p>}
+          {platforms.map(([p,v]:any,i:number)=>(
+            <div key={i} style={{display:'flex',justifyContent:'space-between',padding:'12px 0',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
+              <span style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,color:'rgba(255,255,255,0.6)',textTransform:'capitalize'}}>{p}</span>
+              <span style={{fontFamily:"'Anton',sans-serif",fontSize:14,color:'#F2EDE5'}}>${Number(v).toFixed(2)}</span>
+            </div>
+          ))}
+        </Card>
+      )}
+
+      {/* Publishing tab */}
+      {tab === 'publishing' && (
+        <Card>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
+            <div>
+              <h3 style={{fontFamily:"'Anton',sans-serif",fontSize:16,color:'#F2EDE5',margin:'0 0 4px'}}>OBRAS REGISTRADAS</h3>
+              <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:12,color:'rgba(255,255,255,0.35)',margin:0}}>Sincronizado con tu catálogo de letras</p>
+            </div>
+            <Btn3D small onClick={()=>toast('Usa la pestaña Letras en Catálogo para registrar obras','info')}>+ REGISTRAR OBRA</Btn3D>
+          </div>
+          {publishing.length===0 ? (
+            <p style={{color:'rgba(255,255,255,0.25)',fontFamily:"'Space Grotesk',sans-serif",fontSize:13,textAlign:'center',padding:'20px 0'}}>No hay obras registradas. Las letras de tu catálogo aparecerán aquí automáticamente.</p>
+          ) : publishing.map((p:any,i:number)=>(
+            <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'12px 0',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
+              <div>
+                <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,fontWeight:600,color:'#F2EDE5',margin:0}}>{p.title}</p>
+                <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:'rgba(255,255,255,0.3)',margin:0}}>ISWC: {p.iswc||'Pendiente'}</p>
+              </div>
+              <span style={{fontFamily:"'Anton',sans-serif",fontSize:13,color:'#C084FC'}}>${Number(p.revenue||0).toFixed(2)}</span>
+            </div>
+          ))}
+        </Card>
+      )}
+
+      {/* History tab */}
+      {tab === 'history' && (
+        <Card>
+          <h3 style={{fontFamily:"'Anton',sans-serif",fontSize:16,color:'#F2EDE5',margin:'0 0 16px'}}>HISTORIAL MENSUAL</h3>
+          {monthly.length===0 && <p style={{color:'rgba(255,255,255,0.25)',fontFamily:"'Space Grotesk',sans-serif",fontSize:13}}>Sin historial aún.</p>}
+          {monthly.map((m:any,i:number)=>(
+            <div key={i} style={{display:'flex',justifyContent:'space-between',padding:'10px 0',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
+              <span style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,color:'rgba(255,255,255,0.55)'}}>{m.month}</span>
+              <span style={{fontFamily:"'Anton',sans-serif",fontSize:14,color:'#22c55e'}}>${Number(m.revenue||0).toFixed(2)}</span>
+            </div>
+          ))}
+        </Card>
+      )}
     </PageShell>
     </>
   );
@@ -2462,43 +2618,136 @@ function ReleasesPage() {
 
 // ─── VIDEOS ───────────────────────────────────────────────────────────────────
 function VideosPage() {
+  const [videosTab, setVideosTab] = useState<'videos'|'content-id'|'yt-artists'|'analytics'>('videos');
   const [videos, setVideos] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ title:'', description:'' });
   const [loading, setLoading] = useState(false);
+  const [analytics, setAnalytics] = useState<any>(null);
   const load = () => apiFetch('/videos').then(d => setVideos(Array.isArray(d) ? d : [])).catch(() => {});
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    apiFetch('/videos/analytics').then(setAnalytics).catch(()=>{});
+  }, []);
   const save = async () => {
     if (!form.title) return; setLoading(true);
     try { await apiFetch('/videos', { method:'POST', body: JSON.stringify(form) }); setForm({ title:'', description:'' }); setShowForm(false); load(); } catch {}
     setLoading(false);
   };
+
+  const VIDEOS_TABS = [{id:'videos',label:'Mis Videos',icon:Video},{id:'content-id',label:'Content ID',icon:Shield},{id:'yt-artists',label:'YT for Artists',icon:Award},{id:'analytics',label:'Analytics',icon:BarChart3}] as const;
+
   return (
-    <PageShell title="Videos" action={<Btn3D small onClick={() => setShowForm(!showForm)}><Plus size={13}/> Subir video</Btn3D>}>
-      {showForm && <Card style={{ marginBottom:'20px' }}>
-        <div style={{ display:'flex', flexDirection:'column', gap:'10px', marginBottom:'10px' }}>
-          <input style={IS} placeholder="Título del video" value={form.title} onChange={e => setForm(f=>({...f,title:e.target.value}))} />
-          <textarea style={{...IS, resize:'vertical', minHeight:'72px'}} placeholder="Descripción" value={form.description} onChange={e => setForm(f=>({...f,description:e.target.value}))} />
-          <div style={{ border:'2px dashed rgba(255,255,255,0.1)', borderRadius:'10px', padding:'24px', textAlign:'center', color:'rgba(255,255,255,0.25)', fontSize:'13px', fontFamily:"'Space Grotesk',sans-serif" }}><Upload size={20} style={{ marginBottom:'8px', display:'block', margin:'0 auto 8px' }}/> Arrastra el archivo de video aquí</div>
-        </div>
-        <div style={{ display:'flex', gap:'10px' }}>
-          <Btn3D small onClick={save} disabled={loading}>{loading?'Guardando...':'Registrar'}</Btn3D>
-          <Btn3D small variant="ghost" onClick={() => setShowForm(false)}>Cancelar</Btn3D>
-        </div>
-      </Card>}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(220px,1fr))', gap:'16px' }}>
-        {videos.length===0 && <Card style={{ gridColumn:'1/-1' }}><EmptyState icon={Video} text="Sin videos. Sube tu primer video musical." /></Card>}
-        {videos.map(v=>(
-          <Card key={v.id} style={{ padding:'0', overflow:'hidden' }}>
-            <div style={{ height:'120px', background:'rgba(94,23,235,0.08)', display:'flex', alignItems:'center', justifyContent:'center', borderRadius:'20px 20px 0 0' }}><Video size={32} color="rgba(255,255,255,0.15)"/></div>
-            <div style={{ padding:'14px' }}>
-              <p style={{ color:'#fff', fontSize:'13px', fontWeight:600, margin:'0 0 4px', fontFamily:"'Space Grotesk',sans-serif" }}>{v.title}</p>
-              <p style={{ color:'rgba(255,255,255,0.3)', fontSize:'11px', margin:0, fontFamily:"'Space Grotesk',sans-serif" }}>{v.description||'Sin descripción'}</p>
-              <div style={{ marginTop:'10px' }}><Badge color="#22c55e" label={v.status||'pendiente'}/></div>
-            </div>
-          </Card>
+    <PageShell title="Videos & YouTube" action={videosTab==='videos'?<Btn3D small onClick={() => setShowForm(!showForm)}><Plus size={13}/> Subir video</Btn3D>:undefined}>
+      {/* Tabs */}
+      <div style={{display:'flex',gap:4,marginBottom:20,background:'rgba(255,255,255,0.03)',borderRadius:12,padding:4}}>
+        {VIDEOS_TABS.map(t=>(
+          <button key={t.id} onClick={()=>setVideosTab(t.id)}
+            style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'9px 8px',borderRadius:9,border:'none',cursor:'pointer',background:videosTab===t.id?'rgba(255,0,0,0.15)':'transparent',color:videosTab===t.id?'#ff4444':'rgba(255,255,255,0.35)',fontFamily:"'Space Grotesk',sans-serif",fontSize:11,fontWeight:700,transition:'all 0.2s',whiteSpace:'nowrap'}}>
+            <t.icon size={12}/>{t.label}
+          </button>
         ))}
       </div>
+
+      {/* Videos tab */}
+      {videosTab === 'videos' && <>
+        {showForm && <Card style={{ marginBottom:'20px' }}>
+          <div style={{ display:'flex', flexDirection:'column', gap:'10px', marginBottom:'10px' }}>
+            <input style={IS} placeholder="Título del video" value={form.title} onChange={e => setForm(f=>({...f,title:e.target.value}))} />
+            <textarea style={{...IS, resize:'vertical', minHeight:'72px'}} placeholder="Descripción" value={form.description} onChange={e => setForm(f=>({...f,description:e.target.value}))} />
+            <div style={{ border:'2px dashed rgba(255,255,255,0.1)', borderRadius:'10px', padding:'24px', textAlign:'center', color:'rgba(255,255,255,0.25)', fontSize:'13px', fontFamily:"'Space Grotesk',sans-serif" }}><Upload size={20} style={{ display:'block', margin:'0 auto 8px' }}/> Arrastra el archivo de video aquí</div>
+          </div>
+          <div style={{ display:'flex', gap:'10px' }}>
+            <Btn3D small onClick={save} disabled={loading}>{loading?'Guardando...':'Registrar'}</Btn3D>
+            <Btn3D small variant="ghost" onClick={() => setShowForm(false)}>Cancelar</Btn3D>
+          </div>
+        </Card>}
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(220px,1fr))', gap:'16px' }}>
+          {videos.length===0 && <Card style={{ gridColumn:'1/-1' }}><EmptyState icon={Video} text="Sin videos. Sube tu primer video musical." /></Card>}
+          {videos.map(v=>(
+            <Card key={v.id} style={{ padding:'0', overflow:'hidden' }}>
+              <div style={{ height:'120px', background:'rgba(255,0,0,0.06)', display:'flex', alignItems:'center', justifyContent:'center', borderRadius:'20px 20px 0 0' }}><Video size={32} color="rgba(255,255,255,0.15)"/></div>
+              <div style={{ padding:'14px' }}>
+                <p style={{ color:'#fff', fontSize:'13px', fontWeight:600, margin:'0 0 4px', fontFamily:"'Space Grotesk',sans-serif" }}>{v.title}</p>
+                <p style={{ color:'rgba(255,255,255,0.3)', fontSize:'11px', margin:0, fontFamily:"'Space Grotesk',sans-serif" }}>{v.description||'Sin descripción'}</p>
+                <div style={{ marginTop:'10px' }}><Badge color="#22c55e" label={v.status||'pendiente'}/></div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </>}
+
+      {/* Content ID tab */}
+      {videosTab === 'content-id' && (
+        <Card>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20}}>
+            <div>
+              <h3 style={{fontFamily:"'Anton',sans-serif",fontSize:18,color:'#F2EDE5',margin:'0 0 8px'}}>YOUTUBE CONTENT ID</h3>
+              <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,color:'rgba(255,255,255,0.5)',margin:0,maxWidth:480}}>Protege tu música en YouTube. Cuando alguien use tu audio, tú monetizas automáticamente en lugar de ellos.</p>
+            </div>
+            <div style={{display:'flex',alignItems:'center',gap:6,background:'rgba(255,165,0,0.1)',border:'1px solid rgba(255,165,0,0.3)',borderRadius:8,padding:'6px 14px',flexShrink:0}}>
+              <div style={{width:6,height:6,borderRadius:'50%',background:'#f59e0b'}}/>
+              <span style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,fontWeight:700,color:'#f59e0b'}}>PENDIENTE ACTIVACIÓN</span>
+            </div>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:12,marginBottom:24}}>
+            {[
+              {num:'1',label:'Verificar elegibilidad',desc:'Mínimo 10 tracks distribuidos',done:false},
+              {num:'2',label:'Enviar solicitud',desc:'IM Music gestiona el registro',done:false},
+              {num:'3',label:'Activar monetización',desc:'Empieza a generar ingresos',done:false},
+            ].map(step=>(
+              <div key={step.num} style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:12,padding:16,textAlign:'center'}}>
+                <div style={{width:32,height:32,borderRadius:'50%',background:step.done?'#22c55e':'rgba(255,255,255,0.1)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 10px',fontFamily:"'Anton',sans-serif",fontSize:14,color:step.done?'#fff':'rgba(255,255,255,0.4)'}}>{step.done?'✓':step.num}</div>
+                <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:12,fontWeight:600,color:'#fff',margin:'0 0 4px'}}>{step.label}</p>
+                <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:'rgba(255,255,255,0.35)',margin:0}}>{step.desc}</p>
+              </div>
+            ))}
+          </div>
+          <div style={{background:'rgba(255,0,0,0.05)',border:'1px solid rgba(255,0,0,0.15)',borderRadius:12,padding:14,marginBottom:20,fontSize:12,color:'rgba(255,255,255,0.5)',fontFamily:"'Space Grotesk',sans-serif"}}>
+            ℹ️ IM Music gestiona tu Content ID a través de nuestros partners certificados. Plan PRO requerido para activación automática.
+          </div>
+          <Btn3D onClick={()=>window.open('https://studio.youtube.com','_blank')}>SOLICITAR CONTENT ID →</Btn3D>
+        </Card>
+      )}
+
+      {/* YouTube for Artists tab */}
+      {videosTab === 'yt-artists' && (
+        <Card>
+          <h3 style={{fontFamily:"'Anton',sans-serif",fontSize:18,color:'#F2EDE5',margin:'0 0 8px'}}>YOUTUBE FOR ARTISTS</h3>
+          <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,color:'rgba(255,255,255,0.5)',margin:'0 0 24px',maxWidth:500}}>Accede a analytics avanzados y herramientas exclusivas para artistas en YouTube Music.</p>
+          <div style={{display:'flex',flexDirection:'column',gap:12,marginBottom:24}}>
+            {[
+              {label:'Canal de YouTube verificado',done:false},
+              {label:'Mínimo 10 videos subidos',done:videos.length>=10},
+              {label:'Música distribuida en YouTube Music',done:false},
+            ].map((req,i)=>(
+              <div key={i} style={{display:'flex',alignItems:'center',gap:12,padding:'12px 16px',background:'rgba(255,255,255,0.03)',border:`1px solid ${req.done?'rgba(34,197,94,0.2)':'rgba(255,255,255,0.06)'}`,borderRadius:10}}>
+                <div style={{width:20,height:20,borderRadius:'50%',background:req.done?'#22c55e':'rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:11,color:req.done?'#fff':'rgba(255,255,255,0.3)'}}>{req.done?'✓':'✗'}</div>
+                <span style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,color:req.done?'rgba(255,255,255,0.8)':'rgba(255,255,255,0.4)'}}>{req.label}</span>
+              </div>
+            ))}
+          </div>
+          <Btn3D onClick={()=>window.open('https://artists.youtube.com','_blank')}>SOLICITAR VERIFICACIÓN →</Btn3D>
+        </Card>
+      )}
+
+      {/* Analytics tab */}
+      {videosTab === 'analytics' && (
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:16}}>
+          {[
+            {label:'Vistas totales',value:analytics?.views||'—',icon:Play,color:'#FF0000'},
+            {label:'Tiempo de visualización',value:analytics?.watchTime||'—',icon:TrendingUp,color:'#f59e0b'},
+            {label:'Suscriptores',value:analytics?.subscribers||'—',icon:Users,color:'#22c55e'},
+          ].map(s=>(
+            <Card key={s.label} style={{textAlign:'center',padding:28}}>
+              <s.icon size={28} color={s.color} style={{marginBottom:12}}/>
+              <p style={{fontFamily:"'Anton',sans-serif",fontSize:28,color:s.color,margin:'0 0 6px'}}>{s.value}</p>
+              <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:12,color:'rgba(255,255,255,0.4)',margin:0}}>{s.label}</p>
+            </Card>
+          ))}
+          {!analytics && <Card style={{gridColumn:'1/-1'}}><EmptyState icon={BarChart3} text="Conecta tu canal de YouTube para ver analytics." /></Card>}
+        </div>
+      )}
     </PageShell>
   );
 }
@@ -3107,10 +3356,11 @@ function SplitsPieChart({ splits }: { splits: { name: string; percentage: number
 }
 
 function SplitsPage() {
+  const [splitsTab, setSplitsTab] = useState<'master'|'publishing'|'all'>('master');
   const [splits, setSplits] = useState<any[]>([]);
   const [tracks, setTracks] = useState<any[]>([]);
   const [selectedTrack, setSelectedTrack] = useState('');
-  const [form, setForm] = useState({ name:'', email:'', percentage:'' });
+  const [form, setForm] = useState({ name:'', email:'', percentage:'', type:'master', role:'artista' });
   const [loading, setLoading] = useState(false);
   useEffect(() => {
     apiFetch('/splits').then(d=>setSplits(Array.isArray(d)?d:[])).catch(()=>{});
@@ -3120,15 +3370,30 @@ function SplitsPage() {
     if (!form.name||!form.percentage) return; setLoading(true);
     try {
       const d = await apiFetch('/splits', { method:'POST', body: JSON.stringify({ ...form, track_id: selectedTrack }) });
-      setSplits(s=>[...s,d]); setForm({ name:'', email:'', percentage:'' });
-      toast(`Split agregado para ${form.name}`);
+      setSplits(s=>[...s,d]); setForm({ name:'', email:'', percentage:'', type:splitsTab==='publishing'?'publishing':'master', role:'artista' });
+      toast(`Split de ${form.type} agregado para ${form.name}`);
     } catch(e:any) { toast(e.message,'error'); }
     setLoading(false);
   };
   const bySplit = splits.reduce((acc:any,s:any)=>{ const k=s.track_id||'general'; if(!acc[k])acc[k]=[]; acc[k].push(s); return acc; }, {});
+  const filteredSplits = splitsTab==='all' ? splits : splits.filter(s=>s.type===splitsTab||(splitsTab==='master'&&!s.type));
+
+  const SPLITS_TABS = [{id:'master',label:'Master (Grabación)',icon:Music},{id:'publishing',label:'Publishing (Composición)',icon:BookOpen},{id:'all',label:'Todos los colaboradores',icon:Users}] as const;
+  const ROLES = ['artista','productor','co-autor','letrista','ingeniero de mezcla','mánager'];
+
   return (
     <PageShell title="Splits de Regalías">
-      <div style={{ display:'grid', gridTemplateColumns:'340px 1fr', gap:'20px' }}>
+      {/* Tabs */}
+      <div style={{display:'flex',gap:4,marginBottom:20,background:'rgba(255,255,255,0.03)',borderRadius:12,padding:4}}>
+        {SPLITS_TABS.map(t=>(
+          <button key={t.id} onClick={()=>{setSplitsTab(t.id);setForm(f=>({...f,type:t.id==='publishing'?'publishing':t.id==='all'?f.type:'master'}))}}
+            style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'9px 8px',borderRadius:9,border:'none',cursor:'pointer',background:splitsTab===t.id?'rgba(94,23,235,0.25)':'transparent',color:splitsTab===t.id?'#C084FC':'rgba(255,255,255,0.35)',fontFamily:"'Space Grotesk',sans-serif",fontSize:11,fontWeight:700,transition:'all 0.2s',whiteSpace:'nowrap'}}>
+            <t.icon size={12}/>{t.label}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ display:'grid', gridTemplateColumns:'320px 1fr', gap:'20px' }}>
         <div>
           <Card style={{ marginBottom:'16px' }}>
             <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'13px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 14px' }}>AGREGAR COLABORADOR</h3>
@@ -3139,6 +3404,14 @@ function SplitsPage() {
               </select>
               <input style={IS} placeholder="Nombre del colaborador" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))}/>
               <input style={IS} placeholder="Email" type="email" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))}/>
+              <select style={IS} value={form.role} onChange={e=>setForm(f=>({...f,role:e.target.value}))}>
+                {ROLES.map(r=><option key={r} value={r} style={{textTransform:'capitalize'}}>{r.charAt(0).toUpperCase()+r.slice(1)}</option>)}
+              </select>
+              <select style={IS} value={form.type} onChange={e=>setForm(f=>({...f,type:e.target.value}))}>
+                <option value="master">Master (Grabación)</option>
+                <option value="publishing">Publishing (Composición)</option>
+                <option value="lyrics">Letras</option>
+              </select>
               <div style={{ position:'relative' }}>
                 <input style={IS} placeholder="Porcentaje" type="number" min="0" max="100" value={form.percentage} onChange={e=>setForm(f=>({...f,percentage:e.target.value}))}/>
                 <Percent size={13} color="rgba(255,255,255,0.3)" style={{ position:'absolute', right:'12px', top:'50%', transform:'translateY(-50%)' }}/>
@@ -3147,24 +3420,29 @@ function SplitsPage() {
             </div>
           </Card>
           <Card style={{ background:'rgba(94,23,235,0.08)', border:'1px solid rgba(94,23,235,0.2)' }}>
-            <p style={{ color:'rgba(255,255,255,0.35)', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif", lineHeight:1.6, margin:0 }}>💡 Los splits se calculan automáticamente. La suma de porcentajes no debe superar 100%.</p>
+            <p style={{ color:'rgba(255,255,255,0.35)', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif", lineHeight:1.6, margin:0 }}>💡 Master = derechos de grabación · Publishing = derechos de composición. La suma no debe superar 100% por tipo.</p>
           </Card>
         </div>
         <Card>
-          <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'13px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 16px' }}>SPLITS ACTIVOS</h3>
-          {splits.length===0 && <EmptyState icon={Users} text="Sin splits. Agrega colaboradores para dividir regalías." />}
-          {/* Pie chart for first group */}
-          {splits.length > 0 && <SplitsPieChart splits={splits} />}
-          {Object.entries(bySplit).map(([trackId, trackSplits]:any)=>(
+          <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'13px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 16px' }}>
+            {splitsTab==='master'?'SPLITS DE MASTER':splitsTab==='publishing'?'SPLITS DE PUBLISHING':'TODOS LOS COLABORADORES'}
+          </h3>
+          {filteredSplits.length===0 && <EmptyState icon={Users} text="Sin colaboradores en esta categoría." />}
+          {filteredSplits.length > 0 && <SplitsPieChart splits={filteredSplits} />}
+          {Object.entries(
+            filteredSplits.reduce((acc:any,s:any)=>{ const k=s.track_id||'general'; if(!acc[k])acc[k]=[]; acc[k].push(s); return acc; }, {})
+          ).map(([trackId, trackSplits]:any)=>(
             <div key={trackId} style={{ marginBottom:'20px' }}>
               <p style={{ color:PL, fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, textTransform:'uppercase', letterSpacing:'0.12em', margin:'0 0 10px' }}>{tracks.find(t=>String(t.id)===trackId)?.title||'General'}</p>
               {trackSplits.map((s:any,i:number)=>(
                 <div key={i} style={{ display:'flex', alignItems:'center', gap:'12px', padding:'10px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
-                  {/* Avatar initials */}
-                  <div style={{ width:'34px', height:'34px', background:AVATAR_COLORS[i%AVATAR_COLORS.length], borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontFamily:"'Anton',sans-serif", fontSize:'13px', color:'#fff', letterSpacing:'0.05em' }}>
+                  <div style={{ width:'34px', height:'34px', background:AVATAR_COLORS[i%AVATAR_COLORS.length], borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontFamily:"'Anton',sans-serif", fontSize:'13px', color:'#fff' }}>
                     {(s.name||'?').split(' ').map((w:string)=>w[0]).slice(0,2).join('').toUpperCase()}
                   </div>
-                  <div style={{ flex:1 }}><p style={{ color:'#fff', fontSize:'13px', margin:0, fontFamily:"'Space Grotesk',sans-serif", fontWeight:500 }}>{s.name}</p><p style={{ color:'rgba(255,255,255,0.3)', fontSize:'11px', margin:0, fontFamily:"'Space Grotesk',sans-serif" }}>{s.email||'Sin email'}</p></div>
+                  <div style={{ flex:1 }}>
+                    <p style={{ color:'#fff', fontSize:'13px', margin:0, fontFamily:"'Space Grotesk',sans-serif", fontWeight:500 }}>{s.name}</p>
+                    <p style={{ color:'rgba(255,255,255,0.3)', fontSize:'11px', margin:0, fontFamily:"'Space Grotesk',sans-serif" }}>{s.role||s.email||'Sin email'}{s.type&&<> · <span style={{color:s.type==='publishing'?'#C084FC':'#22c55e'}}>{s.type}</span></>}</p>
+                  </div>
                   <div style={{ fontFamily:"'Anton',sans-serif", fontSize:'22px', color:AVATAR_COLORS[i%AVATAR_COLORS.length] }}>{s.percentage}%</div>
                   <Badge color="#22c55e" label="Activo"/>
                 </div>
@@ -4785,31 +5063,24 @@ export default function App() {
 
   const renderPage = () => {
     switch (activePage) {
-      case 'dashboard':      return <DashboardPage onNav={setActivePage} />;
-      case 'catalog':        return <CatalogPage />;
-      case 'royalties':      return <RoyaltiesPage />;
-      case 'ai-chat':        return <AIChatPage />;
-      case 'publishing':     return <PublishingPage />;
-      case 'releases':       return <ReleasesPage />;
-      case 'videos':         return <VideosPage />;
-      case 'lyrics':         return <LyricsPage />;
+      case 'dashboard':       return <DashboardPage onNav={setActivePage} />;
+      case 'catalog':         return <CatalogPage />;
+      case 'royalties':       return <RoyaltiesPage />;
+      case 'ai-chat':         return <AIChatPage />;
+      case 'releases':        return <ReleasesPage />;
+      case 'videos':          return <VideosPage />;
       case 'marketing-suite': return <MarketingSuitePage />;
-      case 'community':      return <CommunityPage />;
-      case 'marketplace':    return <MarketplacePage />;
-      case 'splits':         return <SplitsPage />;
-      case 'vault':          return <VaultPage />;
-      case 'bulk-upload':    return <BulkUploadPage />;
-      case 'store-maximizer':return <StoreMaximizerPage />;
-      case 'riaa':           return <RIAAPage />;
-      case 'label':          return <LabelPage />;
-      case 'team':           return <TeamPage />;
-      case 'stats':          return <StatsPage />;
-      case 'feedback':       return <FeedbackPage />;
-      case 'settings':       return <SettingsPage user={user} />;
-      case 'playlists':      return <PlaylistsPage />;
-      case 'legal':          return <LegalPage />;
-      case 'financing':      return <FinancingPage />;
-      default:               return <GenericPage moduleId={activePage} />;
+      case 'community':       return <CommunityPage />;
+      case 'marketplace':     return <MarketplacePage />;
+      case 'splits':          return <SplitsPage />;
+      case 'store-maximizer': return <StoreMaximizerPage />;
+      case 'label':           return <LabelPage />;
+      case 'team':            return <TeamPage />;
+      case 'stats':           return <StatsPage />;
+      case 'settings':        return <SettingsPage user={user} />;
+      case 'legal':           return <LegalPage />;
+      case 'financing':       return <FinancingPage />;
+      default:                return <GenericPage moduleId={activePage} />;
     }
   };
 
