@@ -120,6 +120,87 @@ function CursorTrail() {
   );
 }
 
+// ─── GlassIcon ───────────────────────────────────────────────────────────────
+function GlassIcon({ icon: Icon, color, size = 48 }: { icon: any; color: string; size?: number }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        width: size, height: size,
+        borderRadius: size * 0.35,
+        background: hovered
+          ? `linear-gradient(135deg, ${color}40, ${color}20)`
+          : `linear-gradient(135deg, ${color}20, ${color}08)`,
+        border: `1px solid ${color}${hovered ? '60' : '30'}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        boxShadow: hovered
+          ? `0 0 30px ${color}50, 0 0 60px ${color}20, inset 0 1px 0 rgba(255,255,255,0.1)`
+          : `0 0 15px ${color}20, inset 0 1px 0 rgba(255,255,255,0.05)`,
+        transform: hovered ? 'scale(1.15) translateZ(8px)' : 'scale(1)',
+        transition: 'all 0.3s cubic-bezier(0.34,1.56,0.64,1)',
+        position: 'relative', overflow: 'hidden', flexShrink: 0,
+      }}>
+      <Icon size={size * 0.42} color={hovered ? '#fff' : color} strokeWidth={1.5} />
+      {hovered && (
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: `radial-gradient(circle at 30% 30%, rgba(255,255,255,0.15), transparent 60%)`,
+          borderRadius: 'inherit', pointerEvents: 'none',
+        }} />
+      )}
+    </div>
+  );
+}
+
+// Group → color map for icons
+const GROUP_COLORS: Record<string, string> = {
+  'Principal': '#5E17EB', 'Música': '#C084FC', 'Finanzas': '#22c55e',
+  'Marketing': '#f59e0b', 'Distribución': '#3b82f6', 'Archivos': '#06b6d4',
+  'Gestión': '#94a3b8',
+};
+
+// ─── FloatingOrbs ─────────────────────────────────────────────────────────────
+function FloatingOrbs({ colors = ['#5E17EB', '#7B3FFF', '#C084FC'] }: { colors?: string[] }) {
+  return (
+    <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 0 }}>
+      {colors.map((color, i) => (
+        <div key={i} style={{
+          position: 'absolute',
+          width: `${300 + i * 100}px`, height: `${300 + i * 100}px`,
+          borderRadius: '50%',
+          background: `radial-gradient(circle, ${color}12 0%, transparent 70%)`,
+          top: ['−10%', '40%', '70%'][i], left: ['60%', '−5%', '70%'][i],
+          animation: `orbFloat${i} ${15 + i * 5}s ease-in-out infinite`,
+          filter: 'blur(40px)',
+        }} />
+      ))}
+    </div>
+  );
+}
+
+// ─── Particle Burst ───────────────────────────────────────────────────────────
+function particleBurst(e: React.MouseEvent) {
+  const colors = ['#5E17EB', '#7B3FFF', '#C084FC', '#F2EDE5'];
+  for (let i = 0; i < 10; i++) {
+    const particle = document.createElement('div');
+    const angle = (i / 10) * 360;
+    const distance = 40 + Math.random() * 60;
+    const size = 4 + Math.random() * 4;
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const tx = Math.cos((angle * Math.PI) / 180) * distance;
+    const ty = Math.sin((angle * Math.PI) / 180) * distance - 40;
+    const kfName = `pb_${Date.now()}_${i}`;
+    const style = document.createElement('style');
+    style.textContent = `@keyframes ${kfName}{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(${tx}px,${ty}px) scale(0);opacity:0}}`;
+    particle.style.cssText = `position:fixed;left:${e.clientX}px;top:${e.clientY}px;width:${size}px;height:${size}px;background:${color};border-radius:50%;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);animation:${kfName} 0.8s ease-out forwards;`;
+    document.head.appendChild(style);
+    document.body.appendChild(particle);
+    setTimeout(() => { particle.remove(); style.remove(); }, 800);
+  }
+}
+
 // ─── 3D Button ───────────────────────────────────────────────────────────────
 function Btn3D({ children, onClick, disabled = false, type = 'button', variant = 'primary', small = false, fullWidth = false }: {
   children: React.ReactNode; onClick?: () => void; disabled?: boolean;
@@ -158,6 +239,7 @@ function Btn3D({ children, onClick, disabled = false, type = 'button', variant =
     `;
     btn.appendChild(circle);
     setTimeout(() => circle.remove(), 600);
+    if (variant === 'primary') particleBurst(e);
     onClick?.();
   };
 
@@ -1126,29 +1208,32 @@ const MODULES = [
 
 function SidebarItem({ m, isActive, onNav, onClose }: { m: typeof MODULES[0]; isActive: boolean; onNav: (id:string)=>void; onClose: ()=>void }) {
   const [hov, setHov] = useState(false);
+  const iconColor = GROUP_COLORS[m.group] || P;
   return (
     <button key={m.id} onClick={() => { onNav(m.id); onClose(); }}
       onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{
         width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-        padding: '9px 16px', margin: '1px 0', borderRadius: '10px', cursor: 'pointer',
-        border: 'none',
-        borderLeft: isActive ? `2px solid ${P}` : '2px solid transparent',
+        padding: '7px 14px', margin: '1px 0', borderRadius: '10px', cursor: 'pointer',
+        border: 'none', borderLeft: '2px solid transparent',
         background: isActive
-          ? 'linear-gradient(90deg, rgba(94,23,235,0.22) 0%, rgba(94,23,235,0.05) 100%)'
-          : hov ? 'rgba(94,23,235,0.08)' : 'transparent',
-        color: isActive ? '#C084FC' : hov ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.35)',
+          ? `linear-gradient(90deg, ${iconColor}22 0%, ${iconColor}06 100%)`
+          : hov ? `${iconColor}0a` : 'transparent',
+        color: isActive ? '#fff' : hov ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.38)',
         fontSize: '12.5px', fontFamily: "'Space Grotesk', sans-serif",
         fontWeight: isActive ? 600 : 400,
         transition: 'all 0.2s cubic-bezier(0.34,1.56,0.64,1)',
         textAlign: 'left',
-        transform: isActive ? 'translateX(4px)' : hov ? 'translateX(2px)' : 'translateX(0)',
-        boxShadow: isActive ? 'inset 0 0 16px rgba(94,23,235,0.12)' : 'none',
+        transform: isActive ? 'translateX(3px)' : hov ? 'translateX(2px)' : 'translateX(0)',
         position: 'relative',
       }}>
-      <m.icon size={16} color={isActive ? PL : hov ? 'rgba(94,23,235,0.7)' : 'rgba(255,255,255,0.25)'} style={{ flexShrink: 0, transition: 'all 0.18s ease', transform: hov || isActive ? 'scale(1.1)' : 'scale(1)' }} />
+      {/* Active left glow bar */}
+      {isActive && (
+        <div style={{ position:'absolute', left:0, top:'50%', transform:'translateY(-50%)', width:'3px', height:'60%', background:`linear-gradient(180deg, transparent, ${iconColor}, transparent)`, borderRadius:'0 3px 3px 0', boxShadow:`0 0 8px ${iconColor}cc, 0 0 16px ${iconColor}66` }} />
+      )}
+      <GlassIcon icon={m.icon} color={iconColor} size={30} />
       <span style={{ flex: 1 }}>{m.label}</span>
-      {isActive && <span style={{ width:'6px', height:'6px', borderRadius:'50%', background: P, boxShadow:`0 0 8px ${P}, 0 0 16px ${P}55`, animation:'activePulse 2s ease-in-out infinite', flexShrink: 0 }} />}
+      {isActive && <span style={{ width:'5px', height:'5px', borderRadius:'50%', background: iconColor, boxShadow:`0 0 8px ${iconColor}, 0 0 16px ${iconColor}88`, animation:'activePulse 2s ease-in-out infinite', flexShrink: 0 }} />}
     </button>
   );
 }
@@ -1164,8 +1249,12 @@ function Sidebar({ active, onNav, user, onLogout, open, onClose }: {
     <>
       {open && <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 20 }} />}
       <aside style={{ position: 'fixed', top: 0, left: 0, height: '100%', width: `${SIDEBAR_W}px`, background: 'linear-gradient(180deg, #0D0618 0%, #080410 50%, #050208 100%)', backdropFilter: 'blur(24px)', borderRight: '1px solid rgba(94,23,235,0.12)', zIndex: 30, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* Scanline texture overlay */}
+        <div style={{ position:'absolute', inset:0, backgroundImage:'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.008) 2px, rgba(255,255,255,0.008) 4px)', pointerEvents:'none', zIndex:0 }} />
+        {/* Glass reflection top */}
+        <div style={{ position:'absolute', top:0, left:0, right:0, height:'200px', background:'linear-gradient(180deg, rgba(94,23,235,0.08) 0%, transparent 100%)', pointerEvents:'none', zIndex:0 }} />
         {/* Ambient ellipse glow top-left */}
-        <div style={{ position:'absolute', top:0, left:0, width:'200px', height:'200px', background:'radial-gradient(ellipse at 0% 0%, rgba(94,23,235,0.15) 0%, transparent 70%)', pointerEvents:'none', zIndex:0 }} />
+        <div style={{ position:'absolute', top:0, left:0, width:'200px', height:'200px', background:'radial-gradient(ellipse at 0% 0%, rgba(94,23,235,0.18) 0%, transparent 70%)', pointerEvents:'none', zIndex:0 }} />
         {/* Logo header */}
         <div style={{ padding: '22px 20px 18px', borderBottom: '1px solid rgba(255,255,255,0.03)', display: 'flex', alignItems: 'center', gap: '12px', position:'relative', zIndex:1 }}>
           <div style={{ width: '36px', height: '36px', background: `linear-gradient(135deg, ${P}, ${PL})`, borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 20px rgba(94,23,235,0.5), 0 4px 0 #2D0B6B`, animation: 'logoFloat 4s ease-in-out infinite', flexShrink: 0 }}>
@@ -1344,31 +1433,42 @@ function StatCard({ label, value, icon: Icon, trend, sparkline, glowColor = PL }
   const tilt = useTilt();
   const [isHov, setIsHov] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
   const bars = sparkline || [40, 55, 35, 70, 50, 80, 65, 90];
   const maxBar = Math.max(...bars, 1);
 
   useEffect(() => { const t = setTimeout(() => setMounted(true), 50); return () => clearTimeout(t); }, []);
 
+  const handleMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    tilt.onMouseMove(e);
+    const r = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+    setMousePos({ x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 });
+  };
+
   return (
-    <div ref={tilt.ref} onMouseMove={tilt.onMouseMove} onMouseEnter={() => setIsHov(true)} onMouseLeave={() => { tilt.onMouseLeave(); setIsHov(false); }}
-      style={{ background: 'rgba(10,6,18,0.85)', backdropFilter: 'blur(40px) saturate(200%)', border: `1px solid rgba(94,23,235,0.2)`, borderRadius: '24px', padding: '22px', position: 'relative', overflow: 'hidden', minHeight: '160px', display:'flex', flexDirection:'column', justifyContent:'space-between' }}>
-      {/* Large faded background icon watermark */}
+    <div ref={tilt.ref} onMouseMove={handleMove} onMouseEnter={() => setIsHov(true)} onMouseLeave={() => { tilt.onMouseLeave(); setIsHov(false); }}
+      style={{ background: 'rgba(10,6,18,0.88)', backdropFilter: 'blur(40px) saturate(200%)', border: `1px solid ${glowColor}30`, borderRadius: '24px', padding: '22px', position: 'relative', overflow: 'hidden', minHeight: '160px', display:'flex', flexDirection:'column', justifyContent:'space-between' }}>
+      {/* Watermark icon */}
       <div style={{ position: 'absolute', right: '-16px', bottom: '-16px', opacity: 0.04, pointerEvents: 'none' }}>
         <Icon size={120} color={glowColor} />
       </div>
-      {/* Inner glow on hover */}
-      <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(circle at 80% 20%, ${glowColor}12 0%, transparent 60%)`, pointerEvents: 'none', opacity: isHov ? 1 : 0.5, transition: 'opacity 0.3s' }} />
+      {/* Holographic shimmer on hover */}
+      {isHov && <div style={{ position:'absolute', inset:0, background:'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.07) 50%, transparent 60%)', backgroundSize:'200% 200%', animation:'holographic 3s linear infinite', pointerEvents:'none', borderRadius:'24px' }} />}
+      {/* Mouse-follow inner glow */}
+      <div style={{ position:'absolute', inset:0, borderRadius:'24px', pointerEvents:'none', background:`radial-gradient(circle 150px at ${mousePos.x}% ${mousePos.y}%, ${glowColor}18, transparent)`, transition:'background 0.1s ease' }} />
+      {/* Static ambient glow */}
+      <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(circle at 80% 20%, ${glowColor}0e 0%, transparent 55%)`, pointerEvents: 'none' }} />
 
       <div style={{ position:'relative', zIndex:1 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-          <IconCircle icon={Icon} color={glowColor} size={46} iconSize={18} />
+          <GlassIcon icon={Icon} color={glowColor} size={46} />
           {trend && (
-            <span style={{ fontSize: '10px', color: trend === 'up' ? '#22c55e' : '#ef4444', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, background: trend === 'up' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${trend === 'up' ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`, borderRadius: '100px', padding: '3px 9px', letterSpacing:'0.04em' }}>
-              {trend === 'up' ? '▲ +12%' : '▼ -5%'}
+            <span style={{ display:'flex', alignItems:'center', gap:'3px', fontSize: '10px', color: '#22c55e', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: '100px', padding: '4px 10px', letterSpacing:'0.04em' }}>
+              <TrendingUp size={10} /> +12%
             </span>
           )}
         </div>
-        <p style={{ fontFamily: "'Anton', sans-serif", fontSize: '44px', color: '#fff', margin: '0 0 2px', letterSpacing: '-0.01em', textShadow: `0 0 40px ${glowColor}55`, lineHeight: 1 }}>
+        <p style={{ fontFamily: "'Anton', sans-serif", fontSize: '44px', color: glowColor, margin: '0 0 2px', letterSpacing: '-0.01em', textShadow: `0 0 30px ${glowColor}99, 0 0 60px ${glowColor}44`, lineHeight: 1 }}>
           {(()=>{
             if (typeof value === 'number') return <AnimatedCounter target={value} />;
             if (typeof value === 'string' && value.startsWith('$')) {
@@ -1378,13 +1478,13 @@ function StatCard({ label, value, icon: Icon, trend, sparkline, glowColor = PL }
             return value;
           })()}
         </p>
-        <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '10px', margin: '0', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.1em', textTransform: 'uppercase' }}>{label}</p>
+        <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', margin: '0', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.1em', textTransform: 'uppercase' }}>{label}</p>
       </div>
 
       {/* Sparkline at bottom */}
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '28px', position: 'relative', zIndex: 1 }}>
         {bars.map((b, i) => (
-          <div key={i} style={{ flex: 1, height: mounted ? `${(b / maxBar) * 28}px` : '2px', background: i === bars.length - 1 ? glowColor : `${glowColor}35`, borderRadius: '2px 2px 0 0', transition: `height 0.7s cubic-bezier(0.34,1.56,0.64,1) ${i * 0.06}s`, minWidth: '4px', boxShadow: i === bars.length - 1 ? `0 0 10px ${glowColor}70` : 'none' }} />
+          <div key={i} style={{ flex: 1, height: mounted ? `${(b / maxBar) * 28}px` : '2px', background: i === bars.length - 1 ? glowColor : `${glowColor}40`, borderRadius: '2px 2px 0 0', transition: `height 0.7s cubic-bezier(0.34,1.56,0.64,1) ${i * 0.06}s`, minWidth: '4px', boxShadow: i === bars.length - 1 ? `0 0 12px ${glowColor}88` : 'none' }} />
         ))}
       </div>
     </div>
@@ -1442,11 +1542,9 @@ function DashboardPage() {
 
   return (
     <>
+      <FloatingOrbs />
       <AppMarqueeStrip />
       <div style={{ position: 'relative', overflow: 'hidden' }}>
-        {/* Animated background orbs */}
-        <div style={{ position: 'absolute', top: '-100px', right: '-100px', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(94,23,235,0.07) 0%, transparent 70%)', pointerEvents: 'none', animation: 'orbFloat 18s ease-in-out infinite' }} />
-        <div style={{ position: 'absolute', bottom: '0', left: '-150px', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(123,63,255,0.05) 0%, transparent 70%)', pointerEvents: 'none', animation: 'orbFloat 24s ease-in-out infinite reverse' }} />
 
         <PageShell title="">
           {/* Greeting header */}
@@ -1569,12 +1667,24 @@ function TrackGridCard({ track: t, onDel }: { track: any; onDel: () => void }) {
       {/* Cover art 140px */}
       <div style={{ height:'140px', background:COVER_GRADIENTS[t.id % COVER_GRADIENTS.length], display:'flex', alignItems:'center', justifyContent:'center', position:'relative', overflow:'hidden', flexShrink:0 }}>
         <div style={{ transform:hov?'scale(1.08)':'scale(1)', transition:'transform 0.4s ease', display:'flex', alignItems:'center', justifyContent:'center' }}>
-          <Music size={44} color="rgba(255,255,255,0.3)" />
+          <Music size={44} color="rgba(255,255,255,0.25)" />
+        </div>
+        {/* Play button overlay — appears on hover */}
+        <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background: hov ? 'rgba(0,0,0,0.25)' : 'transparent', transition:'background 0.3s ease' }}>
+          <div style={{ width:'56px', height:'56px', borderRadius:'50%', background:'rgba(255,255,255,0.15)', backdropFilter:'blur(10px)', border:'1px solid rgba(255,255,255,0.3)', display:'flex', alignItems:'center', justifyContent:'center', transform: hov ? 'scale(1)' : 'scale(0)', transition:'transform 0.3s cubic-bezier(0.34,1.56,0.64,1)', boxShadow:'0 8px 32px rgba(0,0,0,0.4)' }}>
+            <Play size={20} color="#fff" fill="#fff" />
+          </div>
         </div>
         {/* Status pill top-right */}
         <div style={{ position:'absolute', top:'10px', right:'10px', background:`${statusDot[t.status]||'#71717a'}22`, border:`1px solid ${statusDot[t.status]||'#71717a'}66`, borderRadius:'100px', padding:'3px 8px', display:'flex', alignItems:'center', gap:'4px' }}>
           <div style={{ width:'5px', height:'5px', borderRadius:'50%', background:statusDot[t.status]||'#71717a', boxShadow:`0 0 6px ${statusDot[t.status]||'#71717a'}` }} />
           <span style={{ color:statusDot[t.status]||'#71717a', fontSize:'9px', fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em' }}>{t.status||'draft'}</span>
+        </div>
+        {/* CSS waveform bars at bottom */}
+        <div style={{ position:'absolute', bottom:'8px', left:'50%', transform:'translateX(-50%)', display:'flex', alignItems:'flex-end', gap:'2px', height:'20px' }}>
+          {[4,7,12,9,14,10,6,13,8,5,11,7].map((h,i) => (
+            <div key={i} style={{ width:'3px', background:'rgba(255,255,255,0.4)', borderRadius:'2px', height:`${h}px`, animation:`waveformPulse 1.4s ease-in-out ${i*0.12}s infinite`, '--wh':`${h}px` } as React.CSSProperties} />
+          ))}
         </div>
         {/* Gradient overlay at bottom */}
         <div style={{ position:'absolute', bottom:0, left:0, right:0, height:'48px', background:'linear-gradient(to top, rgba(10,6,18,0.95), transparent)' }} />
@@ -1703,19 +1813,25 @@ function RoyaltiesPage() {
   const maxPlatform = platforms.length > 0 ? Math.max(...platforms.map(([,v]:any)=>Number(v)), 1) : 1;
 
   return (
+    <>
+    <FloatingOrbs colors={['#22c55e', '#16a34a', '#5E17EB']} />
     <PageShell title="Regalías">
       {/* Hero balance — 280px flagship card */}
-      <div style={{ position:'relative', background:'linear-gradient(135deg, #000d08 0%, #001a10 50%, #000d08 100%)', border:'1px solid rgba(34,197,94,0.15)', borderRadius:'28px', padding:'44px 52px', marginBottom:'28px', height:'280px', display:'flex', alignItems:'center', justifyContent:'space-between', overflow:'hidden', boxShadow:'inset 0 1px 0 rgba(255,255,255,0.05), 0 0 120px rgba(34,197,94,0.06)' }}>
-        {/* Floating particle dots */}
+      <div style={{ position:'relative', background:'linear-gradient(135deg, #000d08 0%, #001a10 50%, #000d08 100%)', border:'1px solid rgba(34,197,94,0.15)', borderRadius:'28px', padding:'44px 52px', marginBottom:'28px', height:'280px', display:'flex', alignItems:'center', justifyContent:'space-between', overflow:'hidden', boxShadow:'inset 0 1px 0 rgba(255,255,255,0.05), 0 0 120px rgba(34,197,94,0.08)' }}>
+        {/* Scan line moving top→bottom */}
+        <div style={{ position:'absolute', left:0, right:0, height:'2px', background:'linear-gradient(90deg, transparent, rgba(34,197,94,0.35), transparent)', animation:'scanLine 3s ease-in-out infinite', pointerEvents:'none', zIndex:2 }} />
+        {/* Money float particles — 8 dots */}
         {[
-          { s:6, x:'15%', y:'20%', delay:'0s',  dur:'4s'  },
-          { s:4, x:'25%', y:'70%', delay:'1s',  dur:'5.5s' },
-          { s:5, x:'60%', y:'15%', delay:'0.5s',dur:'3.8s' },
-          { s:3, x:'75%', y:'65%', delay:'2s',  dur:'6s'  },
-          { s:4, x:'45%', y:'80%', delay:'1.5s',dur:'4.5s' },
-          { s:6, x:'88%', y:'30%', delay:'0.8s',dur:'5s'  },
+          { s:5, x:'12%', y:'25%', delay:'0s',   dur:'3.8s' },
+          { s:3, x:'22%', y:'65%', delay:'0.7s',  dur:'5s'   },
+          { s:6, x:'38%', y:'15%', delay:'0.3s',  dur:'4.2s' },
+          { s:4, x:'55%', y:'72%', delay:'1.2s',  dur:'3.5s' },
+          { s:5, x:'68%', y:'20%', delay:'0.9s',  dur:'4.8s' },
+          { s:3, x:'78%', y:'58%', delay:'1.8s',  dur:'5.2s' },
+          { s:6, x:'88%', y:'35%', delay:'0.5s',  dur:'3.9s' },
+          { s:4, x:'48%', y:'82%', delay:'1.5s',  dur:'4.5s' },
         ].map((p,i) => (
-          <div key={i} style={{ position:'absolute', left:p.x, top:p.y, width:`${p.s}px`, height:`${p.s}px`, borderRadius:'50%', background:'rgba(34,197,94,0.5)', boxShadow:'0 0 8px rgba(34,197,94,0.8)', animation:`orbFloat ${p.dur} ease-in-out ${p.delay} infinite`, pointerEvents:'none' }} />
+          <div key={i} style={{ position:'absolute', left:p.x, top:p.y, width:`${p.s}px`, height:`${p.s}px`, borderRadius:'50%', background:'rgba(34,197,94,0.6)', boxShadow:'0 0 10px rgba(34,197,94,0.9)', animation:`moneyFloat ${p.dur} ease-in-out ${p.delay} infinite`, pointerEvents:'none', filter:'blur(0.5px)' }} />
         ))}
         {/* Large faded $ watermark */}
         <div style={{ position:'absolute', right:'-30px', bottom:'-60px', fontFamily:"'Anton',sans-serif", fontSize:'300px', color:'rgba(34,197,94,0.03)', lineHeight:1, userSelect:'none', pointerEvents:'none', letterSpacing:'-0.05em' }}>$</div>
@@ -1790,6 +1906,7 @@ function RoyaltiesPage() {
         </Card>
       </div>
     </PageShell>
+    </>
   );
 }
 
@@ -3488,6 +3605,39 @@ export default function App() {
           0%,100% { transform: translate(0,0) scale(1); }
           33%     { transform: translate(25px,-20px) scale(1.06); }
           66%     { transform: translate(-15px,15px) scale(0.94); }
+        }
+
+        /* ── FloatingOrbs individual ─────────────────────────────── */
+        @keyframes orbFloat0 {
+          0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(-30px,20px) scale(1.05)} 66%{transform:translate(20px,-15px) scale(0.95)}
+        }
+        @keyframes orbFloat1 {
+          0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(25px,-20px) scale(1.08)} 66%{transform:translate(-15px,25px) scale(0.92)}
+        }
+        @keyframes orbFloat2 {
+          0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(-20px,-25px) scale(1.03)} 66%{transform:translate(30px,10px) scale(0.97)}
+        }
+
+        /* ── Holographic shimmer ─────────────────────────────────── */
+        @keyframes holographic {
+          0%   { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+
+        /* ── Money float (Royalties particles) ───────────────────── */
+        @keyframes moneyFloat {
+          0%,100%{transform:translateY(0) rotate(0deg);opacity:0.4}
+          50%{transform:translateY(-20px) rotate(180deg);opacity:0.9}
+        }
+
+        /* ── Scan line (Royalties hero) ──────────────────────────── */
+        @keyframes scanLine {
+          0%{top:0%;opacity:0} 10%{opacity:1} 90%{opacity:1} 100%{top:100%;opacity:0}
+        }
+
+        /* ── Waveform pulse (catalog track cards) ────────────────── */
+        @keyframes waveformPulse {
+          0%,100%{height:4px} 50%{height:var(--wh,12px)}
         }
 
         /* ── Card ambient glow cycle ─────────────────────────────── */
