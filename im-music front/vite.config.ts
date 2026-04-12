@@ -21,7 +21,6 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks: {
             vendor: ['react', 'react-dom'],
-            motion: ['motion/react'],
             icons: ['lucide-react'],
           },
         },
@@ -29,7 +28,8 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 500,
     },
     optimizeDeps: {
-      include: ['react', 'react-dom', 'motion/react', 'lucide-react'],
+      include: ['react', 'react-dom', 'lucide-react'],
+      exclude: ['motion/react'],
     },
     server: {
       hmr: process.env.DISABLE_HMR !== 'true',

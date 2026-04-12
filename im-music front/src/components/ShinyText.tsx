@@ -1,4 +1,4 @@
-import { motion, useMotionValue, useAnimationFrame, useTransform } from 'motion/react';
+import React, { useRef, useEffect } from 'react';
 
 interface ShinyTextProps {
   text: string;
@@ -19,19 +19,26 @@ export default function ShinyText({
   className,
   style,
 }: ShinyTextProps) {
-  const progress = useMotionValue(0);
+  const ref = useRef<HTMLSpanElement>(null);
+  const pos = useRef(150);
+  const raf = useRef<number>(0);
 
-  useAnimationFrame((time) => {
-    progress.set((time * speed * 0.01) % 100);
-  });
-
-  const backgroundPosition = useTransform(
-    progress,
-    (p) => `${150 - p * 2}% center`
-  );
+  useEffect(() => {
+    const tick = () => {
+      pos.current = (pos.current - speed * 0.4) % 300;
+      if (pos.current < -50) pos.current = 250;
+      if (ref.current) {
+        ref.current.style.backgroundPosition = `${pos.current}% center`;
+      }
+      raf.current = requestAnimationFrame(tick);
+    };
+    raf.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf.current);
+  }, [speed]);
 
   return (
-    <motion.span
+    <span
+      ref={ref}
       className={className}
       style={{
         backgroundImage: `linear-gradient(${spread}deg, ${color} 35%, ${shineColor} 50%, ${color} 65%)`,
@@ -39,12 +46,12 @@ export default function ShinyText({
         WebkitBackgroundClip: 'text',
         backgroundClip: 'text',
         WebkitTextFillColor: 'transparent',
-        backgroundPosition,
+        backgroundPosition: '150% center',
         display: 'inline-block',
         ...style,
       }}
     >
       {text}
-    </motion.span>
+    </span>
   );
 }

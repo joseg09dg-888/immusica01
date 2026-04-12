@@ -6,17 +6,16 @@ import ShinyText from './components/ShinyText';
 import CountUp from './components/CountUp';
 import {
   LayoutDashboard, Music, TrendingUp, DollarSign, Settings,
-  Plus, Bell, User as UserIcon, BarChart3, Globe,
+  Plus, Bell, BarChart3, Globe,
   Zap, CreditCard, Sparkles, Play, ShoppingBag,
   MessageCircle, Lock, Video, Mic, Award, Link2, Store,
-  Upload, Image, Scale, Lightbulb, ChevronDown, Send, Trash2,
+  Upload, Image, Scale, ChevronDown, Send, Trash2,
   LogOut, BookOpen, Package, Users, Radio, Star, Check,
-  ArrowRight, Disc, Headphones, TrendingDown, Shield,
-  Download, FileText, ExternalLink, Copy, RefreshCw,
-  Calendar, Clock, Eye, X, Edit2, ToggleLeft, ToggleRight,
-  FileAudio, FileVideo, FileImage, Percent
+  ArrowRight, Disc, Headphones, Shield,
+  Download, FileText, Copy,
+  Calendar, Clock, X, ToggleLeft, ToggleRight,
+  FileAudio, FileVideo, FileImage, Percent, User
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const P = '#5E17EB';
@@ -993,7 +992,7 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
                 <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '15px', color: 'rgba(255,255,255,0.7)', lineHeight: 1.7, margin: '0 0 24px', fontStyle: 'italic' }}>{t.quote.slice(1, -1)}</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: `linear-gradient(135deg, ${P}, ${PL})`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <UserIcon size={16} color="#fff" />
+                    <User size={16} color="#fff" />
                   </div>
                   <div>
                     <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '14px', fontWeight: 700, color: '#fff', margin: 0 }}>{t.name}</p>
@@ -1229,8 +1228,7 @@ function LoginPage({ onLogin, onBack }: { onLogin: (u: any) => void; onBack: () 
       <div style={{ position: 'fixed', inset: 0, backgroundImage: `linear-gradient(rgba(94,23,235,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(94,23,235,0.04) 1px, transparent 1px)`, backgroundSize: '56px 56px', pointerEvents: 'none' }} />
       <div style={{ position: 'fixed', top: '-200px', left: '50%', transform: 'translateX(-50%)', width: '800px', height: '600px', background: `radial-gradient(ellipse, rgba(94,23,235,0.15) 0%, transparent 65%)`, pointerEvents: 'none' }} />
 
-      <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}
-        style={{ width: '100%', maxWidth: '420px', position: 'relative', zIndex: 1 }}>
+      <div className="page-in" style={{ width: '100%', maxWidth: '420px', position: 'relative', zIndex: 1 }}>
         {/* Back to landing */}
         <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', fontFamily: "'Space Grotesk', sans-serif", fontSize: '12px', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '32px', padding: 0, transition: 'color 0.2s' }}
           onMouseEnter={e => (e.currentTarget.style.color = '#fff')} onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.3)')}>
@@ -1265,7 +1263,7 @@ function LoginPage({ onLogin, onBack }: { onLogin: (u: any) => void; onBack: () 
             </Btn3D>
           </form>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }
@@ -2649,7 +2647,7 @@ function CommunityPage() {
             {messages.length===0 && <EmptyState icon={MessageCircle} text="Sin mensajes aún. ¡Sé el primero!" />}
             {messages.map((m,i)=>(
               <div key={i} style={{ display:'flex', gap:'10px', alignItems:'flex-start' }}>
-                <div style={{ width:'28px', height:'28px', background:`rgba(94,23,235,0.2)`, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><UserIcon size={12} color={PL}/></div>
+                <div style={{ width:'28px', height:'28px', background:`rgba(94,23,235,0.2)`, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><User size={12} color={PL}/></div>
                 <div>
                   <span style={{ color:PL, fontSize:'11px', fontWeight:700, fontFamily:"'Space Grotesk',sans-serif" }}>{m.user_name||m.author||'Artista'} </span>
                   <span style={{ color:'rgba(255,255,255,0.2)', fontSize:'10px', fontFamily:"'Space Grotesk',sans-serif" }}>{m.created_at ? new Date(m.created_at).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}) : ''}</span>
@@ -3022,7 +3020,7 @@ function TeamPage() {
         {members.length===0 && <EmptyState icon={Users} text="Sin miembros de equipo. Invita a tus colaboradores." />}
         {members.map(m=>(
           <div key={m.id} style={{ display:'flex', alignItems:'center', gap:'14px', padding:'12px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
-            <div style={{ width:'38px', height:'38px', background:'rgba(94,23,235,0.12)', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><UserIcon size={15} color={PL}/></div>
+            <div style={{ width:'38px', height:'38px', background:'rgba(94,23,235,0.12)', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><User size={15} color={PL}/></div>
             <div style={{ flex:1 }}>
               <p style={{ color:'#fff', fontSize:'13px', fontWeight:600, margin:'0 0 2px', fontFamily:"'Space Grotesk',sans-serif" }}>{m.name}</p>
               <p style={{ color:'rgba(255,255,255,0.3)', fontSize:'11px', margin:0, fontFamily:"'Space Grotesk',sans-serif" }}>{m.email}</p>
@@ -3760,208 +3758,11 @@ export default function App() {
             </div>
           </div>
         </div>
-        <AnimatePresence mode="wait">
-          <motion.main key={activePage} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.14 }}>
-            {renderPage()}
-          </motion.main>
-        </AnimatePresence>
+        <main key={activePage} className="page-in">
+          {renderPage()}
+        </main>
       </div>
-      <style>{`
-        /* ── Core animations ─────────────────────────────────────── */
-        @keyframes marqueeScroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
-        @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
-        @keyframes waveBar { 0%,100%{height:4px} 50%{height:var(--h,12px)} }
-        @keyframes spin { to{transform:rotate(360deg)} }
-        @keyframes dashFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
-        @keyframes logoFloat { 0%,100%{transform:translateY(0) rotate(0deg)} 50%{transform:translateY(-3px) rotate(2deg)} }
-
-        /* ── Shimmer skeleton (purple tinted) ───────────────────── */
-        @keyframes shimmer {
-          0%   { background-position: -800px 0; }
-          100% { background-position: 800px 0; }
-        }
-        .skeleton-shimmer {
-          background: linear-gradient(90deg,
-            rgba(255,255,255,0.03) 0%,
-            rgba(94,23,235,0.08) 50%,
-            rgba(255,255,255,0.03) 100%);
-          background-size: 800px 100%;
-          animation: shimmer 1.8s infinite;
-        }
-
-        /* ── Ripple ─────────────────────────────────────────────── */
-        @keyframes ripple {
-          to { transform: scale(4); opacity: 0; }
-        }
-
-        /* ── Active sidebar pulse ────────────────────────────────── */
-        @keyframes activePulse {
-          0%,100% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(94,23,235,0.4); }
-          50%      { transform: scale(1.3); opacity: 0.8; box-shadow: 0 0 0 4px rgba(94,23,235,0); }
-        }
-
-        /* ── Toast slide-in ──────────────────────────────────────── */
-        @keyframes toastIn {
-          from { opacity:0; transform:translateX(60px) scale(0.9); }
-          to   { opacity:1; transform:translateX(0) scale(1); }
-        }
-
-        /* ── Glow pulse (sidebar dot) ────────────────────────────── */
-        @keyframes glowPulse {
-          0%,100% { box-shadow: 0 0 6px currentColor; opacity:1; }
-          50%     { box-shadow: 0 0 16px currentColor, 0 0 30px currentColor; opacity:0.7; }
-        }
-
-        /* ── Ambient orb float ───────────────────────────────────── */
-        @keyframes orbFloat {
-          0%,100% { transform: translate(0,0) scale(1); }
-          33%     { transform: translate(25px,-20px) scale(1.06); }
-          66%     { transform: translate(-15px,15px) scale(0.94); }
-        }
-
-        /* ── FloatingOrbs individual ─────────────────────────────── */
-        @keyframes orbFloat0 {
-          0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(-30px,20px) scale(1.05)} 66%{transform:translate(20px,-15px) scale(0.95)}
-        }
-        @keyframes orbFloat1 {
-          0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(25px,-20px) scale(1.08)} 66%{transform:translate(-15px,25px) scale(0.92)}
-        }
-        @keyframes orbFloat2 {
-          0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(-20px,-25px) scale(1.03)} 66%{transform:translate(30px,10px) scale(0.97)}
-        }
-
-        /* ── Holographic shimmer ─────────────────────────────────── */
-        @keyframes holographic {
-          0%   { background-position: 200% 0; }
-          100% { background-position: -200% 0; }
-        }
-
-        /* ── Money float (Royalties particles) ───────────────────── */
-        @keyframes moneyFloat {
-          0%,100%{transform:translateY(0) rotate(0deg);opacity:0.4}
-          50%{transform:translateY(-20px) rotate(180deg);opacity:0.9}
-        }
-
-        /* ── Scan line (Royalties hero) ──────────────────────────── */
-        @keyframes scanLine {
-          0%{top:0%;opacity:0} 10%{opacity:1} 90%{opacity:1} 100%{top:100%;opacity:0}
-        }
-
-        /* ── Waveform pulse (catalog track cards) ────────────────── */
-        @keyframes waveformPulse {
-          0%,100%{height:4px} 50%{height:var(--wh,12px)}
-        }
-
-        /* ── Card ambient glow cycle ─────────────────────────────── */
-        @keyframes cardGlow {
-          0%,100% { box-shadow: 0 0 20px rgba(94,23,235,0.08); }
-          50%     { box-shadow: 0 0 40px rgba(94,23,235,0.22), 0 0 80px rgba(94,23,235,0.08); }
-        }
-
-        /* ── Number pulse ────────────────────────────────────────── */
-        @keyframes numberPulse {
-          0%,100% { opacity:1; }
-          50%     { opacity:0.75; }
-        }
-
-        /* ── Count-up appear ─────────────────────────────────────── */
-        @keyframes countUp {
-          from { opacity:0; transform:translateY(12px); }
-          to   { opacity:1; transform:translateY(0); }
-        }
-
-        /* ── 3D float ────────────────────────────────────────────── */
-        @keyframes float3d {
-          0%,100% { transform: translateY(0) rotateX(0deg) rotateZ(0deg); }
-          33%     { transform: translateY(-8px) rotateX(2deg) rotateZ(0.8deg); }
-          66%     { transform: translateY(-4px) rotateX(-1deg) rotateZ(-0.5deg); }
-        }
-
-        /* ── Bar fill ────────────────────────────────────────────── */
-        @keyframes barFill {
-          from { width: 0; }
-          to   { width: var(--target-width, 100%); }
-        }
-
-        /* ── Typing bounce ───────────────────────────────────────── */
-        @keyframes typingBounce {
-          0%, 60%, 100% { transform: translateY(0); }
-          30%            { transform: translateY(-8px); }
-        }
-
-        /* ── Btn3D / Icon3D ─────────────────────────────────────── */
-        @keyframes glowRingPulse {
-          0%, 100% { opacity: 0.6; transform: scale(1); }
-          50%       { opacity: 1;   transform: scale(1.06); }
-        }
-        @keyframes btnShine {
-          from { left: -100%; }
-          to   { left: 200%; }
-        }
-        @keyframes rippleExpand {
-          0%   { width: 0;     height: 0;     opacity: 0.55; }
-          100% { width: 320px; height: 320px; opacity: 0; }
-        }
-
-        /* ── Holographic border ─────────────────────────────────── */
-        @keyframes holoBorder {
-          0%   { border-color: rgba(34,197,94,0.30); }
-          25%  { border-color: rgba(94,23,235,0.35); }
-          50%  { border-color: rgba(34,197,94,0.30); }
-          75%  { border-color: rgba(192,132,252,0.35); }
-          100% { border-color: rgba(34,197,94,0.30); }
-        }
-
-        /* ── Animated chat bubbles ──────────────────────────────── */
-        @keyframes bubbleGradient {
-          0%   { background-position: 0%   50%; }
-          50%  { background-position: 100% 50%; }
-          100% { background-position: 0%   50%; }
-        }
-
-        /* ── Matrix digits ──────────────────────────────────────── */
-        @keyframes matrixFall {
-          0%   { transform: translateY(-100%); opacity: 0; }
-          10%  { opacity: 0.06; }
-          90%  { opacity: 0.06; }
-          100% { transform: translateY(300px); opacity: 0; }
-        }
-
-        /* ── Spinning conic avatar ──────────────────────────────── */
-        @keyframes conicSpin {
-          to { transform: rotate(360deg); }
-        }
-
-        /* ── Chat message appear ─────────────────────────────────── */
-        @keyframes messageAppear {
-          from { transform: scale(0.85) translateY(10px); opacity: 0; }
-          to   { transform: scale(1) translateY(0); opacity: 1; }
-        }
-
-        /* ── Sparkline bar rise ──────────────────────────────────── */
-        @keyframes barRise {
-          from { transform: scaleY(0); opacity: 0; }
-          to   { transform: scaleY(1); opacity: 1; }
-        }
-
-        /* ── Toast slide in ──────────────────────────────────────── */
-        @keyframes toastSlide {
-          from { transform: translateX(120%) scale(0.8); opacity: 0; }
-          to   { transform: translateX(0) scale(1); opacity: 1; }
-        }
-
-        /* ── Global resets ───────────────────────────────────────── */
-        * { box-sizing: border-box; }
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
-        ::-webkit-scrollbar-thumb { background: rgba(94,23,235,0.5); border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: ${PL}; }
-        input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.18); }
-        select { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); color: #fff; }
-        select option { background: #0e0c1e; }
-        button { font-family: "'Space Grotesk', sans-serif"; }
-        aside::-webkit-scrollbar { width: 0; }
-      `}</style>
+      {/* All keyframes are in index.css */}
     </div>
   );
 }
