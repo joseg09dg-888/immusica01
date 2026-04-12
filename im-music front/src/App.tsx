@@ -4,46 +4,9 @@ import SpotlightCard from './components/SpotlightCard';
 import RotatingText from './components/RotatingText';
 import ShinyText from './components/ShinyText';
 import CountUp from './components/CountUp';
-// ─── Animated Background (pure CSS, replaces Three.js LightPillar) ───────────
-function AnimatedBackground() {
-  return (
-    <div style={{ position:'absolute', inset:0, overflow:'hidden', zIndex:0, pointerEvents:'none' }}>
-      {/* Beam 1 */}
-      <div style={{
-        position:'absolute', width:'600px', height:'100%', left:'20%', top:0,
-        background:'linear-gradient(180deg, transparent 0%, rgba(94,23,235,0.4) 20%, rgba(123,63,255,0.6) 50%, rgba(94,23,235,0.4) 80%, transparent 100%)',
-        filter:'blur(80px)', animation:'beam1 10s ease-in-out infinite',
-        transformOrigin:'center center',
-      }} />
-      {/* Beam 2 */}
-      <div style={{
-        position:'absolute', width:'400px', height:'100%', left:'55%', top:0,
-        background:'linear-gradient(180deg, transparent 0%, rgba(123,63,255,0.3) 30%, rgba(192,132,252,0.5) 50%, rgba(123,63,255,0.3) 70%, transparent 100%)',
-        filter:'blur(100px)', animation:'beam2 15s ease-in-out infinite',
-        transformOrigin:'center center',
-      }} />
-      {/* Center orb */}
-      <div style={{
-        position:'absolute', width:'900px', height:'900px', top:'50%', left:'50%',
-        transform:'translate(-50%,-50%)',
-        background:'radial-gradient(circle, rgba(94,23,235,0.12) 0%, rgba(94,23,235,0.04) 40%, transparent 70%)',
-        animation:'orbPulse 8s ease-in-out infinite',
-      }} />
-      {/* Top radial */}
-      <div style={{
-        position:'absolute', width:'100%', height:'500px', top:'-150px', left:0,
-        background:'radial-gradient(ellipse 70% 100% at 40% 0%, rgba(94,23,235,0.18) 0%, transparent 70%)',
-        animation:'topGlow 12s ease-in-out infinite',
-      }} />
-      {/* Purple grid */}
-      <div style={{
-        position:'absolute', inset:0,
-        backgroundImage:'linear-gradient(rgba(94,23,235,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(94,23,235,0.04) 1px, transparent 1px)',
-        backgroundSize:'60px 60px',
-      }} />
-    </div>
-  );
-}
+const LightPillarLazy = React.lazy(() =>
+  import('./components/LightPillar').catch(() => ({ default: () => null as any }))
+);
 import {
   LayoutDashboard, Music, TrendingUp, DollarSign, Settings,
   Plus, Bell, BarChart3, Globe,
@@ -479,39 +442,29 @@ function fireConfetti(originEl?: HTMLElement) {
   }
 }
 
-// ─── LazySection — mounts children only when near viewport ──────────────────
-function LazySection({ children }: { children: React.ReactNode }) {
-  const [visible, setVisible] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setVisible(true); observer.disconnect(); } },
-      { rootMargin: '200px' }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, []);
-  return (
-    <div ref={ref} style={{ minHeight: visible ? 'auto' : '400px' }}>
-      {visible ? children : null}
-    </div>
-  );
+class LightPillarBoundary extends React.Component<{children:React.ReactNode},{error:boolean}> {
+  state = {error:false};
+  componentDidCatch() { this.setState({error:true}); }
+  render() { return this.state.error ? null : this.props.children; }
 }
 
 function LandingPage({ onEnter }: { onEnter: () => void }) {
+  const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showBg, setShowBg] = useState(false);
   const progressBarRef = useRef<HTMLDivElement>(null);
-  const navRef = useRef<HTMLElement>(null);
 
-  // Scroll: pure DOM mutations — zero React re-renders
   useEffect(() => {
+    const t = setTimeout(() => setShowBg(true), 800);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Scroll: only trigger React re-render when threshold crosses, progress via direct DOM
+  useEffect(() => {
+    let lastScrolled = false;
     const onScroll = () => {
-      const s = window.scrollY > 50;
-      if (navRef.current) {
-        navRef.current.style.background = s ? 'rgba(2,2,2,0.95)' : 'transparent';
-        navRef.current.style.backdropFilter = s ? 'blur(24px)' : 'none';
-        navRef.current.style.borderBottomColor = s ? 'rgba(94,23,235,0.18)' : 'transparent';
-      }
+      const isScrolled = window.scrollY > 50;
+      if (isScrolled !== lastScrolled) { setScrolled(isScrolled); lastScrolled = isScrolled; }
       if (progressBarRef.current) {
         const doc = document.documentElement;
         const prog = Math.min(window.scrollY / (doc.scrollHeight - doc.clientHeight), 1);
@@ -539,10 +492,6 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
       <style>{`
         @keyframes marquee { from{transform:translateX(0)} to{transform:translateX(-50%)} }
         @keyframes marqueeRev { from{transform:translateX(-50%)} to{transform:translateX(0)} }
-        @keyframes beam1 { 0%,100%{transform:rotate(20deg) scaleY(1);opacity:0.7} 50%{transform:rotate(15deg) scaleY(1.15);opacity:1} }
-        @keyframes beam2 { 0%,100%{transform:rotate(-10deg) scaleY(1);opacity:0.5} 50%{transform:rotate(-18deg) scaleY(1.1);opacity:0.8} }
-        @keyframes orbPulse { 0%,100%{transform:translate(-50%,-50%) scale(1);opacity:0.7} 50%{transform:translate(-50%,-50%) scale(1.08);opacity:1} }
-        @keyframes topGlow { 0%,100%{opacity:0.7;transform:scaleX(1)} 50%{opacity:1;transform:scaleX(1.05)} }
         @keyframes fadeIn { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
         @keyframes waveBar { 0%,100%{height:20px} 50%{height:var(--h)} }
@@ -635,12 +584,13 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
       <div style={{ position: 'fixed', inset: 0, backgroundImage: `linear-gradient(rgba(94,23,235,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(94,23,235,0.03) 1px, transparent 1px)`, backgroundSize: '56px 56px', pointerEvents: 'none', zIndex: 0 }} />
 
       {/* ── NAVBAR ── */}
-      <nav ref={navRef} style={{
+      <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
         padding: '0 48px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        background: 'transparent', backdropFilter: 'none',
-        borderBottom: '1px solid transparent',
-        transition: 'background 0.35s ease, backdrop-filter 0.35s ease, border-color 0.35s ease',
+        background: scrolled ? 'rgba(2,2,2,0.95)' : 'transparent',
+        backdropFilter: scrolled ? 'blur(24px)' : 'none',
+        borderBottom: scrolled ? '1px solid rgba(94,23,235,0.18)' : '1px solid transparent',
+        transition: 'all 0.35s ease',
       }}>
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -683,8 +633,32 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
       )}
 
       {/* ── HERO ── */}
-      <section className="landing-hero-section" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', padding: '100px 72px 80px', position: 'relative', zIndex: 1, overflow: 'hidden', background: '#000' }}>
-        <AnimatedBackground />
+      <section className="landing-hero-section" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', padding: '100px 72px 80px', position: 'relative', zIndex: 1, overflow: 'hidden', background: '#000', contain: 'layout style paint', transform: 'translateZ(0)' }}>
+        {/* CSS gradient fallback — always visible */}
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 80% 60% at 30% 50%, rgba(94,23,235,0.3) 0%, transparent 60%), radial-gradient(ellipse 60% 80% at 80% 20%, rgba(123,63,255,0.2) 0%, transparent 60%), #000', pointerEvents: 'none', zIndex: 0 }} />
+        {/* LightPillar WebGL — loads after 1000ms, sits on top via mixBlendMode screen */}
+        {showBg && (
+          <LightPillarBoundary>
+            <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+              <React.Suspense fallback={null}>
+                <LightPillarLazy
+                  topColor="#5E17EB"
+                  bottomColor="#7B3FFF"
+                  intensity={1.5}
+                  rotationSpeed={0.5}
+                  glowAmount={0.002}
+                  pillarWidth={3}
+                  pillarHeight={0.4}
+                  noiseIntensity={0.5}
+                  pillarRotation={25}
+                  interactive={false}
+                  mixBlendMode="screen"
+                  quality="medium"
+                />
+              </React.Suspense>
+            </div>
+          </LightPillarBoundary>
+        )}
 
         <div className="landing-hero-grid" style={{ maxWidth: '1340px', margin: '0 auto', width: '100%', display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '80px', alignItems: 'center', position: 'relative', zIndex: 2 }}>
           {/* Left: text */}
@@ -818,7 +792,6 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
       </div>
 
       {/* ── STATS BAR ── */}
-      <LazySection>
       <section className="landing-stats-section" style={{ background: `linear-gradient(135deg, rgba(94,23,235,0.15) 0%, rgba(45,11,107,0.25) 100%)`, borderTop: '1px solid rgba(94,23,235,0.2)', borderBottom: '1px solid rgba(94,23,235,0.2)', padding: '64px 48px', position: 'relative', zIndex: 1, overflow: 'hidden', backdropFilter: 'blur(10px)' }}>
         <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '600px', height: '300px', background: `radial-gradient(ellipse, rgba(94,23,235,0.12) 0%, transparent 70%)`, pointerEvents: 'none' }} />
         <div className="landing-stats-grid" style={{ maxWidth: '1100px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0', position: 'relative' }}>
@@ -838,10 +811,8 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
           ))}
         </div>
       </section>
-      </LazySection>
 
       {/* ── SERVICES ── */}
-      <LazySection>
       <section id="servicios" className="landing-section-padding" style={{ padding: '120px 48px', position: 'relative', zIndex: 1, background: '#000' }}>
         <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 80% 60% at 50% 50%, rgba(94,23,235,0.06) 0%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(94,23,235,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(94,23,235,0.03) 1px, transparent 1px)', backgroundSize: '60px 60px', pointerEvents: 'none' }} />
@@ -884,10 +855,8 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
           </div>
         </div>
       </section>
-      </LazySection>
 
       {/* ── POR QUÉ NOSOTROS ── */}
-      <LazySection>
       <section className="landing-section-padding" style={{ padding: '80px 48px', position: 'relative', zIndex: 1 }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '64px' }}>
@@ -918,10 +887,8 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
           </div>
         </div>
       </section>
-      </LazySection>
 
       {/* ── ARTISTS CAROUSEL ── */}
-      <LazySection>
       <section id="artistas" style={{ padding: '100px 0', position: 'relative', zIndex: 1, overflow: 'hidden' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 48px', marginBottom: '48px' }}>
           <div style={{ textAlign: 'center' }}>
@@ -950,10 +917,8 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
           ))}
         </div>
       </section>
-      </LazySection>
 
       {/* ── TESTIMONIALS ── */}
-      <LazySection>
       <section className="landing-section-padding" style={{ padding: '80px 48px', position: 'relative', zIndex: 1, background: 'rgba(5,5,15,0.6)' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '56px' }}>
@@ -988,10 +953,8 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
           </div>
         </div>
       </section>
-      </LazySection>
 
       {/* ── PRICING ── */}
-      <LazySection>
       <section id="precios" className="landing-section-padding" style={{ padding: '120px 48px', position: 'relative', zIndex: 1, background: '#000', overflow: 'hidden' }}>
         {/* Large purple glow orb */}
         <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '800px', height: '800px', background: 'radial-gradient(circle, rgba(94,23,235,0.08) 0%, transparent 65%)', pointerEvents: 'none', filter: 'blur(60px)' }} />
@@ -1008,10 +971,8 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
           </div>
         </div>
       </section>
-      </LazySection>
 
       {/* ── CTA FINAL ── */}
-      <LazySection>
       <section className="landing-section-padding" style={{ padding: '120px 48px', position: 'relative', zIndex: 1, textAlign: 'center', background: '#000', overflow: 'hidden' }}>
         {/* Massive orb */}
         <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '1000px', height: '1000px', background: `radial-gradient(circle, rgba(94,23,235,0.12) 0%, transparent 65%)`, pointerEvents: 'none', filter: 'blur(40px)' }} />
@@ -1040,10 +1001,8 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
           </p>
         </div>
       </section>
-      </LazySection>
 
       {/* ── FOOTER (4 columns) ── */}
-      <LazySection>
       <footer style={{ borderTop: '1px solid rgba(94,23,235,0.15)', padding: '64px 48px 32px', position: 'relative', zIndex: 1, background: 'rgba(5,3,12,1)' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div className="landing-footer-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '48px', marginBottom: '48px' }}>
@@ -1103,7 +1062,6 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
           </div>
         </div>
       </footer>
-      </LazySection>
     </div>
   );
 }
