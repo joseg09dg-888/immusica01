@@ -4,6 +4,7 @@ import SpotlightCard from './components/SpotlightCard';
 import RotatingText from './components/RotatingText';
 import ShinyText from './components/ShinyText';
 import CountUp from './components/CountUp';
+import LightPillar from './components/LightPillar';
 import {
   LayoutDashboard, Music, TrendingUp, DollarSign, Settings,
   Plus, Bell, BarChart3, Globe,
@@ -439,6 +440,12 @@ function fireConfetti(originEl?: HTMLElement) {
   }
 }
 
+class LightPillarBoundary extends React.Component<{children:React.ReactNode},{error:boolean}> {
+  state = {error:false};
+  componentDidCatch() { this.setState({error:true}); }
+  render() { return this.state.error ? null : this.props.children; }
+}
+
 function LandingPage({ onEnter }: { onEnter: () => void }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -619,8 +626,25 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
 
       {/* ── HERO ── */}
       <section className="landing-hero-section" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', padding: '100px 72px 80px', position: 'relative', zIndex: 1, overflow: 'hidden', background: '#000', contain: 'layout style paint', transform: 'translateZ(0)' }}>
-        {/* Pure CSS background — zero WebGL, zero JS overhead */}
-        <div style={{ position: 'absolute', inset: 0, background: "radial-gradient(ellipse 80% 60% at 20% 50%, rgba(94,23,235,0.25) 0%, transparent 60%), radial-gradient(ellipse 60% 80% at 80% 20%, rgba(123,63,255,0.15) 0%, transparent 60%), #000", pointerEvents: 'none' }} />
+        {/* LightPillar WebGL background */}
+        <LightPillarBoundary>
+          <div style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 0 }}>
+            <LightPillar
+              topColor="#5E17EB"
+              bottomColor="#7B3FFF"
+              intensity={1.5}
+              rotationSpeed={0.5}
+              glowAmount={0.002}
+              pillarWidth={3}
+              pillarHeight={0.4}
+              noiseIntensity={0.5}
+              pillarRotation={25}
+              interactive={true}
+              mixBlendMode="screen"
+              quality="high"
+            />
+          </div>
+        </LightPillarBoundary>
 
         <div className="landing-hero-grid" style={{ maxWidth: '1340px', margin: '0 auto', width: '100%', display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '80px', alignItems: 'center', position: 'relative' }}>
           {/* Left: text */}
