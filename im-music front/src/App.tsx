@@ -7,40 +7,39 @@ import CountUp from './components/CountUp';
 // ─── Animated Background (pure CSS, replaces Three.js LightPillar) ───────────
 function AnimatedBackground() {
   return (
-    <div style={{ position:'absolute', inset:0, overflow:'hidden', zIndex:0 }}>
-      <div style={{ position:'absolute', inset:0, background:'#000' }} />
+    <div style={{ position:'absolute', inset:0, overflow:'hidden', zIndex:0, pointerEvents:'none' }}>
+      {/* Beam 1 */}
       <div style={{
-        position:'absolute', width:'2px', height:'100%', left:'30%', top:0,
-        background:'linear-gradient(180deg, transparent 0%, rgba(94,23,235,0.6) 30%, rgba(123,63,255,0.8) 50%, rgba(94,23,235,0.6) 70%, transparent 100%)',
-        filter:'blur(40px)', animation:'beamFloat1 8s ease-in-out infinite',
-        transform:'rotate(25deg)', transformOrigin:'50% 50%',
+        position:'absolute', width:'600px', height:'100%', left:'20%', top:0,
+        background:'linear-gradient(180deg, transparent 0%, rgba(94,23,235,0.4) 20%, rgba(123,63,255,0.6) 50%, rgba(94,23,235,0.4) 80%, transparent 100%)',
+        filter:'blur(80px)', animation:'beam1 10s ease-in-out infinite',
+        transformOrigin:'center center',
       }} />
+      {/* Beam 2 */}
       <div style={{
-        position:'absolute', width:'2px', height:'100%', left:'60%', top:0,
-        background:'linear-gradient(180deg, transparent 0%, rgba(123,63,255,0.4) 20%, rgba(192,132,252,0.6) 50%, rgba(123,63,255,0.4) 80%, transparent 100%)',
-        filter:'blur(60px)', animation:'beamFloat2 12s ease-in-out infinite',
-        transform:'rotate(-15deg)', transformOrigin:'50% 50%',
+        position:'absolute', width:'400px', height:'100%', left:'55%', top:0,
+        background:'linear-gradient(180deg, transparent 0%, rgba(123,63,255,0.3) 30%, rgba(192,132,252,0.5) 50%, rgba(123,63,255,0.3) 70%, transparent 100%)',
+        filter:'blur(100px)', animation:'beam2 15s ease-in-out infinite',
+        transformOrigin:'center center',
       }} />
+      {/* Center orb */}
       <div style={{
-        position:'absolute', width:'800px', height:'800px', top:'50%', left:'50%',
+        position:'absolute', width:'900px', height:'900px', top:'50%', left:'50%',
         transform:'translate(-50%,-50%)',
-        background:'radial-gradient(circle, rgba(94,23,235,0.15) 0%, rgba(94,23,235,0.05) 40%, transparent 70%)',
-        animation:'orbPulse 6s ease-in-out infinite',
+        background:'radial-gradient(circle, rgba(94,23,235,0.12) 0%, rgba(94,23,235,0.04) 40%, transparent 70%)',
+        animation:'orbPulse 8s ease-in-out infinite',
       }} />
+      {/* Top radial */}
       <div style={{
-        position:'absolute', width:'100%', height:'400px', top:'-100px',
-        background:'radial-gradient(ellipse 60% 100% at 50% 0%, rgba(94,23,235,0.2) 0%, transparent 70%)',
-        animation:'topGlow 10s ease-in-out infinite',
+        position:'absolute', width:'100%', height:'500px', top:'-150px', left:0,
+        background:'radial-gradient(ellipse 70% 100% at 40% 0%, rgba(94,23,235,0.18) 0%, transparent 70%)',
+        animation:'topGlow 12s ease-in-out infinite',
       }} />
+      {/* Purple grid */}
       <div style={{
         position:'absolute', inset:0,
         backgroundImage:'linear-gradient(rgba(94,23,235,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(94,23,235,0.04) 1px, transparent 1px)',
         backgroundSize:'60px 60px',
-      }} />
-      <div style={{
-        position:'absolute', inset:0, opacity:0.03,
-        backgroundImage:"url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
-        mixBlendMode:'overlay' as const,
       }} />
     </div>
   );
@@ -540,6 +539,10 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
       <style>{`
         @keyframes marquee { from{transform:translateX(0)} to{transform:translateX(-50%)} }
         @keyframes marqueeRev { from{transform:translateX(-50%)} to{transform:translateX(0)} }
+        @keyframes beam1 { 0%,100%{transform:rotate(20deg) scaleY(1);opacity:0.7} 50%{transform:rotate(15deg) scaleY(1.15);opacity:1} }
+        @keyframes beam2 { 0%,100%{transform:rotate(-10deg) scaleY(1);opacity:0.5} 50%{transform:rotate(-18deg) scaleY(1.1);opacity:0.8} }
+        @keyframes orbPulse { 0%,100%{transform:translate(-50%,-50%) scale(1);opacity:0.7} 50%{transform:translate(-50%,-50%) scale(1.08);opacity:1} }
+        @keyframes topGlow { 0%,100%{opacity:0.7;transform:scaleX(1)} 50%{opacity:1;transform:scaleX(1.05)} }
         @keyframes fadeIn { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
         @keyframes waveBar { 0%,100%{height:20px} 50%{height:var(--h)} }
