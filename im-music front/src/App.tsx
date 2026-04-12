@@ -120,6 +120,74 @@ function CursorTrail() {
   );
 }
 
+// ─── Magnetic Cursor ─────────────────────────────────────────────────────────
+function MagneticCursor() {
+  const dotRef = useRef<HTMLDivElement>(null);
+  const ringRef = useRef<HTMLDivElement>(null);
+  const pos = useRef({ x: -100, y: -100 });
+  const ring = useRef({ x: -100, y: -100 });
+  const hovering = useRef(false);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => { pos.current = { x: e.clientX, y: e.clientY }; };
+    const onEnter = () => { hovering.current = true; };
+    const onLeave = () => { hovering.current = false; };
+
+    const attach = () => {
+      document.querySelectorAll('button, a, [data-magnetic]').forEach(el => {
+        el.addEventListener('mouseenter', onEnter);
+        el.addEventListener('mouseleave', onLeave);
+      });
+    };
+    attach();
+    const mo = new MutationObserver(attach);
+    mo.observe(document.body, { childList: true, subtree: true });
+
+    window.addEventListener('mousemove', onMove, { passive: true });
+    let raf: number;
+    const loop = () => {
+      ring.current.x += (pos.current.x - ring.current.x) * 0.1;
+      ring.current.y += (pos.current.y - ring.current.y) * 0.1;
+      if (dotRef.current) {
+        dotRef.current.style.left = pos.current.x - 5 + 'px';
+        dotRef.current.style.top = pos.current.y - 5 + 'px';
+      }
+      if (ringRef.current) {
+        const sz = hovering.current ? '52px' : '40px';
+        ringRef.current.style.left = ring.current.x - 20 + 'px';
+        ringRef.current.style.top = ring.current.y - 20 + 'px';
+        ringRef.current.style.width = sz;
+        ringRef.current.style.height = sz;
+        ringRef.current.style.background = hovering.current ? 'rgba(94,23,235,0.18)' : 'transparent';
+        ringRef.current.style.borderColor = hovering.current ? '#7B3FFF' : 'rgba(94,23,235,0.6)';
+      }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('mousemove', onMove); mo.disconnect(); };
+  }, []);
+
+  return (
+    <>
+      <div ref={dotRef} style={{ position:'fixed', width:10, height:10, background:'#fff', borderRadius:'50%', pointerEvents:'none', zIndex:99999, mixBlendMode:'difference', transform:'translate(0,0)' }} />
+      <div ref={ringRef} style={{ position:'fixed', width:40, height:40, border:'1.5px solid rgba(94,23,235,0.6)', borderRadius:'50%', pointerEvents:'none', zIndex:99998, transition:'width 0.3s ease, height 0.3s ease, background 0.3s ease, border-color 0.3s ease' }} />
+    </>
+  );
+}
+
+// ─── Page Background ──────────────────────────────────────────────────────────
+function PageBackground({ color = '#5E17EB' }: { color?: string }) {
+  return (
+    <div style={{ position:'fixed', inset:0, pointerEvents:'none', zIndex:0, overflow:'hidden' }}>
+      <div style={{ position:'absolute', width:700, height:700, top:'-20%', right:'-10%', borderRadius:'50%', background:`radial-gradient(circle, ${color}12 0%, transparent 70%)`, animation:'orbFloat0 18s ease-in-out infinite', filter:'blur(60px)' }} />
+      <div style={{ position:'absolute', width:500, height:500, bottom:'-10%', left:'-5%', borderRadius:'50%', background:`radial-gradient(circle, ${color}08 0%, transparent 70%)`, animation:'orbFloat1 22s ease-in-out infinite', filter:'blur(40px)' }} />
+      <div style={{ position:'absolute', width:350, height:350, top:'40%', left:'40%', borderRadius:'50%', background:`radial-gradient(circle, ${color}07 0%, transparent 70%)`, animation:'orbFloat2 26s ease-in-out infinite', filter:'blur(30px)' }} />
+      <div style={{ position:'absolute', inset:0, backgroundImage:`linear-gradient(${color}12 1px, transparent 1px), linear-gradient(90deg, ${color}12 1px, transparent 1px)`, backgroundSize:'60px 60px', opacity:0.4 }} />
+      <div style={{ position:'absolute', inset:0, background:'radial-gradient(ellipse 100% 100% at 50% 50%, transparent 40%, rgba(0,0,0,0.45) 100%)' }} />
+    </div>
+  );
+}
+
 // ─── Icon3D ─────────────────────────────────────────────────────────────────
 function Icon3D({ icon: Icon, color, size = 48, label }: { icon: any; color: string; size?: number; label?: string }) {
   const [hovered, setHovered] = useState(false);
@@ -1404,37 +1472,58 @@ function PageShell({ title, children, action }: { title: string; children: React
   );
 }
 
-// 3D Tilt Card — tracks cursor for perspective rotation + inner glow
-function Card({ children, style = {}, glow = false }: { children: React.ReactNode; style?: React.CSSProperties; glow?: boolean }) {
-  const tilt = useTilt();
-  const [glowPos, setGlowPos] = useState({ x: 50, y: 50 });
-  const [isHov, setIsHov] = useState(false);
+// ─── HoloCard — holographic tilt card ────────────────────────────────────────
+function HoloCard({ children, style = {}, color = P, intense = false }: { children: React.ReactNode; style?: React.CSSProperties; color?: string; intense?: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [mouse, setMouse] = useState({ x: 50, y: 50 });
+  const [hovered, setHovered] = useState(false);
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    tilt.onMouseMove(e);
-    const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
-    setGlowPos({ x: ((e.clientX - rect.left) / rect.width) * 100, y: ((e.clientY - rect.top) / rect.height) * 100 });
+  const onMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!ref.current) return;
+    const r = ref.current.getBoundingClientRect();
+    const x = ((e.clientX - r.left) / r.width) * 100;
+    const y = ((e.clientY - r.top) / r.height) * 100;
+    setMouse({ x, y });
+    const rx = ((e.clientY - r.top - r.height / 2) / r.height) * -10;
+    const ry = ((e.clientX - r.left - r.width / 2) / r.width) * 10;
+    ref.current.style.transform = `perspective(1000px) rotateX(${rx}deg) rotateY(${ry}deg) translateZ(${intense ? 18 : 10}px) scale(1.01)`;
+    ref.current.style.transition = 'box-shadow 0.2s ease, border-color 0.2s ease';
   };
-  const handleMouseLeave = (e: React.MouseEvent<HTMLDivElement>) => {
-    tilt.onMouseLeave();
-    setIsHov(false);
+  const onLeave = () => {
+    if (!ref.current) return;
+    ref.current.style.transform = '';
+    ref.current.style.transition = 'transform 0.55s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease, border-color 0.3s ease';
+    setHovered(false);
   };
 
   return (
-    <div ref={tilt.ref} onMouseMove={handleMouseMove} onMouseEnter={() => setIsHov(true)} onMouseLeave={handleMouseLeave}
+    <div ref={ref} onMouseMove={onMove} onMouseEnter={() => setHovered(true)} onMouseLeave={onLeave}
       style={{
-        background: 'rgba(255,255,255,0.03)',
-        backdropFilter: 'blur(20px) saturate(180%)',
-        border: `1px solid ${glow ? 'rgba(94,23,235,0.3)' : 'rgba(255,255,255,0.07)'}`,
-        borderRadius: '20px', padding: '24px',
         position: 'relative', overflow: 'hidden',
+        background: 'rgba(8,5,16,0.88)',
+        border: `1px solid ${hovered ? color + '45' : 'rgba(255,255,255,0.07)'}`,
+        borderRadius: 24, backdropFilter: 'blur(28px) saturate(180%)',
+        boxShadow: hovered
+          ? `0 30px 80px rgba(0,0,0,0.5), 0 0 60px ${color}18, inset 0 1px 0 rgba(255,255,255,0.08)`
+          : `0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)`,
+        transition: 'box-shadow 0.3s ease, border-color 0.3s ease',
+        padding: '24px',
         ...style,
       }}>
-      {/* Inner mouse-follow glow */}
-      <div style={{ position: 'absolute', inset: 0, borderRadius: '20px', background: `radial-gradient(circle at ${glowPos.x}% ${glowPos.y}%, rgba(94,23,235,${isHov ? '0.09' : '0'}) 0%, transparent 60%)`, pointerEvents: 'none', transition: 'opacity 0.3s' }} />
-      <div style={{ position: 'relative', zIndex: 1 }}>{children}</div>
+      {/* Mouse-follow radial shine */}
+      <div style={{ position:'absolute', inset:0, pointerEvents:'none', zIndex:1, borderRadius:'inherit', background: hovered ? `radial-gradient(circle 220px at ${mouse.x}% ${mouse.y}%, ${color}16, transparent 60%)` : 'none', transition:'background 0.12s ease' }} />
+      {/* Rainbow foil on intense cards */}
+      {intense && hovered && <div style={{ position:'absolute', inset:0, pointerEvents:'none', zIndex:2, borderRadius:'inherit', background:`linear-gradient(${mouse.x + mouse.y * 0.5}deg, rgba(255,0,128,0.03), ${color}08, rgba(0,200,255,0.03))`, mixBlendMode:'screen' }} />}
+      {/* Top glass rim */}
+      <div style={{ position:'absolute', top:0, left:0, right:0, height:1, background:'linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent)', pointerEvents:'none', zIndex:3 }} />
+      <div style={{ position:'relative', zIndex:4 }}>{children}</div>
     </div>
   );
+}
+
+// Card — thin wrapper around HoloCard for backward compat
+function Card({ children, style = {}, glow = false, color }: { children: React.ReactNode; style?: React.CSSProperties; glow?: boolean; color?: string }) {
+  return <HoloCard style={style} color={color || (glow ? P : P)} intense={glow}>{children}</HoloCard>;
 }
 
 // Icon circle — premium 52x52 with glow
@@ -1526,17 +1615,14 @@ function AppMarqueeStrip() {
 }
 
 // ─── DASHBOARD ───────────────────────────────────────────────────────────────
-function DashboardPage() {
+function DashboardPage({ onNav }: { onNav?: (id: string) => void }) {
   const [stats, setStats] = useState<any>(null);
   const [tracks, setTracks] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
-  const greeting = (() => {
-    const h = new Date().getHours();
-    if (h < 12) return 'Buenos días';
-    if (h < 19) return 'Buenas tardes';
-    return 'Buenas noches';
-  })();
+  const hour = new Date().getHours();
+  const greeting = hour < 6 ? '🌙 Buenas noches' : hour < 12 ? '☀️ Buenos días' : hour < 18 ? '🌤️ Buenas tardes' : '🌙 Buenas noches';
+  const motivational = ['Tu música merece el mundo.', 'Hoy es un buen día para lanzar.', 'Los streams no paran.', 'Tu carrera está creciendo.'][new Date().getDay() % 4];
 
   useEffect(() => {
     Promise.all([
@@ -1553,34 +1639,44 @@ function DashboardPage() {
   ];
 
   const quickActions = [
-    { label: 'Subir Track', icon: Upload, action: () => toast('Abre Catálogo para subir tu track', 'info'), color: '#5E17EB' },
-    { label: 'Nuevo Split', icon: Users, action: () => toast('Abre Splits para crear un nuevo split', 'info'), color: '#3b82f6' },
-    { label: 'Ver Regalías', icon: DollarSign, action: () => toast('Revisa tus regalías', 'info'), color: '#22c55e' },
-    { label: 'Preguntar IA', icon: Sparkles, action: () => toast('¡La IA está lista para ayudarte!', 'info'), color: '#f59e0b' },
+    { label: 'Subir Track', icon: Upload, page: 'catalog',   color: '#5E17EB' },
+    { label: 'Nuevo Split', icon: Users,  page: 'splits',    color: '#22c55e' },
+    { label: 'Ver Regalías',icon: DollarSign, page: 'royalties', color: '#f59e0b' },
+    { label: 'Preguntar IA',icon: Zap,    page: 'ai-chat',  color: '#3b82f6' },
   ];
 
   return (
     <>
-      <FloatingOrbs />
+      <PageBackground color="#5E17EB" />
       <AppMarqueeStrip />
       <div style={{ position: 'relative', overflow: 'hidden' }}>
 
         <PageShell title="">
-          {/* Greeting header */}
-          <div style={{ marginBottom: '32px' }}>
-            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '13px', fontFamily: "'Space Grotesk',sans-serif", margin: '0 0 6px', letterSpacing: '0.06em' }}>{greeting} 👋</p>
-            <h1 style={{ fontFamily: "'Anton',sans-serif", fontSize: '40px', background: `linear-gradient(135deg, #fff 30%, ${PL} 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', margin: 0, letterSpacing: '0.04em' }}>DASHBOARD</h1>
+          {/* Greeting hero */}
+          <div style={{ marginBottom: '40px' }}>
+            <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:12, fontWeight:700, color:'rgba(94,23,235,0.8)', letterSpacing:'0.2em', textTransform:'uppercase', marginBottom:8, display:'flex', alignItems:'center', gap:8 }}>
+              <div style={{ width:24, height:1, background:'rgba(94,23,235,0.5)' }} />
+              {new Date().toLocaleDateString('es-CO', { weekday:'long', day:'numeric', month:'long' })}
+            </div>
+            <h1 style={{ fontFamily:"'Anton',sans-serif", fontSize:'clamp(2rem,4vw,3rem)', color:'#F2EDE5', margin:'0 0 8px', lineHeight:1.1 }}>
+              {greeting}, <span style={{ background:`linear-gradient(135deg, ${P}, #C084FC)`, WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>Artista</span>
+            </h1>
+            <p style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:15, color:'rgba(255,255,255,0.4)', margin:0 }}>{motivational}</p>
           </div>
 
-          {/* Quick Actions — 4-column Icon3D grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', marginBottom: '32px' }}>
-            {quickActions.map((qa) => (
-              <button key={qa.label} onClick={qa.action}
-                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', paddingTop: '18px', paddingBottom: '18px', background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '20px', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.34,1.56,0.64,1)', position: 'relative', overflow: 'hidden' }}
-                onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(255,255,255,0.05)'; el.style.borderColor = 'rgba(94,23,235,0.3)'; el.style.transform = 'translateY(-4px) scale(1.04)'; el.style.boxShadow = '0 14px 40px rgba(94,23,235,0.2)'; }}
-                onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(255,255,255,0.03)'; el.style.borderColor = 'rgba(255,255,255,0.07)'; el.style.transform = ''; el.style.boxShadow = ''; }}>
-                <Icon3D icon={qa.icon} color={qa.color} size={44} label={qa.label} />
-              </button>
+          {/* Quick Actions — glass tiles */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 32 }}>
+            {quickActions.map((a, i) => (
+              <div key={i} onClick={() => onNav?.(a.page)} data-magnetic
+                style={{ height:108, borderRadius:20, cursor:'pointer', background:`linear-gradient(135deg, ${a.color}18, ${a.color}06)`, border:`1px solid ${a.color}22`, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:10, transition:'all 0.4s cubic-bezier(0.34,1.56,0.64,1)', position:'relative', overflow:'hidden' }}
+                onMouseEnter={e => { const el=e.currentTarget as HTMLElement; el.style.transform='translateY(-8px) scale(1.03)'; el.style.background=`linear-gradient(135deg, ${a.color}28, ${a.color}10)`; el.style.borderColor=`${a.color}50`; el.style.boxShadow=`0 20px 40px rgba(0,0,0,0.3), 0 0 40px ${a.color}22`; }}
+                onMouseLeave={e => { const el=e.currentTarget as HTMLElement; el.style.transform=''; el.style.background=`linear-gradient(135deg, ${a.color}18, ${a.color}06)`; el.style.borderColor=`${a.color}22`; el.style.boxShadow=''; }}
+                onMouseDown={e => { (e.currentTarget as HTMLElement).style.transform='translateY(2px) scale(0.97)'; }}
+                onMouseUp={e => { (e.currentTarget as HTMLElement).style.transform='translateY(-8px) scale(1.03)'; }}>
+                <Icon3D icon={a.icon} color={a.color} size={42} />
+                <span style={{ fontFamily:"'Anton',sans-serif", fontSize:10, color:'rgba(255,255,255,0.55)', letterSpacing:'0.18em', textTransform:'uppercase' }}>{a.label}</span>
+                <div style={{ position:'absolute', top:-24, right:-24, width:90, height:90, borderRadius:'50%', background:`radial-gradient(circle, ${a.color}22, transparent 70%)`, pointerEvents:'none' }} />
+              </div>
             ))}
           </div>
 
@@ -1666,54 +1762,69 @@ const COVER_GRADIENTS = [
 
 function TrackGridCard({ track: t, onDel }: { track: any; onDel: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [tiltStyle, setTiltStyle] = useState<React.CSSProperties>({});
   const [hov, setHov] = useState(false);
-  const statusDot: Record<string,string> = { draft:'#71717a', published:'#22c55e', scheduled:'#3b82f6' };
+  const statusColors: Record<string,string> = { draft:'#71717a', published:'#22c55e', scheduled:'#3b82f6' };
+  const sc = statusColors[t.status] || '#71717a';
+  const WAVE_BARS = [4,8,5,12,6,14,4,10,7,13,5,11,8,15,6,9];
+
   const onMouseMove = (e: React.MouseEvent) => {
     const el = ref.current; if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const nx = (e.clientX - rect.left) / rect.width;
-    const ny = (e.clientY - rect.top) / rect.height;
-    setTiltStyle({ transform: `perspective(800px) rotateX(${(ny-0.5)*-10}deg) rotateY(${(nx-0.5)*10}deg) translateY(-8px)`, boxShadow: `0 16px 48px rgba(94,23,235,0.3), 0 0 0 1px rgba(94,23,235,0.4)`, borderColor:'rgba(94,23,235,0.5)' });
+    const r = el.getBoundingClientRect();
+    const nx = (e.clientX - r.left) / r.width;
+    const ny = (e.clientY - r.top) / r.height;
+    el.style.transform = `perspective(900px) rotateX(${(ny-0.5)*-8}deg) rotateY(${(nx-0.5)*8}deg) translateY(-6px)`;
+    el.style.boxShadow = `0 20px 60px rgba(94,23,235,0.25), 0 0 0 1px rgba(94,23,235,0.35)`;
   };
-  const onMouseLeave = () => { setHov(false); setTiltStyle({ transform:'perspective(800px) rotateX(0) rotateY(0) translateY(0)', transition:'all 0.5s cubic-bezier(0.34,1.56,0.64,1)', boxShadow:'none', borderColor:'rgba(255,255,255,0.07)' }); };
+  const onMouseLeave = () => {
+    setHov(false);
+    if (ref.current) {
+      ref.current.style.transform = '';
+      ref.current.style.boxShadow = '';
+      ref.current.style.transition = 'all 0.55s cubic-bezier(0.34,1.56,0.64,1)';
+      setTimeout(() => { if (ref.current) ref.current.style.transition = ''; }, 550);
+    }
+  };
+
   return (
     <div ref={ref} onMouseMove={onMouseMove} onMouseEnter={() => setHov(true)} onMouseLeave={onMouseLeave}
-      style={{ background:'rgba(10,6,18,0.85)', backdropFilter:'blur(24px)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:'20px', overflow:'hidden', transition:hov?'border-color 0.15s':'all 0.5s cubic-bezier(0.34,1.56,0.64,1)', height:'200px', display:'flex', flexDirection:'column', ...tiltStyle }}>
-      {/* Cover art 140px */}
-      <div style={{ height:'140px', background:COVER_GRADIENTS[t.id % COVER_GRADIENTS.length], display:'flex', alignItems:'center', justifyContent:'center', position:'relative', overflow:'hidden', flexShrink:0 }}>
-        <div style={{ transform:hov?'scale(1.08)':'scale(1)', transition:'transform 0.4s ease', display:'flex', alignItems:'center', justifyContent:'center' }}>
-          <Music size={44} color="rgba(255,255,255,0.25)" />
+      style={{ background:'rgba(8,5,16,0.9)', backdropFilter:'blur(24px)', border:`1px solid ${hov ? 'rgba(94,23,235,0.4)' : 'rgba(255,255,255,0.07)'}`, borderRadius:'22px', overflow:'hidden', height:'240px', display:'flex', flexDirection:'column', transition:'border-color 0.2s ease' }}>
+      {/* Cover art — 150px */}
+      <div style={{ height:'150px', background:COVER_GRADIENTS[t.id % COVER_GRADIENTS.length], position:'relative', overflow:'hidden', flexShrink:0 }}>
+        {/* Noise texture */}
+        <div style={{ position:'absolute', inset:0, backgroundImage:'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.75\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.08\'/%3E%3C/svg%3E")', backgroundSize:'200px 200px', mixBlendMode:'overlay', pointerEvents:'none', opacity:0.4 }} />
+        {/* Music note */}
+        <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', transform:hov?'scale(1.1)':'scale(1)', transition:'transform 0.4s ease' }}>
+          <Music size={48} color="rgba(255,255,255,0.18)" />
         </div>
-        {/* Play button overlay — appears on hover */}
-        <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background: hov ? 'rgba(0,0,0,0.25)' : 'transparent', transition:'background 0.3s ease' }}>
-          <div style={{ width:'56px', height:'56px', borderRadius:'50%', background:'rgba(255,255,255,0.15)', backdropFilter:'blur(10px)', border:'1px solid rgba(255,255,255,0.3)', display:'flex', alignItems:'center', justifyContent:'center', transform: hov ? 'scale(1)' : 'scale(0)', transition:'transform 0.3s cubic-bezier(0.34,1.56,0.64,1)', boxShadow:'0 8px 32px rgba(0,0,0,0.4)' }}>
-            <Play size={20} color="#fff" fill="#fff" />
+        {/* Play button overlay */}
+        <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background:hov?'rgba(0,0,0,0.28)':'transparent', transition:'background 0.3s ease' }}>
+          <div style={{ width:62, height:62, borderRadius:'50%', background:'rgba(255,255,255,0.14)', backdropFilter:'blur(10px)', border:'1px solid rgba(255,255,255,0.28)', display:'flex', alignItems:'center', justifyContent:'center', transform:hov?'scale(1)':'scale(0)', transition:'transform 0.35s cubic-bezier(0.34,1.56,0.64,1)', boxShadow:'0 8px 32px rgba(0,0,0,0.4)' }}>
+            <Play size={22} color="#fff" fill="#fff" />
           </div>
         </div>
-        {/* Status pill top-right */}
-        <div style={{ position:'absolute', top:'10px', right:'10px', background:`${statusDot[t.status]||'#71717a'}22`, border:`1px solid ${statusDot[t.status]||'#71717a'}66`, borderRadius:'100px', padding:'3px 8px', display:'flex', alignItems:'center', gap:'4px' }}>
-          <div style={{ width:'5px', height:'5px', borderRadius:'50%', background:statusDot[t.status]||'#71717a', boxShadow:`0 0 6px ${statusDot[t.status]||'#71717a'}` }} />
-          <span style={{ color:statusDot[t.status]||'#71717a', fontSize:'9px', fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em' }}>{t.status||'draft'}</span>
+        {/* Status badge top-right */}
+        <div style={{ position:'absolute', top:10, right:10, background:`${sc}22`, border:`1px solid ${sc}60`, borderRadius:100, padding:'3px 9px', display:'flex', alignItems:'center', gap:4 }}>
+          <div style={{ width:5, height:5, borderRadius:'50%', background:sc, boxShadow:`0 0 6px ${sc}` }} />
+          <span style={{ color:sc, fontSize:'9px', fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em' }}>{t.status||'draft'}</span>
         </div>
-        {/* CSS waveform bars at bottom */}
-        <div style={{ position:'absolute', bottom:'8px', left:'50%', transform:'translateX(-50%)', display:'flex', alignItems:'flex-end', gap:'2px', height:'20px' }}>
-          {[4,7,12,9,14,10,6,13,8,5,11,7].map((h,i) => (
-            <div key={i} style={{ width:'3px', background:'rgba(255,255,255,0.4)', borderRadius:'2px', height:`${h}px`, animation:`waveformPulse 1.4s ease-in-out ${i*0.12}s infinite`, '--wh':`${h}px` } as React.CSSProperties} />
+        {/* Bottom gradient */}
+        <div style={{ position:'absolute', bottom:0, left:0, right:0, height:56, background:'linear-gradient(to top, rgba(8,5,16,1), transparent)' }} />
+        {/* 16-bar waveform */}
+        <div style={{ position:'absolute', bottom:8, left:'50%', transform:'translateX(-50%)', display:'flex', alignItems:'flex-end', gap:2, height:24 }}>
+          {WAVE_BARS.map((h,i) => (
+            <div key={i} style={{ width:3, background:'rgba(255,255,255,0.3)', borderRadius:2, height:`${h}px`, animation:`waveformPulse 1.4s ease-in-out ${i*0.09}s infinite`, '--wh':`${h}px` } as React.CSSProperties} />
           ))}
         </div>
-        {/* Gradient overlay at bottom */}
-        <div style={{ position:'absolute', bottom:0, left:0, right:0, height:'48px', background:'linear-gradient(to top, rgba(10,6,18,0.95), transparent)' }} />
       </div>
-      {/* Track info */}
-      <div style={{ padding:'10px 14px', flex:1, display:'flex', flexDirection:'column', justifyContent:'space-between' }}>
+      {/* Track info — 90px */}
+      <div style={{ padding:'12px 14px', flex:1, display:'flex', flexDirection:'column', justifyContent:'space-between' }}>
         <p style={{ color:'#F2EDE5', fontSize:'14px', fontWeight:700, margin:0, fontFamily:"'Space Grotesk',sans-serif", overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.title}</p>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-          <span style={{ color:'rgba(255,255,255,0.35)', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif" }}>{t.genre||'Sin género'}</span>
-          <button onClick={e => { e.stopPropagation(); onDel(); }} style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.2)', padding:'2px', transition:'color 0.15s' }}
-            onMouseEnter={e => (e.currentTarget as HTMLElement).style.color='#ef4444'}
-            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color='rgba(255,255,255,0.2)'}>
-            <Trash2 size={12}/>
+          <span style={{ background:`rgba(94,23,235,0.14)`, border:'1px solid rgba(94,23,235,0.25)', borderRadius:100, padding:'2px 8px', fontSize:'10px', color:'rgba(192,132,252,0.9)', fontFamily:"'Space Grotesk',sans-serif", fontWeight:600 }}>{t.genre||'Sin género'}</span>
+          <button onClick={e => { e.stopPropagation(); onDel(); }} style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.18)', padding:2, borderRadius:6, transition:'all 0.15s' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color='#ef4444'; (e.currentTarget as HTMLElement).style.background='rgba(239,68,68,0.1)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color='rgba(255,255,255,0.18)'; (e.currentTarget as HTMLElement).style.background='transparent'; }}>
+            <Trash2 size={13}/>
           </button>
         </div>
       </div>
@@ -1758,6 +1869,8 @@ function CatalogPage() {
   );
 
   return (
+    <>
+    <PageBackground color="#7B3FFF" />
     <PageShell title="Catálogo" action={
       <div style={{ display:'flex', gap:'10px', alignItems:'center' }}>
         <ViewToggle />
@@ -1808,6 +1921,7 @@ function CatalogPage() {
         </div>
       )}
     </PageShell>
+    </>
   );
 }
 
@@ -1830,7 +1944,7 @@ function RoyaltiesPage() {
 
   return (
     <>
-    <FloatingOrbs colors={['#22c55e', '#16a34a', '#5E17EB']} />
+    <PageBackground color="#22c55e" />
     <PageShell title="Regalías">
       {/* Hero balance — 280px flagship card */}
       <div style={{ position:'relative', background:'linear-gradient(135deg, #000d08 0%, #001a10 50%, #000d08 100%)', border:'1px solid rgba(34,197,94,0.15)', borderRadius:'28px', padding:'44px 52px', marginBottom:'28px', height:'280px', display:'flex', alignItems:'center', justifyContent:'space-between', overflow:'hidden', boxShadow:'inset 0 1px 0 rgba(255,255,255,0.05), 0 0 120px rgba(34,197,94,0.08)', animation:'holoBorder 4s ease-in-out infinite' }}>
@@ -1970,9 +2084,13 @@ function AIChatPage() {
 
   return (
     <PageShell title="IA Chat">
-      <div style={{ position:'relative', background:'rgba(8,4,16,0.92)', backdropFilter:'blur(24px)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:'20px', overflow:'hidden', display:'flex', flexDirection:'column', height:'calc(100vh - 160px)', minHeight:'480px' }}>
+      <div style={{ position:'relative', background:'rgba(6,3,14,0.94)', backdropFilter:'blur(28px)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:'24px', overflow:'hidden', display:'flex', flexDirection:'column', height:'calc(100vh - 160px)', minHeight:'480px' }}>
         {/* Neural dot pattern background */}
-        <div style={{ position:'absolute', inset:0, backgroundImage:'radial-gradient(rgba(94,23,235,0.08) 1px, transparent 1px)', backgroundSize:'32px 32px', pointerEvents:'none', zIndex:0 }} />
+        <div style={{ position:'absolute', inset:0, backgroundImage:'radial-gradient(rgba(94,23,235,0.12) 1.5px, transparent 1.5px)', backgroundSize:'28px 28px', pointerEvents:'none', zIndex:0 }} />
+        {/* Floating abstract shapes */}
+        <div style={{ position:'absolute', top:'-40px', right:'-40px', width:220, height:220, borderRadius:'50%', background:'radial-gradient(circle, rgba(59,130,246,0.08), transparent 70%)', animation:'orbFloat0 14s ease-in-out infinite', pointerEvents:'none', zIndex:0 }} />
+        <div style={{ position:'absolute', bottom:60, left:'-30px', width:160, height:160, background:'radial-gradient(circle, rgba(94,23,235,0.07), transparent 70%)', transform:'rotate(45deg)', animation:'orbFloat1 18s ease-in-out infinite', pointerEvents:'none', zIndex:0 }} />
+        <div style={{ position:'absolute', top:'45%', right:'15%', width:100, height:100, borderRadius:'50%', background:'radial-gradient(circle, rgba(192,132,252,0.06), transparent 70%)', animation:'orbFloat2 22s ease-in-out infinite', pointerEvents:'none', zIndex:0 }} />
         {/* Chat header */}
         <div style={{ position:'relative', zIndex:1, display:'flex', alignItems:'center', gap:'12px', padding:'16px 20px', borderBottom:'1px solid rgba(255,255,255,0.06)', flexShrink:0 }}>
           <div style={{ position:'relative', flexShrink:0 }}>
@@ -1991,7 +2109,7 @@ function AIChatPage() {
         {/* Messages */}
         <div style={{ position:'relative', zIndex:1, flex:1, overflowY:'auto', display:'flex', flexDirection:'column', gap:'14px', padding:'20px 20px 8px', scrollbarWidth:'none' }}>
           {messages.map((m,i)=>(
-            <div key={i} style={{display:'flex',justifyContent:m.role==='user'?'flex-end':'flex-start',alignItems:'flex-end',gap:'8px'}}>
+            <div key={i} style={{display:'flex',justifyContent:m.role==='user'?'flex-end':'flex-start',alignItems:'flex-end',gap:'8px',animation:'messageAppear 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards'}}>
               {m.role==='assistant' && (
                 <div style={{width:'28px',height:'28px',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,position:'relative',overflow:'hidden'}}>
                   <div style={{position:'absolute',inset:0,borderRadius:'50%',background:`conic-gradient(${P},${PL},#C084FC,${P})`,animation:'conicSpin 3s linear infinite'}}/>
@@ -3520,7 +3638,7 @@ export default function App() {
 
   const renderPage = () => {
     switch (activePage) {
-      case 'dashboard':      return <DashboardPage />;
+      case 'dashboard':      return <DashboardPage onNav={setActivePage} />;
       case 'catalog':        return <CatalogPage />;
       case 'royalties':      return <RoyaltiesPage />;
       case 'ai-chat':        return <AIChatPage />;
@@ -3558,6 +3676,7 @@ export default function App() {
       <div style={{ position: 'fixed', top: '-300px', right: '-200px', width: '700px', height: '700px', background: `radial-gradient(circle, rgba(94,23,235,0.06) 0%, transparent 65%)`, pointerEvents: 'none', zIndex: 0, animation: 'orbFloat 20s ease-in-out infinite' }} />
       <div style={{ position: 'fixed', bottom: '-200px', left: `${SIDEBAR_W - 100}px`, width: '500px', height: '500px', background: `radial-gradient(circle, rgba(123,63,255,0.04) 0%, transparent 65%)`, pointerEvents: 'none', zIndex: 0, animation: 'orbFloat 26s ease-in-out infinite reverse' }} />
 
+      <MagneticCursor />
       <CursorTrail />
       <ToastContainer />
       <Sidebar active={activePage} onNav={setActivePage} user={user} onLogout={handleLogout} open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -3752,6 +3871,24 @@ export default function App() {
         /* ── Spinning conic avatar ──────────────────────────────── */
         @keyframes conicSpin {
           to { transform: rotate(360deg); }
+        }
+
+        /* ── Chat message appear ─────────────────────────────────── */
+        @keyframes messageAppear {
+          from { transform: scale(0.85) translateY(10px); opacity: 0; }
+          to   { transform: scale(1) translateY(0); opacity: 1; }
+        }
+
+        /* ── Sparkline bar rise ──────────────────────────────────── */
+        @keyframes barRise {
+          from { transform: scaleY(0); opacity: 0; }
+          to   { transform: scaleY(1); opacity: 1; }
+        }
+
+        /* ── Toast slide in ──────────────────────────────────────── */
+        @keyframes toastSlide {
+          from { transform: translateX(120%) scale(0.8); opacity: 0; }
+          to   { transform: translateX(0) scale(1); opacity: 1; }
         }
 
         /* ── Global resets ───────────────────────────────────────── */
