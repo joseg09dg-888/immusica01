@@ -5,11 +5,14 @@ import {
   deleteSplit,
   acceptSplit,
   rejectSplit,
-  getPendingSplits
+  getPendingSplits,
+  getAllSplitsByArtist
 } from '../controllers/splitController';
+import { authenticate } from '../middleware/auth';
 
 const router = Router();
 
+router.get('/splits', authenticate, getAllSplitsByArtist);
 router.post('/tracks/:trackId/splits', addSplit);
 router.get('/tracks/:trackId/splits', getSplits);
 router.get('/tracks/:trackId/splits/pending', getPendingSplits);

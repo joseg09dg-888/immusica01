@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import db from '../database';
 import crypto from 'crypto';
+import { AuthRequest } from '../middleware/auth';
+import * as ArtistModel from '../models/Artist';
 
 const generateToken = () => crypto.randomBytes(32).toString('hex');
 
@@ -84,4 +86,21 @@ export const deleteSplit = async (req: Request, res: Response) => {
     await db.prepare('DELETE FROM split_invitations WHERE split_id = ?').run(splitId);
     res.json({ success: true });
   } catch (error) { console.error(error); res.status(500).json({ error: 'Error al eliminar split' }); }
+};
+
+export const getAllSplitsByArtist = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'No autorizado' });
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
+    if (artists.length === 0) return res.json([]);
+    const artistId = artists[0].id;
+    const splits = await db.prepare(`
+      SELECT s.*, t.title as track_title
+      FROM splits s
+      JOIN tracks t ON s.track_id = t.id
+      WHERE t.artist_id = ?
+      ORDER BY s.created_at DESC
+    `).all(artistId) as (SplitRow & { track_title: string })[];
+    res.json(splits);
+  } catch (error) { console.error(error); res.status(500).json({ error: 'Error al obtener splits' }); }
 };

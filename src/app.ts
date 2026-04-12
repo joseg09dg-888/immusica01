@@ -38,6 +38,7 @@ import youtubeRoutes from './routes/youtubeRoutes';
 import legacyRoutes from './routes/legacyRoutes';
 import feedbackRoutes from './routes/feedbackRoutes';
 import openClawRoutes from './routes/openClawRoutes';
+import promoRoutes from './routes/promoRoutes';
 
 import { startReleasePublisher } from './jobs/releasePublisher';
 import { startStoreMaximizer } from './jobs/storeMaximizerJob';
@@ -76,8 +77,26 @@ wss.on('connection', (ws, req) => {
 const PORT = parseInt(process.env.PORT || '3000', 10);
 
 app.set('trust proxy', 1);
-app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https://generativelanguage.googleapis.com"],
+    }
+  }
+}));
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production'
+    ? ['https://immusic.co', 'https://www.immusic.co']
+    : ['http://localhost:3001', 'http://localhost:5173', 'http://localhost:3000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 
 // Webhook de Wompi — raw body para verificación de firma
 app.post('/api/wompi/webhook', express.raw({ type: 'application/json' }), (req, res) => {
@@ -103,10 +122,15 @@ const limiter = rateLimit({
   max: 1000,
   message: { error: 'Demasiadas peticiones, intenta más tarde' }
 });
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { error: 'Demasiados intentos de autenticación, intenta más tarde' }
+});
 app.use('/api', limiter);
 
 // ========== RUTAS ==========
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/artists', artistRoutes);
 app.use('/api/tracks', trackRoutes);
 app.use('/api/campaigns', campaignRoutes);
@@ -137,6 +161,7 @@ app.use('/api/youtube', youtubeRoutes);
 app.use('/api/legacy', legacyRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/openclaw', openClawRoutes);
+app.use('/api/promo', promoRoutes);
 
 // Socket.io chat
 io.on('connection', (socket) => {

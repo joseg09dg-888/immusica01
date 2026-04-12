@@ -18,7 +18,8 @@ router.post('/upload', uploadDailyStats);
 // Obtener estadísticas de un track específico
 router.get('/track/:trackId', getTrackStats);
 
-// Obtener resumen general del artista
+// Obtener resumen general del artista (root alias for frontend compatibility)
+router.get('/', getArtistSummary);
 router.get('/summary', getArtistSummary);
 
 // Obtener lista de tracks del artista (para selects)

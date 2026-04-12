@@ -19,7 +19,7 @@ export const chat = async (req: AuthRequest, res: Response) => {
     if (!message?.trim()) return res.status(400).json({ error: 'Mensaje requerido' });
 
     const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.0-flash',
       systemInstruction: SYSTEM_PROMPT
     });
 
@@ -40,5 +40,5 @@ export const chat = async (req: AuthRequest, res: Response) => {
 };
 
 export const getModels = (_req: AuthRequest, res: Response) => {
-  res.json({ model: 'gemini-1.5-flash', status: 'active' });
+  res.json({ model: 'gemini-2.0-flash', status: 'active' });
 };

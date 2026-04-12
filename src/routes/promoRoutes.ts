@@ -11,6 +11,9 @@ const router = express.Router();
 // Todas las rutas requieren autenticación
 router.use(authenticate);
 
+// List promo cards (frontend uses GET /promo)
+router.get('/', (req, res) => res.json([]));
+
 // Generar tarjeta promocional para un track existente
 router.post('/generate', generatePromoCard);
 

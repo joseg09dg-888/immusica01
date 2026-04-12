@@ -5,7 +5,15 @@ dotenv.config();
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false },
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
+  max: 10,
+});
+
+// Prevent unhandled ECONNRESET from killing the process when DB drops idle connections
+pool.on('error', (err) => {
+  console.error('⚠️  PostgreSQL pool error (auto-reconnecting):', err.message);
 });
 
 async function initDB() {

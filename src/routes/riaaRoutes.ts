@@ -9,6 +9,7 @@ const router = express.Router();
 
 router.use(authenticate);
 
+router.get('/', getCertificationStatus);
 router.get('/status', getCertificationStatus);
 router.get('/history/:artistId', getCertificationHistory);
 

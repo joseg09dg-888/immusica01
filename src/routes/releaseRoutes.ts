@@ -21,7 +21,8 @@ router.delete('/track/:trackId/schedule', cancelScheduled);
 // Obtener info de un track
 router.get('/track/:trackId', getReleaseInfo);
 
-// Listar todos los tracks programados del artista
+// Listar todos los tracks programados del artista (root alias for frontend compatibility)
+router.get('/', getScheduledTracks);
 router.get('/scheduled', getScheduledTracks);
 
 export default router;

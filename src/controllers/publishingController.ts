@@ -348,3 +348,25 @@ export const getPublishingSummary = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ error: 'Error al obtener resumen editorial' });
   }
 };
+
+export const getCompositions = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'No autorizado' });
+    const artists = await ArtistModel.getArtistsByUser(req.user.id);
+    if (artists.length === 0) return res.json([]);
+    const artistId = artists[0].id;
+    const compositions = await db.prepare(`
+      SELECT DISTINCT c.*,
+      (SELECT SUM(pr.cantidad) FROM publishing_royalties pr WHERE pr.composition_id = c.id) as total_earned
+      FROM compositions c
+      JOIN track_compositions tc ON c.id = tc.composition_id
+      JOIN tracks t ON tc.track_id = t.id
+      WHERE t.artist_id = ?
+      ORDER BY c.created_at DESC
+    `).all(artistId) as (CompositionRow & { total_earned: number | null })[];
+    res.json(compositions);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al obtener composiciones' });
+  }
+};

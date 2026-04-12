@@ -448,7 +448,7 @@ class LightPillarBoundary extends React.Component<{children:React.ReactNode},{er
   render() { return this.state.error ? null : this.props.children; }
 }
 
-function LandingPage({ onEnter }: { onEnter: () => void }) {
+function LandingPage({ onEnter, onNav }: { onEnter: () => void; onNav?: (s: Screen) => void }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showBg, setShowBg] = useState(false);
@@ -1046,10 +1046,17 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
             {/* Legal */}
             <div>
               <h4 style={{ fontFamily: "'Anton', sans-serif", fontSize: '13px', color: '#fff', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '20px' }}>Legal</h4>
-              {['Privacidad', 'Términos de uso', 'Cookies', 'DMCA', 'Licencias'].map(l => (
-                <div key={l} style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.35)', marginBottom: '10px', cursor: 'pointer', transition: 'color 0.2s' }}
+              {[
+                { label: 'Privacidad', screen: 'privacy' as Screen },
+                { label: 'Términos de uso', screen: 'terms' as Screen },
+                { label: 'Cookies', screen: null },
+                { label: 'DMCA', screen: null },
+                { label: 'Licencias', screen: null },
+              ].map(({ label, screen }) => (
+                <div key={label} style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.35)', marginBottom: '10px', cursor: 'pointer', transition: 'color 0.2s' }}
                   onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
-                  onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.35)')}>{l}</div>
+                  onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.35)')}
+                  onClick={() => screen && onNav?.(screen)}>{label}</div>
               ))}
             </div>
           </div>
@@ -1291,7 +1298,7 @@ const Sidebar = memo(function Sidebar({ active, onNav, user, onLogout, open, onC
   return (
     <>
       {open && <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 20 }} />}
-      <aside style={{ position: 'fixed', top: 0, left: 0, height: '100%', width: `${SIDEBAR_W}px`, background: 'linear-gradient(180deg, #0D0618 0%, #080410 50%, #050208 100%)', backdropFilter: 'blur(24px)', borderRight: '1px solid rgba(94,23,235,0.12)', zIndex: 30, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <aside className={`dashboard-sidebar${open ? ' sidebar-open' : ''}`} style={{ position: 'fixed', top: 0, left: 0, height: '100%', width: `${SIDEBAR_W}px`, background: 'linear-gradient(180deg, #0D0618 0%, #080410 50%, #050208 100%)', backdropFilter: 'blur(24px)', borderRight: '1px solid rgba(94,23,235,0.12)', zIndex: 30, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* Scanline texture overlay */}
         <div style={{ position:'absolute', inset:0, backgroundImage:'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.008) 2px, rgba(255,255,255,0.008) 4px)', pointerEvents:'none', zIndex:0 }} />
         {/* Glass reflection top */}
@@ -3615,8 +3622,100 @@ function GenericPage({ moduleId }: { moduleId: string }) {
   );
 }
 
+// ─── LEGAL PAGES ──────────────────────────────────────────────────────────────
+function LegalStaticPage({ title, onBack, children }: { title: string; onBack: () => void; children: React.ReactNode }) {
+  return (
+    <div style={{ minHeight: '100vh', background: '#050308', color: '#F2EDE5', fontFamily: "'Space Grotesk', sans-serif" }}>
+      <nav style={{ position: 'sticky', top: 0, padding: '16px 48px', background: 'rgba(5,3,8,0.95)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(94,23,235,0.15)', display: 'flex', alignItems: 'center', gap: '16px', zIndex: 10 }}>
+        <button onClick={onBack} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)', padding: '6px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontFamily: "'Space Grotesk', sans-serif" }}>← Volver</button>
+        <span style={{ fontFamily: "'Anton', sans-serif", fontSize: '16px', letterSpacing: '0.1em', color: '#F2EDE5' }}>IM MUSIC</span>
+      </nav>
+      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '64px 32px' }}>
+        <h1 style={{ fontFamily: "'Anton', sans-serif", fontSize: '36px', letterSpacing: '0.05em', marginBottom: '40px', color: '#F2EDE5' }}>{title}</h1>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function TermsPage({ onBack }: { onBack: () => void }) {
+  const S = { color: 'rgba(255,255,255,0.7)', fontSize: '15px', lineHeight: 1.8, marginBottom: '24px' };
+  const H = { fontFamily: "'Anton', sans-serif", fontSize: '18px', letterSpacing: '0.05em', margin: '32px 0 12px', color: '#F2EDE5' };
+  return (
+    <LegalStaticPage title="TÉRMINOS Y CONDICIONES" onBack={onBack}>
+      <p style={S}>Última actualización: 12 de abril de 2026</p>
+      <p style={S}>Bienvenido a IM Music. Al utilizar nuestra plataforma, aceptas estos Términos y Condiciones. Si no estás de acuerdo, por favor no uses el servicio.</p>
+      <h2 style={H}>1. DESCRIPCIÓN DEL SERVICIO</h2>
+      <p style={S}>IM Music es una plataforma de distribución musical digital que permite a artistas independientes distribuir su música en plataformas de streaming, gestionar regalías, registrar composiciones y acceder a herramientas de marketing.</p>
+      <h2 style={H}>2. ELEGIBILIDAD</h2>
+      <p style={S}>Debes tener al menos 18 años de edad o contar con el consentimiento de un tutor legal. Debes tener los derechos legales sobre el contenido que distribuyes a través de nuestra plataforma.</p>
+      <h2 style={H}>3. DERECHOS DE PROPIEDAD INTELECTUAL</h2>
+      <p style={S}>Mantienes todos los derechos sobre tu música. Al usar IM Music, nos otorgas una licencia no exclusiva para distribuir tu contenido en las plataformas seleccionadas. Garantizas que tienes los derechos para distribuir todo el contenido subido.</p>
+      <h2 style={H}>4. REGALÍAS Y PAGOS</h2>
+      <p style={S}>Las regalías se calculan según los reportes de las plataformas de distribución. IM Music retiene el porcentaje acordado según tu plan de suscripción. Los pagos se procesan mensualmente una vez que superes el umbral mínimo de pago.</p>
+      <h2 style={H}>5. CONDUCTA PROHIBIDA</h2>
+      <p style={S}>Está prohibido subir contenido que infrinja derechos de autor de terceros, contenido fraudulento, streams artificiales o cualquier práctica que viole las políticas de las plataformas de distribución.</p>
+      <h2 style={H}>6. TERMINACIÓN</h2>
+      <p style={S}>Nos reservamos el derecho de suspender o terminar tu cuenta si violas estos términos. Puedes cancelar tu cuenta en cualquier momento desde la configuración de tu perfil.</p>
+      <h2 style={H}>7. LEY APLICABLE</h2>
+      <p style={S}>Estos términos se rigen por las leyes de la República de Colombia. Cualquier disputa se resolverá ante los tribunales competentes de Bogotá D.C.</p>
+      <h2 style={H}>8. CONTACTO</h2>
+      <p style={S}>Para consultas legales: legal@immusic.co</p>
+    </LegalStaticPage>
+  );
+}
+
+function PrivacyPage({ onBack }: { onBack: () => void }) {
+  const S = { color: 'rgba(255,255,255,0.7)', fontSize: '15px', lineHeight: 1.8, marginBottom: '24px' };
+  const H = { fontFamily: "'Anton', sans-serif", fontSize: '18px', letterSpacing: '0.05em', margin: '32px 0 12px', color: '#F2EDE5' };
+  return (
+    <LegalStaticPage title="POLÍTICA DE PRIVACIDAD" onBack={onBack}>
+      <p style={S}>Última actualización: 12 de abril de 2026</p>
+      <p style={S}>IM Music se compromete a proteger tu privacidad de conformidad con la Ley 1581 de 2012 (Habeas Data) y el Decreto 1377 de 2013 de la República de Colombia.</p>
+      <h2 style={H}>1. DATOS QUE RECOPILAMOS</h2>
+      <p style={S}>Recopilamos: información de registro (nombre, email), información de pago (procesada por Wompi), datos de tu música y regalías, información de uso de la plataforma para mejorar el servicio.</p>
+      <h2 style={H}>2. USO DE LA INFORMACIÓN</h2>
+      <p style={S}>Usamos tus datos para: proveer y mejorar el servicio, procesar pagos, enviarte reportes de regalías, comunicarte sobre tu cuenta y servicios relevantes, cumplir obligaciones legales.</p>
+      <h2 style={H}>3. COMPARTIR DATOS</h2>
+      <p style={S}>Compartimos datos con: plataformas de distribución (Spotify, Apple Music, etc.) para cumplir el servicio, procesadores de pago (Wompi), proveedores de servicios tecnológicos bajo acuerdos de confidencialidad. No vendemos tus datos personales.</p>
+      <h2 style={H}>4. SEGURIDAD</h2>
+      <p style={S}>Implementamos medidas de seguridad técnicas y organizativas incluyendo encriptación SSL, autenticación JWT, y acceso restringido a datos sensibles.</p>
+      <h2 style={H}>5. TUS DERECHOS</h2>
+      <p style={S}>Tienes derecho a: conocer, actualizar y rectificar tu información personal; solicitar prueba de la autorización; ser informado sobre el uso de tus datos; presentar quejas ante la Superintendencia de Industria y Comercio.</p>
+      <h2 style={H}>6. COOKIES</h2>
+      <p style={S}>Usamos cookies esenciales para el funcionamiento de la plataforma y cookies analíticas para mejorar la experiencia. Puedes gestionar las cookies desde la configuración de tu navegador.</p>
+      <h2 style={H}>7. CONTACTO</h2>
+      <p style={S}>Para ejercer tus derechos o consultas de privacidad: privacidad@immusic.co</p>
+    </LegalStaticPage>
+  );
+}
+
+// ─── COOKIE CONSENT ───────────────────────────────────────────────────────────
+function CookieConsent() {
+  const [show, setShow] = useState(() => !localStorage.getItem('im_cookies'));
+  if (!show) return null;
+  return (
+    <div style={{ position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)', zIndex: 9999, background: 'rgba(13,6,24,0.97)', border: '1px solid rgba(94,23,235,0.3)', borderRadius: '16px', padding: '16px 24px', display: 'flex', alignItems: 'center', gap: '20px', backdropFilter: 'blur(20px)', maxWidth: '600px', width: 'calc(100vw - 48px)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+      <p style={{ margin: 0, fontSize: '13px', fontFamily: "'Space Grotesk', sans-serif", color: 'rgba(255,255,255,0.65)', flex: 1, lineHeight: 1.5 }}>
+        Usamos cookies esenciales para el funcionamiento de la plataforma. Al continuar, aceptas nuestra <span style={{ color: '#7B3FFF', cursor: 'pointer' }}>política de privacidad</span>.
+      </p>
+      <div style={{ display: 'flex', gap: '10px', flexShrink: 0 }}>
+        <button onClick={() => { localStorage.setItem('im_cookies', '1'); setShow(false); }}
+          style={{ background: 'linear-gradient(135deg,#5E17EB,#7B3FFF)', border: 'none', color: '#fff', padding: '8px 20px', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, whiteSpace: 'nowrap' }}>
+          Aceptar
+        </button>
+        <button onClick={() => setShow(false)}
+          style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', fontFamily: "'Space Grotesk', sans-serif", whiteSpace: 'nowrap' }}>
+          Rechazar
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
 // ─── APP ROOT ─────────────────────────────────────────────────────────────────
-type Screen = 'landing' | 'login' | 'app';
+type Screen = 'landing' | 'login' | 'app' | 'terms' | 'privacy';
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>(() => {
@@ -3641,8 +3740,10 @@ export default function App() {
   const handleLogin = (u: any) => { setUser(u); setScreen('app'); };
   const handleLogout = () => { localStorage.removeItem('im_token'); setUser(null); setScreen('landing'); };
 
-  if (screen === 'landing') return <LandingPage onEnter={() => setScreen('login')} />;
-  if (screen === 'login') return <LoginPage onLogin={handleLogin} onBack={() => setScreen('landing')} />;
+  if (screen === 'terms') return <><TermsPage onBack={() => setScreen('landing')} /><CookieConsent /></>;
+  if (screen === 'privacy') return <><PrivacyPage onBack={() => setScreen('landing')} /><CookieConsent /></>;
+  if (screen === 'landing') return <><LandingPage onEnter={() => setScreen('login')} onNav={(s: Screen) => setScreen(s)} /><CookieConsent /></>;
+  if (screen === 'login') return <><LoginPage onLogin={handleLogin} onBack={() => setScreen('landing')} /><CookieConsent /></>;
 
   const renderPage = () => {
     switch (activePage) {
@@ -3687,10 +3788,15 @@ export default function App() {
       <CursorTrail />
       <ToastContainer />
       <Sidebar active={activePage} onNav={setActivePage} user={user} onLogout={handleLogout} open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div style={{ marginLeft: `${SIDEBAR_W}px`, position: 'relative', zIndex: 1 }}>
+      <div className="dashboard-main">
         {/* Top bar */}
-        <div style={{ position: 'sticky', top: 0, height: '56px', background: 'rgba(5,3,8,0.88)', backdropFilter: 'blur(24px) saturate(160%)', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '0 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ position: 'sticky', top: 0, height: '56px', background: 'rgba(5,3,8,0.88)', backdropFilter: 'blur(24px) saturate(160%)', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {/* Hamburger — visible on mobile only */}
+            <button className="dash-hamburger" onClick={() => setSidebarOpen(o => !o)}
+              style={{ width:'36px', height:'36px', display:'none', alignItems:'center', justifyContent:'center', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'10px', cursor:'pointer', flexDirection:'column', gap:'5px', padding:'8px' }}>
+              {[0,1,2].map(i => <div key={i} style={{ width:'18px', height:'2px', background:'rgba(255,255,255,0.7)', borderRadius:'2px' }} />)}
+            </button>
             <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '11px', fontFamily: "'Space Grotesk',sans-serif", letterSpacing: '0.06em' }}>IM MUSIC</span>
             <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '11px' }}>/</span>
             <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '13px', fontWeight: 600, letterSpacing: '0.03em', color: 'rgba(255,255,255,0.55)' }}>

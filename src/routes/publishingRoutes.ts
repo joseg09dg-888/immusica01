@@ -1,5 +1,5 @@
 import express from 'express';
-import { authenticate } from '../middleware/auth';
+import { authenticate, AuthRequest } from '../middleware/auth';
 import {
   createComposer,
   getComposers,
@@ -7,13 +7,16 @@ import {
   assignCompositionSplits,
   registerWithPRO,
   addPublishingRoyalty,
-  getPublishingSummary
+  getPublishingSummary,
+  getCompositions
 } from '../controllers/publishingController';
 
 const router = express.Router();
 
 router.use(authenticate);
 
+// Root: returns compositions array for frontend compatibility
+router.get('/', getCompositions);
 router.post('/composers', createComposer);
 router.get('/composers', getComposers);
 router.post('/compositions', createComposition);
