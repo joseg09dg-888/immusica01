@@ -476,6 +476,25 @@ async function initDB() {
       ON CONFLICT (id) DO NOTHING
     `);
 
+    // Feature migrations — idempotent
+    await client.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_tokens_used INTEGER DEFAULT 0;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_tokens_reset TIMESTAMPTZ;
+      CREATE TABLE IF NOT EXISTS marketplace_transactions (
+        id SERIAL PRIMARY KEY,
+        purchase_id INTEGER REFERENCES purchases(id) ON DELETE SET NULL,
+        beat_id INTEGER NOT NULL REFERENCES beats(id) ON DELETE CASCADE,
+        buyer_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        seller_id INTEGER NOT NULL REFERENCES artists(id) ON DELETE CASCADE,
+        total_amount INTEGER NOT NULL,
+        commission_amount INTEGER NOT NULL,
+        seller_amount INTEGER NOT NULL,
+        commission_rate REAL DEFAULT 0.05,
+        status TEXT DEFAULT 'completed',
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
     console.log('✅ PostgreSQL conectado y tablas listas');
   } catch (error) {
     console.error('❌ Error inicializando DB:', error);

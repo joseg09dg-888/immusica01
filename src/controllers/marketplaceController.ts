@@ -9,6 +9,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import dotenv from 'dotenv';
+import configDb from '../config/database';
 
 dotenv.config();
 
@@ -162,6 +163,7 @@ export const comprarBeat = async (req: AuthRequest, res: Response) => {
     // Calcular comisión del 5%
     const monto = beat.precio;
     const comision = Math.round(monto * 0.05);
+    const montoVendedor = monto - comision;
 
     // Registrar la compra
     const purchase = await PurchaseModel.createPurchase({
@@ -172,6 +174,25 @@ export const comprarBeat = async (req: AuthRequest, res: Response) => {
       fecha: new Date().toISOString()
     });
 
+    // Registrar transacción con comisión en marketplace_transactions
+    try {
+      await configDb.prepare(`
+        INSERT INTO marketplace_transactions
+          (purchase_id, beat_id, buyer_id, seller_id, total_amount, commission_amount, seller_amount, commission_rate)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 0.05)
+      `).run(
+        (purchase as any).lastInsertRowid ?? null,
+        beatId,
+        req.user.id,
+        beat.productor_id,
+        monto,
+        comision,
+        montoVendedor
+      );
+    } catch (txErr) {
+      console.error('Error registrando marketplace_transaction:', txErr);
+    }
+
     // Opcional: generar URL de descarga (el archivo completo)
     const downloadUrl = beat.archivo_completo_url;
 
@@ -180,6 +201,7 @@ export const comprarBeat = async (req: AuthRequest, res: Response) => {
       beatId,
       monto,
       comision,
+      montoVendedor,
       downloadUrl
     });
   } catch (error) {
@@ -318,6 +340,38 @@ export const estadisticasUsuario = async (req: AuthRequest, res: Response) => {
 // ============================================
 // RANKINGS GLOBALES (para la página principal dopamínica)
 // ============================================
+
+// ============================================
+// ADMIN: COMISIONES MARKETPLACE
+// ============================================
+
+export const getCommissions = async (req: AuthRequest, res: Response) => {
+  try {
+    const transactions = await configDb.prepare(`
+      SELECT mt.*, b.titulo as beat_titulo
+      FROM marketplace_transactions mt
+      LEFT JOIN beats b ON mt.beat_id = b.id
+      ORDER BY mt.created_at DESC
+      LIMIT 100
+    `).all() as any[];
+
+    const totalCommission = transactions.reduce((sum: number, t: any) => sum + (t.commission_amount || 0), 0);
+    const totalVolume = transactions.reduce((sum: number, t: any) => sum + (t.total_amount || 0), 0);
+
+    res.json({
+      transactions,
+      summary: {
+        total_transactions: transactions.length,
+        total_volume: totalVolume,
+        total_commission: totalCommission,
+        commission_rate: 0.05
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al obtener comisiones' });
+  }
+};
 
 export const rankings = async (req: Request, res: Response) => {
   try {

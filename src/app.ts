@@ -39,6 +39,7 @@ import legacyRoutes from './routes/legacyRoutes';
 import feedbackRoutes from './routes/feedbackRoutes';
 import openClawRoutes from './routes/openClawRoutes';
 import promoRoutes from './routes/promoRoutes';
+import labelRoutes from './routes/labelRoutes';
 
 import { startReleasePublisher } from './jobs/releasePublisher';
 import { startStoreMaximizer } from './jobs/storeMaximizerJob';
@@ -162,6 +163,7 @@ app.use('/api/legacy', legacyRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/openclaw', openClawRoutes);
 app.use('/api/promo', promoRoutes);
+app.use('/api/labels', labelRoutes);
 
 // Socket.io chat
 io.on('connection', (socket) => {

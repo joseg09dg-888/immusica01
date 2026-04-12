@@ -402,6 +402,45 @@ async function initDB() {
       ON CONFLICT (id) DO NOTHING
     `);
 
+    // Feature migrations — idempotent
+    await client.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_tokens_used INTEGER DEFAULT 0;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_tokens_reset TIMESTAMPTZ;
+      CREATE TABLE IF NOT EXISTS labels (
+        id SERIAL PRIMARY KEY,
+        owner_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        name VARCHAR(255) NOT NULL,
+        slug VARCHAR(100) UNIQUE,
+        logo_url VARCHAR(500),
+        plan VARCHAR(50) DEFAULT 'starter',
+        max_artists INTEGER DEFAULT 5,
+        commission_rate DECIMAL(5,2) DEFAULT 15.00,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS label_artists (
+        id SERIAL PRIMARY KEY,
+        label_id INTEGER REFERENCES labels(id) ON DELETE CASCADE,
+        artist_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        royalty_split DECIMAL(5,2) DEFAULT 85.00,
+        status VARCHAR(50) DEFAULT 'active',
+        contract_signed_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS marketplace_transactions (
+        id SERIAL PRIMARY KEY,
+        purchase_id INTEGER,
+        beat_id INTEGER NOT NULL,
+        buyer_id INTEGER NOT NULL,
+        seller_id INTEGER NOT NULL,
+        total_amount INTEGER NOT NULL,
+        commission_amount INTEGER NOT NULL,
+        seller_amount INTEGER NOT NULL,
+        commission_rate REAL DEFAULT 0.05,
+        status TEXT DEFAULT 'completed',
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
     console.log('✅ PostgreSQL conectado y tablas listas');
   } catch (error) {
     console.error('❌ Error inicializando DB:', error);

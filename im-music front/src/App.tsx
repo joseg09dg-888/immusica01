@@ -404,19 +404,63 @@ const SERVICES = [
 
 const PLANS = [
   {
-    name: 'FREE', price: 'GRATIS', cop: '$0 COP', period: '/mes',
-    features: ['3 lanzamientos/año', 'Spotify + Apple Music', 'Estadísticas básicas', 'Soporte por email'],
-    cta: 'EMPEZAR GRATIS', featured: false,
+    name: 'INDIE',
+    price: '$79.000' as string | null,
+    cop: 'COP/mes' as string | null,
+    period: '/mes' as string | null,
+    featured: false,
+    cta: 'EMPEZAR AHORA',
+    badge: null as string | null,
+    features: [
+      'Distribución ilimitada 150+ plataformas',
+      '100% de tus regalías',
+      'Splits automáticos',
+      'Analytics en tiempo real',
+      'ISRC y UPC incluidos',
+      'IA Chat (50 consultas/mes)',
+      'Soporte por email',
+    ],
   },
   {
-    name: 'INDIE', price: '$37.000', cop: 'COP/mes', period: '/mes',
-    features: ['Lanzamientos ilimitados', '+150 plataformas', 'Analytics avanzado', 'Splits automáticos', 'Marketing IA'],
-    cta: 'EMPEZAR AHORA', featured: false,
+    name: 'PRO',
+    price: '$490.000' as string | null,
+    cop: 'COP/mes' as string | null,
+    period: '/mes' as string | null,
+    featured: true,
+    cta: 'IR AL PRO',
+    badge: '★ MÁS POPULAR' as string | null,
+    features: [
+      'Todo lo de INDIE',
+      'Marketing con IA ilimitado',
+      'Meta Ads integrado',
+      'Plan de contenidos mensual IA',
+      'Publishing y registro',
+      'Store Maximizer',
+      'Financiamiento',
+      'HyperFollow + Spotlight',
+      'Soporte prioritario 24/7',
+    ],
   },
   {
-    name: 'PRO', price: '$119.000', cop: 'COP/mes', period: '/mes',
-    features: ['Todo lo de INDIE', 'Publishing completo', 'Spotlight premium', 'Store Maximizer', 'Financiamiento', 'Soporte 24/7 prioritario'],
-    cta: 'IR AL PRO', featured: true,
+    name: 'ÉLITE 360',
+    price: null as string | null,
+    cop: null as string | null,
+    period: null as string | null,
+    featured: false,
+    cta: 'AGENDAR REUNIÓN',
+    badge: '👑 SERVICIO COMPLETO' as string | null,
+    features: [
+      'Todo lo de PRO',
+      'Project Manager dedicado',
+      'Manager musical y desarrollo artístico',
+      'Producción de videos musicales',
+      'Branding y diseño gráfico profesional',
+      'Contenidos ejecutados (no solo generados)',
+      'Meta Ads gestionado por expertos',
+      'Producción y edición para redes sociales',
+      'Campamentos musicales',
+      'Acceso a red de industria',
+    ],
   },
 ];
 
@@ -998,6 +1042,68 @@ function LandingPage({ onEnter, onNav }: { onEnter: () => void; onNav?: (s: Scre
         </div>
       </section>
 
+      {/* ── LABEL PLANS ── */}
+      <section style={{ padding: '80px 48px', position: 'relative', zIndex: 1, background: '#000' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+            <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase' as any, color: '#f59e0b', display: 'block', marginBottom: 16 }}>PARA SELLOS Y ESTUDIOS</span>
+            <h2 style={{ fontFamily: "'Anton',sans-serif", fontSize: 'clamp(2.5rem,4.5vw,3.75rem)', color: '#F2EDE5', margin: '0 0 12px' }}>GESTIONA TODO TU ROSTER</h2>
+            <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 16, color: 'rgba(255,255,255,0.4)' }}>Un panel para controlar múltiples artistas, regalías y distribución.</p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 24, alignItems: 'center' }}>
+            {[
+              {
+                name: 'LABEL STARTER', price: '$890.000', cop: 'COP/mes', featured: false, maxArtists: 5,
+                features: ['Hasta 5 artistas en tu roster', 'Panel de sello unificado', 'Dashboard consolidado de regalías', 'Splits automáticos sello/artista', 'Distribución ilimitada por artista', '0% comisión plataforma'],
+                cta: 'EMPEZAR SELLO',
+              },
+              {
+                name: 'LABEL PRO', price: '$1.900.000', cop: 'COP/mes', featured: true, maxArtists: 15,
+                features: ['Hasta 15 artistas en tu roster', 'Todo lo de Label Starter', 'IA marketing para cada artista', 'Mercado objetivo por artista', 'Meta Ads para el roster', 'Reportes avanzados del sello', 'Soporte prioritario 24/7'],
+                cta: 'EMPEZAR LABEL PRO',
+              },
+              {
+                name: 'ENTERPRISE', price: null as string | null, cop: null as string | null, featured: false, maxArtists: null as number | null,
+                features: ['Artistas ilimitados', 'Todo lo de Label Pro', 'Integración API personalizada', 'Servicio dedicado', 'Precio según tamaño del roster'],
+                cta: 'AGENDAR REUNIÓN',
+              },
+            ].map((plan, i) => (
+              <div key={i} style={{ background: plan.featured ? 'linear-gradient(160deg, rgba(94,23,235,0.25), rgba(123,63,255,0.15))' : 'rgba(255,255,255,0.03)', border: `1px solid ${plan.featured ? 'rgba(94,23,235,0.7)' : 'rgba(255,255,255,0.07)'}`, borderRadius: 24, padding: '32px 28px', transform: plan.featured ? 'scale(1.05)' : 'none', position: 'relative' as any }}>
+                {plan.featured && <div style={{ position: 'absolute', top: 16, right: 16, background: `linear-gradient(135deg, ${P}, ${PL})`, padding: '5px 14px', borderRadius: 100, fontFamily: "'Anton',sans-serif", fontSize: 10, letterSpacing: '0.2em', color: '#fff', zIndex: 1 }}>MÁS POPULAR</div>}
+                <p style={{ fontFamily: "'Anton',sans-serif", fontSize: 13, color: plan.featured ? '#C084FC' : '#f59e0b', letterSpacing: '0.25em', margin: '0 0 12px' }}>{plan.name}</p>
+                {plan.price ? (
+                  <>
+                    <span style={{ fontFamily: "'Anton',sans-serif", fontSize: 36, color: '#F2EDE5', letterSpacing: '-0.02em' }}>{plan.price}</span>
+                    <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, color: 'rgba(255,255,255,0.35)', margin: '4px 0 20px' }}>{plan.cop}</p>
+                  </>
+                ) : (
+                  <div style={{ marginBottom: 20 }}>
+                    <p style={{ fontFamily: "'Anton',sans-serif", fontSize: 22, color: '#F2EDE5', margin: '0 0 8px' }}>PRECIO A MEDIDA</p>
+                    <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 12, color: 'rgba(255,255,255,0.4)', margin: 0 }}>Según tamaño del roster</p>
+                  </div>
+                )}
+                <div style={{ height: 1, background: plan.featured ? `linear-gradient(90deg,transparent,rgba(94,23,235,0.5),transparent)` : 'rgba(255,255,255,0.06)', margin: '0 0 20px' }} />
+                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px' }}>
+                  {plan.features.map((f, fi) => (
+                    <li key={fi} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>
+                      <Check size={14} color={plan.featured ? '#C084FC' : '#f59e0b'} style={{ flexShrink: 0 }} />{f}
+                    </li>
+                  ))}
+                </ul>
+                {plan.price ? (
+                  <Btn3D fullWidth variant={plan.featured ? 'primary' : 'ghost'} onClick={onEnter}>{plan.cta}</Btn3D>
+                ) : (
+                  <a href="https://wa.me/573XXXXXXXXX?text=Hola%2C%20quiero%20información%20sobre%20el%20plan%20Enterprise%20de%20IM%20Music" target="_blank" rel="noopener noreferrer"
+                    style={{ display: 'block', width: '100%', background: 'linear-gradient(135deg, #F2EDE5, #fff)', color: '#000', borderRadius: 14, padding: '15px', fontFamily: "'Anton',sans-serif", fontSize: 12, letterSpacing: '0.15em', textTransform: 'uppercase' as any, textAlign: 'center' as any, textDecoration: 'none', boxShadow: '0 6px 0 rgba(0,0,0,0.3)' }}>
+                    AGENDAR REUNIÓN →
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── CTA FINAL ── */}
       <section className="landing-section-padding" style={{ padding: '120px 48px', position: 'relative', zIndex: 1, textAlign: 'center', background: '#000', overflow: 'hidden' }}>
         {/* Massive orb */}
@@ -1121,6 +1227,7 @@ function PlanCard({ plan, onSelect }: { key?: React.Key; plan: typeof PLANS[0]; 
   const [tilt, setTilt] = useState({ rx: 0, ry: 0 });
   const cardRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLDivElement>(null);
+  const isElite = plan.name === 'ÉLITE 360';
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;
@@ -1131,7 +1238,7 @@ function PlanCard({ plan, onSelect }: { key?: React.Key; plan: typeof PLANS[0]; 
   };
 
   return (
-    <div className={`reveal reveal-delay-${plan.name === 'FREE' ? 1 : plan.name === 'INDIE' ? 2 : 3}`} style={{ perspective: '800px' }}>
+    <div className={`reveal reveal-delay-${plan.name === 'INDIE' ? 1 : plan.name === 'PRO' ? 2 : 3}`} style={{ perspective: '800px' }}>
       <div
         ref={cardRef}
         onMouseEnter={() => setHover(true)}
@@ -1141,8 +1248,10 @@ function PlanCard({ plan, onSelect }: { key?: React.Key; plan: typeof PLANS[0]; 
         style={{
           background: plan.featured
             ? `linear-gradient(160deg, rgba(94,23,235,0.25) 0%, rgba(123,63,255,0.15) 50%, rgba(94,23,235,0.1) 100%)`
-            : 'rgba(255,255,255,0.03)',
-          border: `1px solid ${plan.featured ? 'rgba(94,23,235,0.7)' : hover ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.07)'}`,
+            : isElite
+              ? 'linear-gradient(160deg, rgba(212,175,55,0.12) 0%, rgba(255,215,0,0.06) 100%)'
+              : 'rgba(255,255,255,0.03)',
+          border: `1px solid ${plan.featured ? 'rgba(94,23,235,0.7)' : isElite ? 'rgba(212,175,55,0.45)' : hover ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.07)'}`,
           borderRadius: '24px', padding: '36px 28px',
           transform: plan.featured
             ? `scale(1.05) rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`
@@ -1153,29 +1262,55 @@ function PlanCard({ plan, onSelect }: { key?: React.Key; plan: typeof PLANS[0]; 
           cursor: 'pointer',
         }}
       >
-        {plan.featured && (
-          <div style={{ position: 'absolute', top: '16px', right: '16px', background: `linear-gradient(135deg, ${P}, ${PL})`, padding: '5px 14px', borderRadius: '100px', fontFamily: "'Anton', sans-serif", fontSize: '10px', letterSpacing: '0.2em', color: '#fff', boxShadow: `0 0 20px rgba(94,23,235,0.6)`, zIndex: 1 }}>
-            MÁS POPULAR
+        {plan.badge && (
+          <div style={{ position: 'absolute', top: '16px', right: '16px', background: plan.featured ? `linear-gradient(135deg, ${P}, ${PL})` : 'linear-gradient(135deg, #d4af37, #ffd700)', padding: '5px 14px', borderRadius: '100px', fontFamily: "'Anton', sans-serif", fontSize: '10px', letterSpacing: '0.2em', color: plan.featured ? '#fff' : '#000', boxShadow: plan.featured ? `0 0 20px rgba(94,23,235,0.6)` : '0 0 20px rgba(212,175,55,0.5)', zIndex: 1 }}>
+            {plan.badge}
           </div>
         )}
         {plan.featured && (
           <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at 50% 0%, rgba(94,23,235,0.2) 0%, transparent 65%)`, pointerEvents: 'none' }} />
         )}
-        <p style={{ fontFamily: "'Anton', sans-serif", fontSize: '13px', color: plan.featured ? '#C084FC' : PL, letterSpacing: '0.25em', margin: '0 0 16px' }}>{plan.name}</p>
-        <div style={{ marginBottom: '4px' }}>
-          <span style={{ fontFamily: "'Anton', sans-serif", fontSize: plan.price === 'GRATIS' ? '44px' : '40px', color: '#F2EDE5', letterSpacing: '-0.02em', textShadow: plan.featured ? `0 0 40px rgba(94,23,235,0.6)` : 'none' }}>{plan.price}</span>
-        </div>
-        <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.35)', margin: '0 0 20px', letterSpacing: '0.05em' }}>{plan.cop}</p>
-        <div style={{ height: '1px', background: plan.featured ? `linear-gradient(90deg, transparent, rgba(94,23,235,0.5), transparent)` : 'rgba(255,255,255,0.06)', margin: '0 0 20px' }} />
+        <p style={{ fontFamily: "'Anton', sans-serif", fontSize: '13px', color: plan.featured ? '#C084FC' : isElite ? '#d4af37' : PL, letterSpacing: '0.25em', margin: '0 0 16px' }}>{plan.name}</p>
+
+        {plan.price ? (
+          <div style={{ marginBottom: 4 }}>
+            <span style={{ fontFamily: "'Anton', sans-serif", fontSize: 40, color: '#F2EDE5', letterSpacing: '-0.02em', textShadow: plan.featured ? `0 0 40px rgba(94,23,235,0.6)` : 'none' }}>{plan.price}</span>
+          </div>
+        ) : (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontFamily: "'Anton', sans-serif", fontSize: 22, color: '#F2EDE5', lineHeight: 1.2, marginBottom: 8 }}>PRECIO A MEDIDA</div>
+            <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13, color: 'rgba(255,255,255,0.4)', margin: 0, lineHeight: 1.6 }}>
+              Servicio completo con equipo humano dedicado. Agenda una reunión y diseñamos tu plan.
+            </p>
+          </div>
+        )}
+
+        {plan.cop && (
+          <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.35)', margin: '0 0 20px', letterSpacing: '0.05em' }}>{plan.cop}</p>
+        )}
+
+        <div style={{ height: '1px', background: plan.featured ? `linear-gradient(90deg, transparent, rgba(94,23,235,0.5), transparent)` : isElite ? 'linear-gradient(90deg,transparent,rgba(212,175,55,0.3),transparent)' : 'rgba(255,255,255,0.06)', margin: '0 0 20px' }} />
         <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 28px' }}>
           {plan.features.map((f, i) => (
             <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '7px 0', fontFamily: "'Space Grotesk', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>
-              <Check size={15} color={plan.featured ? '#C084FC' : PL} style={{ flexShrink: 0 }} />{f}
+              <Check size={15} color={plan.featured ? '#C084FC' : isElite ? '#d4af37' : PL} style={{ flexShrink: 0 }} />{f}
             </li>
           ))}
         </ul>
         <div ref={btnRef}>
-          <Btn3D fullWidth variant={plan.featured ? 'primary' : 'ghost'} onClick={() => onSelect(btnRef.current ?? undefined)}>{plan.cta}</Btn3D>
+          {isElite ? (
+            <a
+              href="https://wa.me/573XXXXXXXXX?text=Hola%2C%20quiero%20información%20sobre%20el%20plan%20Élite%20360%20de%20IM%20Music"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ display: 'block', width: '100%', background: 'linear-gradient(135deg, #F2EDE5, #fff)', color: '#000', borderRadius: 14, padding: '15px 36px', minHeight: 52, fontFamily: "'Anton', sans-serif", fontSize: 13, letterSpacing: '0.15em', textTransform: 'uppercase', textAlign: 'center', textDecoration: 'none', boxShadow: '0 6px 0 rgba(0,0,0,0.3), 0 0 30px rgba(242,237,229,0.2)', transition: 'all 0.3s cubic-bezier(0.34,1.56,0.64,1)', boxSizing: 'border-box' as const }}
+              onMouseEnter={e => { const el = e.currentTarget; el.style.transform = 'translateY(-4px)'; el.style.boxShadow = '0 10px 0 rgba(0,0,0,0.3), 0 0 40px rgba(242,237,229,0.3)'; }}
+              onMouseLeave={e => { const el = e.currentTarget; el.style.transform = ''; el.style.boxShadow = '0 6px 0 rgba(0,0,0,0.3), 0 0 30px rgba(242,237,229,0.2)'; }}>
+              {plan.cta}
+            </a>
+          ) : (
+            <Btn3D fullWidth variant={plan.featured ? 'primary' : 'ghost'} onClick={() => onSelect(btnRef.current ?? undefined)}>{plan.cta}</Btn3D>
+          )}
         </div>
       </div>
     </div>
@@ -1263,6 +1398,8 @@ const MODULES = [
   { id: 'lyrics', label: 'Letras', icon: Mic, group: 'Contenido' },
   { id: 'promo-cards', label: 'Promo Cards', icon: Image, group: 'Contenido' },
   { id: 'marketing', label: 'Marketing IA', icon: Sparkles, group: 'Marketing' },
+  { id: 'meta-ads', label: 'Meta Ads', icon: Globe, group: 'Marketing' },
+  { id: 'market-intel', label: 'Mercado Musical', icon: TrendingUp, group: 'Marketing' },
   { id: 'spotlight', label: 'Spotlight', icon: Radio, group: 'Marketing' },
   { id: 'hyperfollow', label: 'HyperFollow', icon: Link2, group: 'Marketing' },
   { id: 'community', label: 'Comunidad', icon: MessageCircle, group: 'Social' },
@@ -1276,6 +1413,7 @@ const MODULES = [
   { id: 'bulk-upload', label: 'Subida Masiva', icon: Upload, group: 'Archivos' },
   { id: 'store-maximizer', label: 'Store Maximizer', icon: Store, group: 'Distribución' },
   { id: 'riaa', label: 'Certificaciones', icon: Award, group: 'Distribución' },
+  { id: 'label', label: 'Mi Sello', icon: Award, group: 'Gestión' },
   { id: 'team', label: 'Equipo', icon: Users, group: 'Gestión' },
   { id: 'stats', label: 'Estadísticas', icon: BarChart3, group: 'Gestión' },
   { id: 'feedback', label: 'Feedback', icon: Star, group: 'Gestión' },
@@ -2436,6 +2574,7 @@ function MarketingPage() {
   const [current, setCurrent] = useState(0);
   const [plan30, setPlan30] = useState<any[]>([]);
   const [loadingPlan, setLoadingPlan] = useState(false);
+  const [payUrl, setPayUrl] = useState('');
   const archKey = `${answers[0]??'x'}-${answers[1]??'x'}`;
   const arch = ARCHETYPES[archKey] || ARCHETYPES.default;
   const answer = (idx: number) => {
@@ -2443,10 +2582,20 @@ function MarketingPage() {
     if (current < ARCHETYPE_Q.length-1) setCurrent(c=>c+1);
     else setStep('results');
   };
-  const genPlan = async () => {
+  const doGenPlan = async () => {
     setLoadingPlan(true); setStep('plan');
     try { const d = await apiFetch('/ai/chat', { method:'POST', body: JSON.stringify({ message:`Genera un plan de contenido de 30 días para un artista con arquetipo "${arch.name}". Devuelve JSON array con {week,day,type,action}.`, history:[] }) }); const text = d.response||''; const match = text.match(/\[[\s\S]*\]/); if (match) { try { setPlan30(JSON.parse(match[0])); } catch { setPlan30(arch.plan.map((p,i)=>({week:1,day:i+1,type:'Post',action:p}))); } } else { setPlan30(arch.plan.map((p,i)=>({week:1,day:i+1,type:'Post',action:p}))); } } catch { setPlan30(arch.plan.map((p,i)=>({week:1,day:i+1,type:'Post',action:p}))); }
     setLoadingPlan(false);
+  };
+  const genPlan = async () => {
+    try {
+      const check = await apiFetch('/marketing/content-plan/purchase', { method: 'POST' });
+      if (check.access === 'free') { await doGenPlan(); return; }
+      if (check.access === 'paid') { setPayUrl(check.paymentUrl); return; }
+    } catch (e: any) {
+      if (e.status === 403) { toast('Necesitas el plan Indie o Pro para generar el plan de contenido IA', 'error'); return; }
+      await doGenPlan(); // fail-open
+    }
   };
   return (
     <PageShell title="Marketing IA">
@@ -2487,6 +2636,18 @@ function MarketingPage() {
           <Btn3D onClick={genPlan}><Sparkles size={14}/> Generar plan 30 días</Btn3D>
           <Btn3D variant="ghost" onClick={()=>{setStep('quiz');setAnswers([]);setCurrent(0);}}>Repetir test</Btn3D>
         </div>
+        {payUrl && (
+          <div style={{ marginTop:'20px', padding:'20px', background:'rgba(94,23,235,0.08)', border:'1px solid rgba(94,23,235,0.3)', borderRadius:'16px' }}>
+            <p style={{ color:'#fff', fontSize:'14px', fontFamily:"'Space Grotesk',sans-serif", margin:'0 0 12px', fontWeight:600 }}>Plan de Contenido IA — $15.000 COP</p>
+            <p style={{ color:'rgba(255,255,255,0.45)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif", margin:'0 0 16px' }}>Acceso único al Plan de 30 días generado por IA para tu arquetipo {arch.name}.</p>
+            <div style={{ display:'flex', gap:'10px' }}>
+              <a href={payUrl} target="_blank" rel="noopener noreferrer" style={{ display:'inline-flex', alignItems:'center', gap:'8px', background:`linear-gradient(135deg,${P},${PL})`, color:'#fff', borderRadius:'12px', padding:'10px 20px', fontFamily:"'Anton',sans-serif", fontSize:'12px', letterSpacing:'0.1em', textDecoration:'none', boxShadow:`0 4px 16px rgba(94,23,235,0.4)` }}>
+                <CreditCard size={14}/> PAGAR CON WOMPI
+              </a>
+              <Btn3D small variant="ghost" onClick={()=>setPayUrl('')}>Cancelar</Btn3D>
+            </div>
+          </div>
+        )}
       </div>}
       {step==='plan' && <div>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'20px' }}>
@@ -2504,6 +2665,237 @@ function MarketingPage() {
           ))}
         </div>}
       </div>}
+    </PageShell>
+  );
+}
+
+// ─── META ADS ─────────────────────────────────────────────────────────────────
+function MetaAdsPage() {
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [form, setForm] = useState({ name: '', objective: 'reach', budget: '', audience: '', copy: '' });
+  const [aiLoading, setAiLoading] = useState(false);
+  const [connected, setConnected] = useState(false);
+  const objectives = ['reach', 'traffic', 'engagement', 'leads', 'conversions', 'video_views'];
+
+  const generateCopy = async () => {
+    if (!form.name) return toast('Ingresa el nombre de la campaña primero', 'error');
+    setAiLoading(true);
+    try {
+      const d = await apiFetch('/ai/chat', {
+        method: 'POST',
+        body: JSON.stringify({
+          message: `Genera un copy publicitario de Facebook/Instagram para una campaña musical. Campaña: "${form.name}", Objetivo: ${form.objective}, Audiencia: ${form.audience || 'fans de música'}. El copy debe ser atractivo, incluir emojis y un CTA claro. Máximo 150 palabras.`,
+          history: []
+        })
+      });
+      setForm(f => ({ ...f, copy: d.response || '' }));
+    } catch { toast('Error generando copy con IA', 'error'); }
+    setAiLoading(false);
+  };
+
+  const createCampaign = () => {
+    if (!form.name || !form.budget) return toast('Nombre y presupuesto son requeridos', 'error');
+    setCampaigns(c => [{ id: Date.now(), ...form, status: 'draft', reach: 0, impressions: 0, clicks: 0, created_at: new Date().toISOString() }, ...c]);
+    setForm({ name: '', objective: 'reach', budget: '', audience: '', copy: '' });
+    toast('Campaña creada', 'success');
+  };
+
+  return (
+    <PageShell title="Meta Ads">
+      {/* Connection card */}
+      <Card style={{ marginBottom: '20px', background: connected ? 'rgba(24,119,242,0.08)' : 'rgba(255,255,255,0.02)', border: `1px solid ${connected ? 'rgba(24,119,242,0.3)' : 'rgba(255,255,255,0.06)'}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'linear-gradient(135deg, #1877F2, #00B2FF)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Globe size={20} color="#fff" />
+            </div>
+            <div>
+              <p style={{ color: '#fff', fontSize: '14px', fontWeight: 600, margin: '0 0 2px', fontFamily: "'Space Grotesk',sans-serif" }}>Meta Business Suite</p>
+              <p style={{ color: connected ? '#22c55e' : 'rgba(255,255,255,0.35)', fontSize: '11px', margin: 0, fontFamily: "'Space Grotesk',sans-serif" }}>{connected ? '● Conectado' : '○ No conectado'}</p>
+            </div>
+          </div>
+          <Btn3D small onClick={() => { setConnected(c => !c); toast(connected ? 'Cuenta desconectada' : '¡Cuenta Meta conectada!', connected ? 'error' : 'success'); }}>
+            {connected ? 'Desconectar' : 'Conectar cuenta Meta'}
+          </Btn3D>
+        </div>
+      </Card>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+        {/* Campaign creator */}
+        <Card>
+          <h3 style={{ fontFamily: "'Anton',sans-serif", fontSize: '14px', color: '#fff', letterSpacing: '0.06em', margin: '0 0 16px' }}>CREAR CAMPAÑA</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <input style={IS} placeholder="Nombre de la campaña" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+            <select style={{ ...IS, appearance: 'none' as any }} value={form.objective} onChange={e => setForm(f => ({ ...f, objective: e.target.value }))}>
+              {objectives.map(o => <option key={o} value={o} style={{ background: '#1a0a2e' }}>{o.replace('_', ' ').toUpperCase()}</option>)}
+            </select>
+            <input style={IS} placeholder="Presupuesto diario (COP)" type="number" value={form.budget} onChange={e => setForm(f => ({ ...f, budget: e.target.value }))} />
+            <input style={IS} placeholder="Audiencia objetivo (ej: fans trap Colombia)" value={form.audience} onChange={e => setForm(f => ({ ...f, audience: e.target.value }))} />
+            <Btn3D small onClick={createCampaign}><Plus size={14} /> Crear campaña</Btn3D>
+          </div>
+        </Card>
+
+        {/* AI Copy generator */}
+        <Card>
+          <h3 style={{ fontFamily: "'Anton',sans-serif", fontSize: '14px', color: '#fff', letterSpacing: '0.06em', margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>COPY CON IA <Sparkles size={13} color={PL} /></h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <Btn3D small variant="ghost" onClick={generateCopy} disabled={aiLoading}>
+              {aiLoading ? 'Generando...' : <><Sparkles size={13} /> Generar copy con IA</>}
+            </Btn3D>
+            <textarea
+              style={{ ...IS, height: '150px', resize: 'none' as any, lineHeight: '1.5' }}
+              placeholder="El copy aparecerá aquí. Puedes editarlo antes de usar."
+              value={form.copy}
+              onChange={e => setForm(f => ({ ...f, copy: e.target.value }))}
+            />
+            {form.copy && (
+              <Btn3D small variant="ghost" onClick={() => { navigator.clipboard.writeText(form.copy); toast('Copy copiado al portapapeles', 'success'); }}>
+                <Copy size={13} /> Copiar
+              </Btn3D>
+            )}
+          </div>
+        </Card>
+      </div>
+
+      {/* Campaigns list */}
+      <h3 style={{ fontFamily: "'Anton',sans-serif", fontSize: '14px', color: '#fff', letterSpacing: '0.06em', margin: '0 0 14px' }}>MIS CAMPAÑAS</h3>
+      {campaigns.length === 0 ? (
+        <Card><EmptyState icon={Globe} text="Sin campañas todavía. Crea tu primera campaña arriba." /></Card>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: '14px' }}>
+          {campaigns.map(c => (
+            <Card key={c.id}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                <p style={{ color: '#fff', fontSize: '14px', fontWeight: 600, margin: 0, fontFamily: "'Space Grotesk',sans-serif" }}>{c.name}</p>
+                <Badge color={c.status === 'active' ? '#22c55e' : '#f59e0b'} label={c.status === 'active' ? 'Activa' : 'Borrador'} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '10px' }}>
+                {(['Alcance', 'Impresiones', 'Clics'] as const).map((label, idx) => (
+                  <div key={label} style={{ textAlign: 'center', padding: '8px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                    <p style={{ color: '#fff', fontSize: '16px', fontWeight: 700, margin: '0 0 2px', fontFamily: "'Anton',sans-serif" }}>{idx === 0 ? c.reach : idx === 1 ? c.impressions : c.clicks}</p>
+                    <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', margin: 0, fontFamily: "'Space Grotesk',sans-serif", textTransform: 'uppercase' as any }}>{label}</p>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', fontFamily: "'Space Grotesk',sans-serif" }}>
+                  ${parseInt(c.budget || '0').toLocaleString()} COP/día
+                </span>
+                <Btn3D small variant="ghost" onClick={() => { setCampaigns(cs => cs.filter(x => x.id !== c.id)); toast('Campaña eliminada', 'error'); }}>
+                  <Trash2 size={12} />
+                </Btn3D>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+    </PageShell>
+  );
+}
+
+// ─── MARKET INTEL ─────────────────────────────────────────────────────────────
+function MarketIntelPage() {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [genre, setGenre] = useState('');
+  const [artistType, setArtistType] = useState('');
+  const GENRES = ['Reggaeton','Trap','Salsa','Vallenato','Pop Latino','R&B','Hip-Hop','Electrónica','Rock Latino','Afrobeats','Cumbia','Champeta','Mambo Urbano','Drill'];
+  const ARTIST_TYPES = ['Solista masculino','Solista femenina','Dúo','Banda/Grupo','DJ/Productor','Colectivo'];
+
+  const analyze = async () => {
+    setLoading(true);
+    try {
+      const data = await apiFetch('/ai/market-intel', { method: 'POST', body: JSON.stringify({ genre, artistType }) });
+      setResult(data);
+    } catch (e: any) { toast(e.message || 'Error analizando mercado', 'error'); }
+    setLoading(false);
+  };
+
+  return (
+    <PageShell title="Mercado Musical">
+      <HoloCard color="#3b82f6" style={{ padding: 28, marginBottom: 20 }}>
+        <h3 style={{ fontFamily: "'Anton',sans-serif", fontSize: 20, color: '#F2EDE5', margin: '0 0 8px' }}>ANALIZA TU MERCADO OBJETIVO</h3>
+        <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 14, color: 'rgba(255,255,255,0.4)', margin: '0 0 24px' }}>Descubre en qué países escuchan tu género, el perfil de tu audiencia ideal y cómo lanzar tu música.</p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+          <div>
+            <label style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 11, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.15em', textTransform: 'uppercase' as any, display: 'block', marginBottom: 8 }}>Género musical</label>
+            <select value={genre} onChange={e => setGenre(e.target.value)} style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '12px 16px', color: '#fff', fontFamily: "'Space Grotesk',sans-serif", fontSize: 14, outline: 'none', appearance: 'none' as any }}>
+              <option value="" style={{ background: '#1a0a2e' }}>Selecciona tu género</option>
+              {GENRES.map(g => <option key={g} value={g} style={{ background: '#1a0a2e' }}>{g}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 11, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.15em', textTransform: 'uppercase' as any, display: 'block', marginBottom: 8 }}>Tipo de artista</label>
+            <select value={artistType} onChange={e => setArtistType(e.target.value)} style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '12px 16px', color: '#fff', fontFamily: "'Space Grotesk',sans-serif", fontSize: 14, outline: 'none', appearance: 'none' as any }}>
+              <option value="" style={{ background: '#1a0a2e' }}>Selecciona</option>
+              {ARTIST_TYPES.map(t => <option key={t} value={t} style={{ background: '#1a0a2e' }}>{t}</option>)}
+            </select>
+          </div>
+        </div>
+        <Btn3D onClick={analyze} disabled={!genre || !artistType || loading}>
+          {loading ? 'ANALIZANDO...' : 'ANALIZAR MERCADO →'}
+        </Btn3D>
+      </HoloCard>
+
+      {result && (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
+            <HoloCard color="#22c55e" style={{ padding: 28 }}>
+              <h3 style={{ fontFamily: "'Anton',sans-serif", fontSize: 16, color: '#F2EDE5', margin: '0 0 20px', letterSpacing: '0.05em' }}>🌍 TOP PAÍSES</h3>
+              {(result.topCountries || []).map((c: any, i: number) => (
+                <div key={i} style={{ marginBottom: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, fontWeight: 600, color: '#F2EDE5' }}>{c.flag} {c.country}</span>
+                    <span style={{ fontFamily: "'Anton',sans-serif", fontSize: 13, color: '#22c55e' }}>{c.percentage}%</span>
+                  </div>
+                  <div style={{ height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 100, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${c.percentage}%`, background: 'linear-gradient(90deg, #22c55e, #16a34a)', borderRadius: 100, boxShadow: '0 0 8px rgba(34,197,94,0.5)' }} />
+                  </div>
+                </div>
+              ))}
+            </HoloCard>
+
+            <HoloCard color="#3b82f6" style={{ padding: 28 }}>
+              <h3 style={{ fontFamily: "'Anton',sans-serif", fontSize: 16, color: '#F2EDE5', margin: '0 0 20px', letterSpacing: '0.05em' }}>🏙️ TOP CIUDADES</h3>
+              {(result.topCities || []).map((c: any, i: number) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(59,130,246,0.2)', border: '1px solid rgba(59,130,246,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <span style={{ fontFamily: "'Anton',sans-serif", fontSize: 12, color: '#3b82f6' }}>#{i+1}</span>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, fontWeight: 600, color: '#F2EDE5', margin: 0 }}>{c.city}</p>
+                    <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 11, color: 'rgba(255,255,255,0.3)', margin: 0 }}>{c.country}</p>
+                  </div>
+                  <span style={{ fontFamily: "'Anton',sans-serif", fontSize: 13, color: '#3b82f6' }}>{c.streams}</span>
+                </div>
+              ))}
+            </HoloCard>
+          </div>
+
+          <HoloCard color="#C084FC" style={{ padding: 28, marginBottom: 20 }}>
+            <h3 style={{ fontFamily: "'Anton',sans-serif", fontSize: 16, color: '#F2EDE5', margin: '0 0 20px' }}>👥 PERFIL DE AUDIENCIA IDEAL</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16 }}>
+              {[
+                { label: 'Edad principal', value: result.audience?.ageRange || '18-28', icon: '🎯' },
+                { label: 'Género dominante', value: result.audience?.gender || '60% M', icon: '👤' },
+                { label: 'Plataforma #1', value: result.audience?.platform || 'Spotify', icon: '🎵' },
+                { label: 'Horario pico', value: result.audience?.peakTime || '8pm-11pm', icon: '⏰' },
+              ].map((s, i) => (
+                <div key={i} style={{ background: 'rgba(192,132,252,0.08)', border: '1px solid rgba(192,132,252,0.2)', borderRadius: 16, padding: '20px 16px', textAlign: 'center' as any }}>
+                  <div style={{ fontSize: 28, marginBottom: 8 }}>{s.icon}</div>
+                  <div style={{ fontFamily: "'Anton',sans-serif", fontSize: 18, color: '#F2EDE5', marginBottom: 4 }}>{s.value}</div>
+                  <div style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 11, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' as any, letterSpacing: '0.1em' }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </HoloCard>
+
+          <HoloCard color="#f59e0b" style={{ padding: 28 }}>
+            <h3 style={{ fontFamily: "'Anton',sans-serif", fontSize: 16, color: '#F2EDE5', margin: '0 0 12px' }}>🚀 ESTRATEGIA DE LANZAMIENTO RECOMENDADA</h3>
+            <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 14, color: 'rgba(255,255,255,0.6)', lineHeight: 1.8, margin: 0 }}>{result.strategy || '...'}</p>
+          </HoloCard>
+        </>
+      )}
     </PageShell>
   );
 }
@@ -2968,6 +3360,151 @@ function RIAAPage() {
 }
 
 // ─── TEAM ────────────────────────────────────────────────────────────────────
+// ─── LABEL PAGE ───────────────────────────────────────────────────────────────
+function LabelPage() {
+  const [label, setLabel] = useState<any>(null);
+  const [artists, setArtists] = useState<any[]>([]);
+  const [creating, setCreating] = useState(false);
+  const [labelName, setLabelName] = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [showInvite, setShowInvite] = useState(false);
+  const [stats, setStats] = useState<any>(null);
+
+  useEffect(() => {
+    apiFetch('/labels/my').then(d => { setLabel(d); }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!label) return;
+    apiFetch(`/labels/${label.id}/artists`).then(d => setArtists(Array.isArray(d) ? d : [])).catch(() => {});
+    apiFetch(`/labels/${label.id}/stats`).then(setStats).catch(() => {});
+  }, [label]);
+
+  if (!label && !creating) return (
+    <PageShell title="Mi Sello">
+      <HoloCard color="#f59e0b" style={{ padding: 40, textAlign: 'center' }}>
+        <Icon3D icon={Award} color="#f59e0b" size={64} />
+        <h2 style={{ fontFamily: "'Anton',sans-serif", fontSize: 28, color: '#F2EDE5', margin: '24px 0 12px' }}>
+          CREA TU SELLO DISCOGRÁFICO
+        </h2>
+        <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 15, color: 'rgba(255,255,255,0.5)', margin: '0 auto 32px', maxWidth: 500 }}>
+          Gestiona múltiples artistas desde un solo panel. Controla regalías, distribución y marketing de todo tu roster.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16, marginBottom: 40, maxWidth: 600, margin: '0 auto 40px' }}>
+          {[
+            { icon: Users, label: 'Hasta 15 artistas', color: P },
+            { icon: DollarSign, label: 'Splits sello/artista', color: '#22c55e' },
+            { icon: BarChart3, label: 'Dashboard consolidado', color: '#3b82f6' },
+          ].map((f, i) => (
+            <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: 20, textAlign: 'center' }}>
+              <f.icon size={24} color={f.color} style={{ marginBottom: 8 }} />
+              <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 12, color: 'rgba(255,255,255,0.5)', margin: 0 }}>{f.label}</p>
+            </div>
+          ))}
+        </div>
+        <Btn3D onClick={() => setCreating(true)}>CREAR MI SELLO →</Btn3D>
+      </HoloCard>
+    </PageShell>
+  );
+
+  if (creating) return (
+    <PageShell title="Crear Sello">
+      <HoloCard color="#f59e0b" style={{ padding: 32, maxWidth: 500, margin: '0 auto' }}>
+        <h3 style={{ fontFamily: "'Anton',sans-serif", fontSize: 22, color: '#F2EDE5', margin: '0 0 24px' }}>NOMBRE DE TU SELLO</h3>
+        <input
+          value={labelName}
+          onChange={e => setLabelName(e.target.value)}
+          placeholder="Ej: Urban Records Colombia"
+          style={{ ...IS, marginBottom: 16 }}
+        />
+        <div style={{ display: 'flex', gap: 12 }}>
+          <Btn3D onClick={async () => {
+            try {
+              const data = await apiFetch('/labels', { method: 'POST', body: JSON.stringify({ name: labelName }) });
+              setLabel(data); setCreating(false); toast('¡Sello creado!', 'success');
+            } catch (e: any) { toast(e.message, 'error'); }
+          }} disabled={!labelName.trim()}>CREAR SELLO</Btn3D>
+          <Btn3D variant="ghost" onClick={() => setCreating(false)}>Cancelar</Btn3D>
+        </div>
+      </HoloCard>
+    </PageShell>
+  );
+
+  return (
+    <PageShell title={label?.name || 'Mi Sello'}>
+      {/* Label header */}
+      <HoloCard color="#f59e0b" style={{ padding: 28, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ width: 56, height: 56, borderRadius: 16, background: 'linear-gradient(135deg, #f59e0b, #d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 30px rgba(245,158,11,0.4)' }}>
+              <Award size={28} color="#fff" />
+            </div>
+            <div>
+              <h2 style={{ fontFamily: "'Anton',sans-serif", fontSize: 24, color: '#F2EDE5', margin: 0 }}>{label.name}</h2>
+              <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 12, color: 'rgba(255,255,255,0.4)', margin: 0, textTransform: 'uppercase' as any, letterSpacing: '0.1em' }}>
+                Plan {label.plan} · {artists.length}/{label.max_artists} artistas · Comisión {label.commission_rate}%
+              </p>
+            </div>
+          </div>
+          <Btn3D small onClick={() => setShowInvite(v => !v)}>+ Agregar artista</Btn3D>
+        </div>
+        {showInvite && (
+          <div style={{ marginTop: 16, display: 'flex', gap: 10, flexWrap: 'wrap' as any }}>
+            <input style={{ ...IS, flex: 1, minWidth: 200 }} placeholder="Email del artista" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} />
+            <Btn3D small onClick={async () => {
+              try {
+                await apiFetch(`/labels/${label.id}/artists`, { method: 'POST', body: JSON.stringify({ email: inviteEmail }) });
+                toast('Artista agregado al sello', 'success');
+                setInviteEmail(''); setShowInvite(false);
+                apiFetch(`/labels/${label.id}/artists`).then(d => setArtists(Array.isArray(d) ? d : [])).catch(() => {});
+              } catch (e: any) { toast(e.message || 'Error', 'error'); }
+            }} disabled={!inviteEmail.trim()}>Agregar</Btn3D>
+            <Btn3D small variant="ghost" onClick={() => setShowInvite(false)}>Cancelar</Btn3D>
+          </div>
+        )}
+      </HoloCard>
+
+      {/* Stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 20 }}>
+        {[
+          { label: 'Artistas activos', value: artists.length, icon: Users, glowColor: P },
+          { label: 'Regalías totales', value: stats ? `$${Number(stats.total_revenue || 0).toFixed(2)}` : '—', icon: DollarSign, glowColor: '#22c55e' },
+          { label: 'Streams totales', value: stats ? Number(stats.total_streams || 0).toLocaleString() : '—', icon: TrendingUp, glowColor: '#C084FC' },
+          { label: 'Tracks en roster', value: stats?.total_tracks ?? '—', icon: Music, glowColor: '#f59e0b' },
+        ].map(s => <StatCard key={s.label} label={s.label} value={s.value} icon={s.icon} glowColor={s.glowColor} />)}
+      </div>
+
+      {/* Artists roster */}
+      <Card>
+        <h3 style={{ fontFamily: "'Anton',sans-serif", fontSize: 18, color: '#F2EDE5', margin: '0 0 20px', letterSpacing: '0.03em' }}>ROSTER DE ARTISTAS</h3>
+        {artists.length === 0 ? (
+          <EmptyState icon={Users} text="Sin artistas en el sello todavía. Agrega artistas con el botón de arriba." />
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {artists.map((a: any, i: number) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'rgba(255,255,255,0.03)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: `linear-gradient(135deg,${P},${PL})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Anton',sans-serif", color: '#fff', fontSize: 14 }}>
+                    {(a.name || a.email || 'A')[0].toUpperCase()}
+                  </div>
+                  <div>
+                    <p style={{ color: '#fff', fontSize: 13, fontWeight: 600, margin: 0, fontFamily: "'Space Grotesk',sans-serif" }}>{a.name || a.email}</p>
+                    <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, margin: 0, fontFamily: "'Space Grotesk',sans-serif" }}>{a.email}</p>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <Badge color="#22c55e" label={`${a.royalty_split || 85}% artista`} />
+                  <Badge color={a.status === 'active' ? '#22c55e' : '#f59e0b'} label={a.status || 'active'} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </PageShell>
+  );
+}
+
 function TeamPage() {
   const [members, setMembers] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -3783,6 +4320,8 @@ export default function App() {
       case 'videos':         return <VideosPage />;
       case 'lyrics':         return <LyricsPage />;
       case 'marketing':      return <MarketingPage />;
+      case 'meta-ads':       return <MetaAdsPage />;
+      case 'market-intel':   return <MarketIntelPage />;
       case 'spotlight':      return <SpotlightPage />;
       case 'hyperfollow':    return <HyperfollowPage />;
       case 'community':      return <CommunityPage />;
@@ -3792,6 +4331,7 @@ export default function App() {
       case 'bulk-upload':    return <BulkUploadPage />;
       case 'store-maximizer':return <StoreMaximizerPage />;
       case 'riaa':           return <RIAAPage />;
+      case 'label':          return <LabelPage />;
       case 'team':           return <TeamPage />;
       case 'stats':          return <StatsPage />;
       case 'feedback':       return <FeedbackPage />;

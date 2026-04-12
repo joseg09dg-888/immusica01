@@ -9,7 +9,8 @@ import {
   misBeats,
   misCompras,
   estadisticasUsuario,
-  rankings
+  rankings,
+  getCommissions
 } from '../controllers/marketplaceController';
 
 const router = express.Router();
@@ -26,5 +27,6 @@ router.post('/beats/:id/valorar', authenticate, valorarBeat);
 router.get('/mis-beats', authenticate, misBeats);
 router.get('/mis-compras', authenticate, misCompras);
 router.get('/mis-estadisticas', authenticate, estadisticasUsuario);
+router.get('/admin/commissions', authenticate, getCommissions);
 
 export default router;
