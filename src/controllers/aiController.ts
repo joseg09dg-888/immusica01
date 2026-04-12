@@ -104,6 +104,190 @@ export const getModels = (_req: AuthRequest, res: Response) => {
   res.json({ model: 'gemini-2.0-flash', status: 'active' });
 };
 
+export const archetypeAnalysis = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'No autorizado' });
+    const { answers } = req.body;
+    if (!answers || !Array.isArray(answers)) return res.status(400).json({ error: 'Respuestas requeridas' });
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) return res.status(503).json({ error: 'Servicio de IA no configurado' });
+
+    const prompt = `Eres un experto en branding musical y arquetipos de marca. Analiza estas respuestas de un artista musical:
+
+${answers.map((a: any, i: number) => `Pregunta ${i + 1}: ${a.question}\nRespuesta: ${a.answer}`).join('\n\n')}
+
+Basado en estas respuestas, determina el arquetipo artístico y responde SOLO con JSON válido:
+{
+  "archetype": "Nombre del arquetipo (ej: El Rebelde, El Creador, El Héroe, El Explorador, El Sabio, El Amante)",
+  "emoji": "Un emoji que represente el arquetipo",
+  "description": "Descripción de 2-3 oraciones del arquetipo aplicado a este artista",
+  "tribe": "Nombre de su comunidad/fanbase ideal (ej: Los Rebeldes, Los Soñadores)",
+  "keyword": "Una palabra clave que define su marca",
+  "brandColor": "Color hex que mejor representa su energía artística (ej: #5E17EB)",
+  "hashtags": ["hashtag1", "hashtag2", "hashtag3", "hashtag4", "hashtag5"]
+}`;
+
+    const resp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 600 } }) }
+    );
+    const data = await resp.json() as any;
+    if (data.error) throw new Error(data.error.message || 'Error de Gemini');
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+    const clean = text.replace(/```json|```/g, '').trim();
+    res.json(JSON.parse(clean));
+  } catch (error: any) {
+    console.error('Error en archetype analysis:', error);
+    res.status(500).json({ error: 'Error al analizar arquetipo' });
+  }
+};
+
+export const brandingGeneration = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'No autorizado' });
+    const { archetype, archetypeData } = req.body;
+    if (!archetype) return res.status(400).json({ error: 'Arquetipo requerido' });
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) return res.status(503).json({ error: 'Servicio de IA no configurado' });
+
+    const prompt = `Eres un experto en branding musical. Un artista tiene el arquetipo "${archetype}".
+Datos del arquetipo: ${JSON.stringify(archetypeData || {})}
+
+Genera una estrategia de marca personal completa y responde SOLO con JSON válido:
+{
+  "concept": "Concepto de marca en 1 oración impactante",
+  "tribe": "Descripción de su comunidad ideal y cómo conectar con ellos",
+  "language": "Tono y estilo de comunicación (ej: 'Auténtico, cercano, con actitud')",
+  "valueProposition": "Propuesta de valor única como artista en 2 oraciones",
+  "tagline": "Tagline/slogan corto y memorable (máx 8 palabras)",
+  "hashtags": ["hashtag1", "hashtag2", "hashtag3", "hashtag4", "hashtag5", "hashtag6"],
+  "colorPalette": ["#color1", "#color2", "#color3"],
+  "contentPillars": ["Pilar 1", "Pilar 2", "Pilar 3"]
+}`;
+
+    const resp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.6, maxOutputTokens: 700 } }) }
+    );
+    const data = await resp.json() as any;
+    if (data.error) throw new Error(data.error.message || 'Error de Gemini');
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+    const clean = text.replace(/```json|```/g, '').trim();
+    res.json(JSON.parse(clean));
+  } catch (error: any) {
+    console.error('Error en branding generation:', error);
+    res.status(500).json({ error: 'Error al generar branding' });
+  }
+};
+
+export const metaAdsCopy = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'No autorizado' });
+    const { archetype, branding, market, genre, objective = 'streams', budget = '50000' } = req.body;
+    if (!archetype) return res.status(400).json({ error: 'Arquetipo requerido' });
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) return res.status(503).json({ error: 'Servicio de IA no configurado' });
+
+    const prompt = `Eres un experto en Meta Ads para artistas musicales.
+Artista con arquetipo "${archetype}", género "${genre || 'urbano'}", objetivo "${objective}", presupuesto $${budget} COP.
+Branding: ${JSON.stringify(branding || {})}
+Mercado: ${JSON.stringify(market || {})}
+
+Crea 3 copies publicitarios optimizados para Meta Ads y responde SOLO con JSON válido:
+{
+  "ads": [
+    {
+      "format": "Historia (Stories)",
+      "headline": "Título llamativo (máx 40 chars)",
+      "copy": "Texto del anuncio (máx 125 chars)",
+      "cta": "Call to action (ej: Escúchalo ahora)",
+      "audience": "Descripción de audiencia objetivo",
+      "tip": "Consejo de producción para este formato"
+    },
+    {
+      "format": "Feed (Imagen/Video)",
+      "headline": "Título llamativo (máx 40 chars)",
+      "copy": "Texto del anuncio (máx 125 chars)",
+      "cta": "Call to action",
+      "audience": "Descripción de audiencia objetivo",
+      "tip": "Consejo de producción para este formato"
+    },
+    {
+      "format": "Reel (Video corto)",
+      "headline": "Título llamativo (máx 40 chars)",
+      "copy": "Texto del anuncio (máx 125 chars)",
+      "cta": "Call to action",
+      "audience": "Descripción de audiencia objetivo",
+      "tip": "Consejo de producción para este formato"
+    }
+  ],
+  "budgetRecommendation": "Recomendación de distribución del presupuesto entre los 3 formatos"
+}`;
+
+    const resp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 900 } }) }
+    );
+    const data = await resp.json() as any;
+    if (data.error) throw new Error(data.error.message || 'Error de Gemini');
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+    const clean = text.replace(/```json|```/g, '').trim();
+    res.json(JSON.parse(clean));
+  } catch (error: any) {
+    console.error('Error en meta ads copy:', error);
+    res.status(500).json({ error: 'Error al generar copies de Meta Ads' });
+  }
+};
+
+export const contentPlanGeneration = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'No autorizado' });
+    const { archetype, branding, market, genre } = req.body;
+    if (!archetype) return res.status(400).json({ error: 'Arquetipo requerido' });
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) return res.status(503).json({ error: 'Servicio de IA no configurado' });
+
+    const prompt = `Eres un estratega de contenido para artistas musicales.
+Artista: arquetipo "${archetype}", género "${genre || 'urbano'}".
+Branding: ${JSON.stringify(branding || {})}
+Mercado: ${JSON.stringify(market || {})}
+
+Crea un plan de contenido mensual de 4 semanas y responde SOLO con JSON válido:
+{
+  "weeks": [
+    {
+      "week": 1,
+      "theme": "Tema de la semana",
+      "posts": [
+        {
+          "day": "Lunes",
+          "format": "Reel / Post / Historia / TikTok",
+          "title": "Título del contenido",
+          "duration": "30s / 60s / Estática",
+          "script": "Guión o descripción breve del contenido (2-3 oraciones)",
+          "hashtags": ["#tag1", "#tag2", "#tag3"]
+        }
+      ]
+    }
+  ]
+}
+Incluye 3 posts por semana (4 semanas = 12 posts total). Variedad de formatos. Cada post debe ser accionable y específico.`;
+
+    const resp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.6, maxOutputTokens: 1200 } }) }
+    );
+    const data = await resp.json() as any;
+    if (data.error) throw new Error(data.error.message || 'Error de Gemini');
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+    const clean = text.replace(/```json|```/g, '').trim();
+    res.json(JSON.parse(clean));
+  } catch (error: any) {
+    console.error('Error en content plan generation:', error);
+    res.status(500).json({ error: 'Error al generar plan de contenidos' });
+  }
+};
+
 export const marketIntel = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });

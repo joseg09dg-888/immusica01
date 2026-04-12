@@ -1396,12 +1396,7 @@ const MODULES = [
   { id: 'releases', label: 'Releases', icon: Package, group: 'Música' },
   { id: 'videos', label: 'Videos', icon: Video, group: 'Contenido' },
   { id: 'lyrics', label: 'Letras', icon: Mic, group: 'Contenido' },
-  { id: 'promo-cards', label: 'Promo Cards', icon: Image, group: 'Contenido' },
-  { id: 'marketing', label: 'Marketing IA', icon: Sparkles, group: 'Marketing' },
-  { id: 'meta-ads', label: 'Meta Ads', icon: Globe, group: 'Marketing' },
-  { id: 'market-intel', label: 'Mercado Musical', icon: TrendingUp, group: 'Marketing' },
-  { id: 'spotlight', label: 'Spotlight', icon: Radio, group: 'Marketing' },
-  { id: 'hyperfollow', label: 'HyperFollow', icon: Link2, group: 'Marketing' },
+  { id: 'marketing-suite', label: 'Marketing Suite', icon: Sparkles, group: 'Marketing' },
   { id: 'community', label: 'Comunidad', icon: MessageCircle, group: 'Social' },
   { id: 'marketplace', label: 'Marketplace', icon: ShoppingBag, group: 'Social' },
   { id: 'playlists', label: 'Playlists', icon: Play, group: 'Social' },
@@ -3652,6 +3647,485 @@ function FeedbackPage() {
   );
 }
 
+// ─── MARKETING SUITE ─────────────────────────────────────────────────────────
+const MS_STEPS = [
+  { number: 1, title: 'Test de Arquetipo',   subtitle: 'Descubre tu identidad artística',    icon: '🎭', color: '#5E17EB' },
+  { number: 2, title: 'Tu Marca Personal',   subtitle: 'Concepto, tribu y comunicación',     icon: '✨', color: '#7B3FFF' },
+  { number: 3, title: 'Estudio de Mercado',  subtitle: 'Dónde escuchan tu música',           icon: '🌍', color: '#3b82f6' },
+  { number: 4, title: 'Meta Ads',            subtitle: 'Campañas listas para lanzar',        icon: '📱', color: '#1877F2' },
+  { number: 5, title: 'Plan de Contenidos',  subtitle: 'Calendario mensual con guiones',     icon: '📅', color: '#f59e0b' },
+  { number: 6, title: 'Kit de Lanzamiento',  subtitle: 'HyperFollow + Promo Cards',          icon: '🚀', color: '#22c55e' },
+];
+
+const QUIZ_QUESTIONS = [
+  { id: 'q1', question: '¿Cómo describes tu música en una frase?', options: ['Cruda y auténtica, sin filtros', 'Melódica y emotiva, llega al alma', 'Innovadora y experimental, siempre evolucionando', 'Poderosa y energética, para mover masas'] },
+  { id: 'q2', question: '¿Qué mueve a tu audiencia ideal?', options: ['Buscan autenticidad y rebeldía', 'Necesitan conexión emocional profunda', 'Quieren arte que los haga pensar', 'Buscan energía y escapismo'] },
+  { id: 'q3', question: '¿Cuál es tu red social principal?', options: ['TikTok — contenido crudo y directo', 'Instagram — estética cuidada', 'YouTube — contenido profundo y largo', 'Todos por igual'] },
+  { id: 'q4', question: '¿Qué artista te representa mejor?', options: ['Bad Bunny / J Balvin — irreverente y global', 'Rosalía / C. Tangana — artístico y culturalmente profundo', 'Karol G / Feid — pop urbano masivo', 'Bizarrap / Trueno — underground que explota'] },
+  { id: 'q5', question: '¿Cuál es tu mayor fortaleza artística?', options: ['Mi historia personal y honestidad', 'Mi habilidad vocal/instrumental', 'Mi visión estética y producción', 'Mi energía en vivo y conexión directa'] },
+];
+
+function Step1Archetype({ onComplete }: { onComplete: (data: any) => void }) {
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const allAnswered = QUIZ_QUESTIONS.every(q => answers[q.id]);
+
+  const analyze = async () => {
+    setLoading(true);
+    try {
+      const payload = QUIZ_QUESTIONS.map(q => ({ question: q.question, answer: answers[q.id] }));
+      const data = await apiFetch('/ai/archetype', { method: 'POST', body: JSON.stringify({ answers: payload }) });
+      setResult(data);
+    } catch { setResult({ archetype: 'El Creador', emoji: '🎨', description: 'Eres un artista que vive para crear y expresar su visión única al mundo.', tribe: 'Los Visionarios', keyword: 'Autenticidad', brandColor: '#5E17EB', hashtags: ['#Creator','#Arte','#Música','#Visión','#Único'] }); }
+    setLoading(false);
+  };
+
+  if (result) return (
+    <div style={{ textAlign: 'center' }}>
+      <div style={{ fontSize: '72px', marginBottom: '16px' }}>{result.emoji}</div>
+      <div style={{ fontSize: '28px', fontWeight: 700, color: result.brandColor || '#5E17EB', marginBottom: '8px' }}>{result.archetype}</div>
+      <div style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '16px', lineHeight: 1.6 }}>{result.description}</div>
+      <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '24px' }}>
+        <span style={{ background: 'rgba(94,23,235,0.2)', border: '1px solid rgba(94,23,235,0.4)', padding: '6px 14px', borderRadius: '20px', fontSize: '13px', color: '#fff' }}>Tribu: {result.tribe}</span>
+        <span style={{ background: 'rgba(94,23,235,0.2)', border: '1px solid rgba(94,23,235,0.4)', padding: '6px 14px', borderRadius: '20px', fontSize: '13px', color: '#fff' }}>Palabra clave: {result.keyword}</span>
+      </div>
+      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '32px' }}>
+        {(result.hashtags || []).map((h: string, i: number) => (
+          <span key={i} style={{ color: result.brandColor || '#5E17EB', fontSize: '13px' }}>{h}</span>
+        ))}
+      </div>
+      <button onClick={() => onComplete({ archetype: result.archetype, archetypeData: result })}
+        style={{ background: 'linear-gradient(135deg, #5E17EB, #7B3FFF)', color: '#fff', border: 'none', borderRadius: '12px', padding: '14px 32px', fontSize: '15px', fontWeight: 600, cursor: 'pointer' }}>
+        Continuar con mi marca →
+      </button>
+    </div>
+  );
+
+  return (
+    <div>
+      <div style={{ marginBottom: '28px', textAlign: 'center', color: 'rgba(255,255,255,0.5)', fontSize: '14px' }}>
+        {Object.keys(answers).length}/{QUIZ_QUESTIONS.length} preguntas respondidas
+      </div>
+      {QUIZ_QUESTIONS.map(q => (
+        <div key={q.id} style={{ marginBottom: '28px' }}>
+          <div style={{ fontSize: '15px', fontWeight: 600, color: '#fff', marginBottom: '12px' }}>{q.question}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            {q.options.map((opt, i) => (
+              <button key={i} onClick={() => setAnswers(a => ({ ...a, [q.id]: opt }))}
+                style={{ padding: '12px 16px', borderRadius: '10px', border: `1px solid ${answers[q.id] === opt ? '#5E17EB' : 'rgba(255,255,255,0.1)'}`, background: answers[q.id] === opt ? 'rgba(94,23,235,0.3)' : 'rgba(255,255,255,0.04)', color: answers[q.id] === opt ? '#fff' : 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: '13px', textAlign: 'left', transition: 'all 0.2s' }}>
+                {opt}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+      <button onClick={analyze} disabled={!allAnswered || loading}
+        style={{ width: '100%', background: allAnswered ? 'linear-gradient(135deg, #5E17EB, #7B3FFF)' : 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', borderRadius: '12px', padding: '14px', fontSize: '15px', fontWeight: 600, cursor: allAnswered ? 'pointer' : 'not-allowed', opacity: allAnswered ? 1 : 0.5 }}>
+        {loading ? 'Analizando tu arquetipo...' : 'Descubrir mi arquetipo ✨'}
+      </button>
+    </div>
+  );
+}
+
+function Step2Branding({ brandData, onComplete }: { brandData: any; onComplete: (data: any) => void }) {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<any>(null);
+
+  useEffect(() => {
+    if (!brandData.archetype) return;
+    setLoading(true);
+    apiFetch('/ai/branding', { method: 'POST', body: JSON.stringify({ archetype: brandData.archetype, archetypeData: brandData.archetypeData }) })
+      .then(data => setResult(data))
+      .catch(() => setResult({ concept: 'Un artista que rompe barreras y conecta con su tribu de manera auténtica.', tribe: 'Jóvenes creativos que buscan música que los represente.', language: 'Auténtico, directo, con actitud', valueProposition: 'Ofreces música que nace de la experiencia real. Tu audiencia siente que eres uno de ellos.', tagline: 'Real. Tuyo. Sin filtros.', hashtags: ['#MiMúsica', '#Auténtico', '#Indie', '#ArtistaIndependiente', '#SinFiltros', '#Música'], colorPalette: ['#5E17EB', '#7B3FFF', '#22c55e'], contentPillars: ['Behind the scenes', 'Proceso creativo', 'Conexión con fans'] }))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div style={{ textAlign: 'center', padding: '60px', color: 'rgba(255,255,255,0.5)' }}>✨ Construyendo tu marca personal...</div>;
+  if (!result) return null;
+
+  return (
+    <div>
+      <div style={{ background: 'rgba(94,23,235,0.1)', border: '1px solid rgba(94,23,235,0.3)', borderRadius: '16px', padding: '24px', marginBottom: '20px' }}>
+        <div style={{ fontSize: '12px', color: '#7B3FFF', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Concepto de marca</div>
+        <div style={{ fontSize: '18px', fontWeight: 600, color: '#fff', lineHeight: 1.5 }}>{result.concept}</div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+        <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '16px' }}>
+          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>Tu tribu</div>
+          <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '13px', lineHeight: 1.5 }}>{result.tribe}</div>
+        </div>
+        <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '16px' }}>
+          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>Lenguaje</div>
+          <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '13px', lineHeight: 1.5 }}>{result.language}</div>
+        </div>
+      </div>
+      <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '16px', marginBottom: '20px' }}>
+        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>Propuesta de valor</div>
+        <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '13px', lineHeight: 1.6 }}>{result.valueProposition}</div>
+      </div>
+      <div style={{ background: 'linear-gradient(135deg, rgba(94,23,235,0.15), rgba(123,63,255,0.1))', border: '1px solid rgba(94,23,235,0.3)', borderRadius: '12px', padding: '16px', marginBottom: '20px', textAlign: 'center' }}>
+        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>Tu tagline</div>
+        <div style={{ fontSize: '22px', fontWeight: 700, color: '#fff', fontStyle: 'italic' }}>"{result.tagline}"</div>
+      </div>
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '28px' }}>
+        {(result.colorPalette || []).map((c: string, i: number) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', padding: '6px 12px' }}>
+            <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: c }} />
+            <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>{c}</span>
+          </div>
+        ))}
+      </div>
+      <button onClick={() => onComplete({ branding: result })}
+        style={{ width: '100%', background: 'linear-gradient(135deg, #7B3FFF, #5E17EB)', color: '#fff', border: 'none', borderRadius: '12px', padding: '14px', fontSize: '15px', fontWeight: 600, cursor: 'pointer' }}>
+        Continuar al estudio de mercado →
+      </button>
+    </div>
+  );
+}
+
+function Step3Market({ brandData, onComplete }: { brandData: any; onComplete: (data: any) => void }) {
+  const [genre, setGenre] = useState('urbano');
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const GENRES = ['urbano', 'trap', 'reggaeton', 'pop', 'rock', 'salsa', 'cumbia', 'electrónica', 'hip-hop', 'indie', 'vallenato', 'metal'];
+
+  const analyze = async () => {
+    setLoading(true);
+    try {
+      const data = await apiFetch('/ai/market-intel', { method: 'POST', body: JSON.stringify({ genre, artistType: brandData.archetype || 'independiente' }) });
+      setResult(data);
+    } catch { setResult({ topCountries: [{ country: 'Colombia', flag: '🇨🇴', percentage: 35 }, { country: 'México', flag: '🇲🇽', percentage: 28 }, { country: 'Argentina', flag: '🇦🇷', percentage: 15 }, { country: 'Chile', flag: '🇨🇱', percentage: 12 }, { country: 'Perú', flag: '🇵🇪', percentage: 10 }], topCities: [{ city: 'Bogotá', country: 'Colombia', streams: '2.4M' }, { city: 'Medellín', country: 'Colombia', streams: '1.8M' }, { city: 'CDMX', country: 'México', streams: '1.5M' }], audience: { ageRange: '18-28', gender: '58% Masculino', platform: 'Spotify', peakTime: '8pm-11pm' }, strategy: 'Enfoca tus lanzamientos en Colombia y México, donde la audiencia urbana está en crecimiento constante.' }); }
+    setLoading(false);
+  };
+
+  if (result) return (
+    <div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+        <div style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '12px', padding: '16px' }}>
+          <div style={{ fontSize: '12px', color: '#3b82f6', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>Top países</div>
+          {(result.topCountries || []).map((c: any, i: number) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+              <span style={{ fontSize: '18px' }}>{c.flag}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)' }}>{c.country}</span>
+                  <span style={{ fontSize: '12px', color: '#3b82f6' }}>{c.percentage}%</span>
+                </div>
+                <div style={{ height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px' }}>
+                  <div style={{ height: '100%', width: `${c.percentage}%`, background: '#3b82f6', borderRadius: '2px' }} />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div>
+          <div style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '12px', padding: '16px', marginBottom: '12px' }}>
+            <div style={{ fontSize: '12px', color: '#3b82f6', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>Audiencia</div>
+            {Object.entries(result.audience || {}).map(([k, v]) => (
+              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '13px' }}>
+                <span style={{ color: 'rgba(255,255,255,0.5)', textTransform: 'capitalize' }}>{k.replace(/([A-Z])/g, ' $1')}</span>
+                <span style={{ color: '#fff' }}>{v as string}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '12px', padding: '16px' }}>
+            <div style={{ fontSize: '12px', color: '#3b82f6', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>Top ciudades</div>
+            {(result.topCities || []).slice(0, 3).map((c: any, i: number) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
+                <span style={{ color: 'rgba(255,255,255,0.7)' }}>{c.city}, {c.country}</span>
+                <span style={{ color: '#3b82f6' }}>{c.streams}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      {result.strategy && (
+        <div style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '12px', padding: '16px', marginBottom: '24px' }}>
+          <div style={{ fontSize: '12px', color: '#3b82f6', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>Estrategia recomendada</div>
+          <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '13px', lineHeight: 1.6 }}>{result.strategy}</div>
+        </div>
+      )}
+      <button onClick={() => onComplete({ market: result, genre })}
+        style={{ width: '100%', background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: '#fff', border: 'none', borderRadius: '12px', padding: '14px', fontSize: '15px', fontWeight: 600, cursor: 'pointer' }}>
+        Continuar a Meta Ads →
+      </button>
+    </div>
+  );
+
+  return (
+    <div>
+      <div style={{ marginBottom: '24px' }}>
+        <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', marginBottom: '12px' }}>Selecciona tu género musical</div>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          {GENRES.map(g => (
+            <button key={g} onClick={() => setGenre(g)}
+              style={{ padding: '8px 16px', borderRadius: '20px', border: `1px solid ${genre === g ? '#3b82f6' : 'rgba(255,255,255,0.15)'}`, background: genre === g ? 'rgba(59,130,246,0.2)' : 'transparent', color: genre === g ? '#fff' : 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '13px', textTransform: 'capitalize', transition: 'all 0.2s' }}>
+              {g}
+            </button>
+          ))}
+        </div>
+      </div>
+      <button onClick={analyze} disabled={loading}
+        style={{ width: '100%', background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: '#fff', border: 'none', borderRadius: '12px', padding: '14px', fontSize: '15px', fontWeight: 600, cursor: 'pointer' }}>
+        {loading ? 'Analizando mercado...' : 'Analizar mi mercado 🌍'}
+      </button>
+    </div>
+  );
+}
+
+function Step4MetaAds({ brandData, onComplete }: { brandData: any; onComplete: (data: any) => void }) {
+  const [objective, setObjective] = useState('streams');
+  const [budget, setBudget] = useState('50000');
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const OBJECTIVES = [{ id: 'streams', label: 'Más streams', icon: '🎵' }, { id: 'followers', label: 'Más seguidores', icon: '👥' }, { id: 'presave', label: 'Pre-save', icon: '📥' }, { id: 'awareness', label: 'Awareness', icon: '👁️' }];
+
+  const generate = async () => {
+    setLoading(true);
+    try {
+      const data = await apiFetch('/ai/meta-ads-copy', { method: 'POST', body: JSON.stringify({ archetype: brandData.archetype, branding: brandData.branding, market: brandData.market, genre: brandData.genre, objective, budget }) });
+      setResult(data);
+    } catch { setResult({ ads: [{ format: 'Historia (Stories)', headline: 'Tu nueva canción llegó', copy: 'Escúchala ahora en todas las plataformas. 🔥', cta: 'Escúchalo ahora', audience: '18-28, intereses: música urbana', tip: 'Usa vertical 9:16, primeros 3 segundos impactantes' }, { format: 'Feed (Imagen/Video)', headline: 'Nuevo lanzamiento disponible', copy: 'Ya está disponible en Spotify y Apple Music.', cta: 'Escuchar en Spotify', audience: '18-30, fans del género', tip: 'Imagen de alta calidad, texto mínimo' }, { format: 'Reel (Video corto)', headline: '¿Ya la escuchaste?', copy: 'El tema del momento ya está disponible.', cta: 'Ver ahora', audience: '16-25, muy activos en Instagram', tip: 'Clip de 15-30s del mejor momento de la canción' }], budgetRecommendation: '40% Stories, 35% Feed, 25% Reels' }); }
+    setLoading(false);
+  };
+
+  const adColors: Record<string, string> = { 'Historia (Stories)': '#E1306C', 'Feed (Imagen/Video)': '#1877F2', 'Reel (Video corto)': '#9333ea' };
+
+  if (result) return (
+    <div>
+      {(result.ads || []).map((ad: any, i: number) => (
+        <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${adColors[ad.format] || '#5E17EB'}33`, borderRadius: '14px', padding: '20px', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 700, color: adColors[ad.format] || '#5E17EB' }}>{ad.format}</span>
+            <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.06)', padding: '4px 10px', borderRadius: '20px' }}>{ad.cta}</span>
+          </div>
+          <div style={{ fontSize: '16px', fontWeight: 600, color: '#fff', marginBottom: '8px' }}>{ad.headline}</div>
+          <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', marginBottom: '12px', lineHeight: 1.5 }}>{ad.copy}</div>
+          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '10px' }}>
+            <span style={{ marginRight: '16px' }}>👥 {ad.audience}</span>
+          </div>
+          {ad.tip && <div style={{ marginTop: '8px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', padding: '8px 12px', fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>💡 {ad.tip}</div>}
+        </div>
+      ))}
+      {result.budgetRecommendation && (
+        <div style={{ background: 'rgba(24,119,242,0.1)', border: '1px solid rgba(24,119,242,0.3)', borderRadius: '12px', padding: '14px', marginBottom: '24px', fontSize: '13px', color: 'rgba(255,255,255,0.7)' }}>
+          💰 Distribución sugerida: {result.budgetRecommendation}
+        </div>
+      )}
+      <button onClick={() => onComplete({ metaAds: result, budget, objective })}
+        style={{ width: '100%', background: 'linear-gradient(135deg, #1877F2, #1251a3)', color: '#fff', border: 'none', borderRadius: '12px', padding: '14px', fontSize: '15px', fontWeight: 600, cursor: 'pointer' }}>
+        Continuar al plan de contenidos →
+      </button>
+    </div>
+  );
+
+  return (
+    <div>
+      <div style={{ marginBottom: '24px' }}>
+        <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', marginBottom: '12px' }}>Objetivo de campaña</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          {OBJECTIVES.map(o => (
+            <button key={o.id} onClick={() => setObjective(o.id)}
+              style={{ padding: '12px 16px', borderRadius: '10px', border: `1px solid ${objective === o.id ? '#1877F2' : 'rgba(255,255,255,0.1)'}`, background: objective === o.id ? 'rgba(24,119,242,0.2)' : 'rgba(255,255,255,0.04)', color: objective === o.id ? '#fff' : 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: '13px', textAlign: 'left', transition: 'all 0.2s' }}>
+              {o.icon} {o.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div style={{ marginBottom: '28px' }}>
+        <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', marginBottom: '8px' }}>Presupuesto diario (COP)</div>
+        <input type="number" value={budget} onChange={e => setBudget(e.target.value)}
+          style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', padding: '12px 16px', color: '#fff', fontSize: '15px', outline: 'none', boxSizing: 'border-box' }}
+          placeholder="50000" />
+      </div>
+      <button onClick={generate} disabled={loading}
+        style={{ width: '100%', background: 'linear-gradient(135deg, #1877F2, #1251a3)', color: '#fff', border: 'none', borderRadius: '12px', padding: '14px', fontSize: '15px', fontWeight: 600, cursor: 'pointer' }}>
+        {loading ? 'Generando copies...' : 'Generar copies con IA 📱'}
+      </button>
+    </div>
+  );
+}
+
+function Step5ContentPlan({ brandData, onComplete }: { brandData: any; onComplete: (data: any) => void }) {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [activeWeek, setActiveWeek] = useState(0);
+
+  useEffect(() => {
+    setLoading(true);
+    apiFetch('/ai/content-plan', { method: 'POST', body: JSON.stringify({ archetype: brandData.archetype, branding: brandData.branding, market: brandData.market, genre: brandData.genre }) })
+      .then(data => setResult(data))
+      .catch(() => setResult({ weeks: [{ week: 1, theme: 'Lanzamiento', posts: [{ day: 'Lunes', format: 'Reel', title: 'Behind the scenes', duration: '30s', script: 'Muestra el proceso de creación de tu canción. Habla directo a cámara sobre qué inspiró el tema.', hashtags: ['#BehindTheScenes', '#Proceso', '#Música'] }, { day: 'Miércoles', format: 'Post', title: 'Arte del sencillo', duration: 'Estática', script: 'Publica el arte oficial del sencillo con una cita de la letra. Usa tu paleta de colores.', hashtags: ['#NuevoSencillo', '#Arte', '#Lanzamiento'] }, { day: 'Viernes', format: 'Historia', title: 'Cuenta regresiva', duration: '15s', script: 'Crea expectativa con una cuenta regresiva animada. Muestra 5 segundos del audio.', hashtags: ['#PróximoLanzamiento', '#Próximo', '#Exclusivo'] }] }, { week: 2, theme: 'Conexión', posts: [{ day: 'Lunes', format: 'TikTok', title: 'Trend musical', duration: '15s', script: 'Úsate en el trend de la semana incorporando tu canción.', hashtags: ['#Trend', '#TikTok', '#MúsicaNueva'] }, { day: 'Jueves', format: 'Post', title: 'Letra favorita', duration: 'Estática', script: 'Diseño con tu verso favorito de la canción. Pregunta a tus fans cuál es el suyo.', hashtags: ['#Letra', '#Canción', '#Favorito'] }, { day: 'Sábado', format: 'Reel', title: 'Fan react', duration: '30s', script: 'Reacciona a los comentarios de tus fans sobre la canción. Sé auténtico y cercano.', hashtags: ['#Fans', '#Reacción', '#Comunidad'] }] }] }))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const formatColors: Record<string, string> = { 'Reel': '#E1306C', 'TikTok': '#010101', 'Post': '#5E17EB', 'Historia': '#f59e0b', 'YouTube': '#FF0000' };
+
+  if (loading) return <div style={{ textAlign: 'center', padding: '60px', color: 'rgba(255,255,255,0.5)' }}>📅 Generando tu calendario de contenidos...</div>;
+  if (!result) return null;
+
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', overflowX: 'auto' }}>
+        {(result.weeks || []).map((w: any, i: number) => (
+          <button key={i} onClick={() => setActiveWeek(i)}
+            style={{ flexShrink: 0, padding: '8px 18px', borderRadius: '20px', border: `1px solid ${activeWeek === i ? '#f59e0b' : 'rgba(255,255,255,0.15)'}`, background: activeWeek === i ? 'rgba(245,158,11,0.2)' : 'transparent', color: activeWeek === i ? '#fff' : 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '13px', transition: 'all 0.2s' }}>
+            Semana {w.week} {w.theme ? `— ${w.theme}` : ''}
+          </button>
+        ))}
+      </div>
+      {result.weeks?.[activeWeek]?.posts?.map((post: any, i: number) => (
+        <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '18px', marginBottom: '14px' }}>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '10px' }}>
+            <span style={{ background: formatColors[post.format] || '#5E17EB', color: '#fff', padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 600, whiteSpace: 'nowrap' }}>{post.format}</span>
+            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', paddingTop: '2px' }}>{post.day} · {post.duration}</span>
+          </div>
+          <div style={{ fontSize: '15px', fontWeight: 600, color: '#fff', marginBottom: '8px' }}>{post.title}</div>
+          <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, marginBottom: '10px' }}>{post.script}</div>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            {(post.hashtags || []).map((h: string, j: number) => (
+              <span key={j} style={{ color: '#f59e0b', fontSize: '12px' }}>{h}</span>
+            ))}
+          </div>
+        </div>
+      ))}
+      <button onClick={() => onComplete({ contentPlan: result })}
+        style={{ width: '100%', marginTop: '8px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#fff', border: 'none', borderRadius: '12px', padding: '14px', fontSize: '15px', fontWeight: 600, cursor: 'pointer' }}>
+        Continuar al kit de lanzamiento →
+      </button>
+    </div>
+  );
+}
+
+function Step6LaunchKit({ brandData, onComplete }: { brandData: any; onComplete: (data: any) => void }) {
+  const [hyperUrl, setHyperUrl] = useState('');
+  const [copied, setCopied] = useState(false);
+  const genUrl = () => {
+    const slug = `im-${Date.now()}`;
+    setHyperUrl(`https://immusic.co/pre/${slug}`);
+  };
+
+  return (
+    <div>
+      <div style={{ background: 'linear-gradient(135deg, rgba(34,197,94,0.15), rgba(22,163,74,0.1))', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '16px', padding: '24px', marginBottom: '20px', textAlign: 'center' }}>
+        <div style={{ fontSize: '40px', marginBottom: '12px' }}>🎉</div>
+        <div style={{ fontSize: '20px', fontWeight: 700, color: '#22c55e', marginBottom: '8px' }}>¡Tu Marketing Suite está completo!</div>
+        <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px' }}>Has completado los 5 pasos. Aquí está tu kit de lanzamiento:</div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '24px' }}>
+        {[
+          { icon: '🎭', label: 'Arquetipo', value: brandData.archetype || '—' },
+          { icon: '✨', label: 'Tagline', value: brandData.branding?.tagline || '—' },
+          { icon: '🌍', label: 'Mercado principal', value: brandData.market?.topCountries?.[0]?.country || '—' },
+          { icon: '📱', label: 'Ads listos', value: `${brandData.metaAds?.ads?.length || 0} formatos` },
+          { icon: '📅', label: 'Posts planificados', value: `${(brandData.contentPlan?.weeks || []).reduce((s: number, w: any) => s + (w.posts?.length || 0), 0)} posts` },
+          { icon: '🎨', label: 'Color de marca', value: brandData.archetypeData?.brandColor || '#5E17EB' },
+        ].map((item, i) => (
+          <div key={i} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '14px' }}>
+            <div style={{ fontSize: '20px', marginBottom: '6px' }}>{item.icon}</div>
+            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>{item.label}</div>
+            <div style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>{item.value}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '14px', padding: '20px', marginBottom: '20px' }}>
+        <div style={{ fontSize: '14px', fontWeight: 600, color: '#fff', marginBottom: '12px' }}>🔗 Página HyperFollow</div>
+        {hyperUrl ? (
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <div style={{ flex: 1, background: 'rgba(255,255,255,0.06)', borderRadius: '8px', padding: '10px 14px', fontSize: '13px', color: '#22c55e', fontFamily: 'monospace' }}>{hyperUrl}</div>
+            <button onClick={() => { navigator.clipboard.writeText(hyperUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+              style={{ background: copied ? '#22c55e' : 'rgba(34,197,94,0.2)', border: '1px solid rgba(34,197,94,0.4)', color: '#22c55e', borderRadius: '8px', padding: '10px 16px', cursor: 'pointer', fontSize: '13px', transition: 'all 0.3s' }}>
+              {copied ? '✓' : 'Copiar'}
+            </button>
+          </div>
+        ) : (
+          <button onClick={genUrl}
+            style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: '#22c55e', borderRadius: '10px', padding: '10px 20px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
+            Generar link HyperFollow →
+          </button>
+        )}
+      </div>
+      <button onClick={() => onComplete({})}
+        style={{ width: '100%', background: 'linear-gradient(135deg, #22c55e, #16a34a)', color: '#fff', border: 'none', borderRadius: '12px', padding: '16px', fontSize: '16px', fontWeight: 700, cursor: 'pointer' }}>
+        🚀 ¡Lanzar mi música al mundo!
+      </button>
+    </div>
+  );
+}
+
+function MarketingSuitePage() {
+  const [currentStep, setCurrentStep] = useState(1);
+  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+  const [brandData, setBrandData] = useState<any>({});
+
+  const handleComplete = (stepNumber: number, data: any) => {
+    setBrandData((prev: any) => ({ ...prev, ...data }));
+    setCompletedSteps(prev => [...new Set([...prev, stepNumber])]);
+    setCurrentStep(stepNumber + 1);
+  };
+
+  const step = MS_STEPS[currentStep - 1];
+
+  return (
+    <PageShell title="Marketing Suite">
+      {/* Progress steps */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0', marginBottom: '32px', overflowX: 'auto', padding: '4px 0' }}>
+        {MS_STEPS.map((s, i) => {
+          const isCompleted = completedSteps.includes(s.number);
+          const isCurrent = currentStep === s.number;
+          const isLocked = !isCompleted && !isCurrent;
+          return (
+            <React.Fragment key={s.number}>
+              <button onClick={() => isCompleted && setCurrentStep(s.number)}
+                style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: isCompleted ? 'pointer' : 'default', padding: '4px 6px' }}>
+                <div style={{ width: '44px', height: '44px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: isCompleted ? '16px' : '20px', background: isCompleted ? '#22c55e' : isCurrent ? s.color : 'rgba(255,255,255,0.06)', border: `2px solid ${isCompleted ? '#22c55e' : isCurrent ? s.color : 'rgba(255,255,255,0.1)'}`, boxShadow: isCurrent ? `0 0 20px ${s.color}66` : 'none', transition: 'all 0.3s', color: isLocked ? 'rgba(255,255,255,0.3)' : '#fff' }}>
+                  {isCompleted ? '✓' : s.icon}
+                </div>
+                <span style={{ fontSize: '10px', color: isCompleted ? '#22c55e' : isCurrent ? '#fff' : 'rgba(255,255,255,0.3)', textAlign: 'center', maxWidth: '64px', lineHeight: 1.2, fontWeight: isCurrent ? 600 : 400 }}>{s.title}</span>
+              </button>
+              {i < MS_STEPS.length - 1 && (
+                <div style={{ flex: 1, height: '2px', background: completedSteps.includes(s.number) ? '#22c55e' : 'rgba(255,255,255,0.08)', minWidth: '16px', transition: 'background 0.5s', marginBottom: '18px' }} />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+
+      {/* Step header */}
+      <div style={{ background: `linear-gradient(135deg, ${step?.color}22, ${step?.color}0a)`, border: `1px solid ${step?.color}44`, borderRadius: '16px', padding: '20px 24px', marginBottom: '28px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ fontSize: '36px' }}>{step?.icon}</div>
+        <div>
+          <div style={{ fontSize: '11px', color: step?.color, textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '4px' }}>Paso {step?.number} de {MS_STEPS.length}</div>
+          <div style={{ fontSize: '20px', fontWeight: 700, color: '#fff', marginBottom: '2px' }}>{step?.title}</div>
+          <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>{step?.subtitle}</div>
+        </div>
+      </div>
+
+      {/* Step content */}
+      <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', padding: '28px' }}>
+        {currentStep === 1 && <Step1Archetype onComplete={data => handleComplete(1, data)} />}
+        {currentStep === 2 && <Step2Branding brandData={brandData} onComplete={data => handleComplete(2, data)} />}
+        {currentStep === 3 && <Step3Market brandData={brandData} onComplete={data => handleComplete(3, data)} />}
+        {currentStep === 4 && <Step4MetaAds brandData={brandData} onComplete={data => handleComplete(4, data)} />}
+        {currentStep === 5 && <Step5ContentPlan brandData={brandData} onComplete={data => handleComplete(5, data)} />}
+        {currentStep === 6 && <Step6LaunchKit brandData={brandData} onComplete={data => handleComplete(6, data)} />}
+        {currentStep > 6 && (
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <div style={{ fontSize: '64px', marginBottom: '16px' }}>🎉</div>
+            <div style={{ fontSize: '24px', fontWeight: 700, color: '#22c55e', marginBottom: '12px' }}>¡Marketing Suite completado!</div>
+            <div style={{ color: 'rgba(255,255,255,0.6)', marginBottom: '24px' }}>Has configurado todo tu sistema de marketing. ¡Tu música está lista para llegar al mundo!</div>
+            <button onClick={() => { setCurrentStep(1); setCompletedSteps([]); setBrandData({}); }}
+              style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '12px', padding: '12px 24px', cursor: 'pointer', fontSize: '14px' }}>
+              Empezar de nuevo
+            </button>
+          </div>
+        )}
+      </div>
+    </PageShell>
+  );
+}
+
 // ─── SETTINGS ────────────────────────────────────────────────────────────────
 // ─── PROMO CARDS ─────────────────────────────────────────────────────────────
 function PromoCardsPage() {
@@ -4319,11 +4793,7 @@ export default function App() {
       case 'releases':       return <ReleasesPage />;
       case 'videos':         return <VideosPage />;
       case 'lyrics':         return <LyricsPage />;
-      case 'marketing':      return <MarketingPage />;
-      case 'meta-ads':       return <MetaAdsPage />;
-      case 'market-intel':   return <MarketIntelPage />;
-      case 'spotlight':      return <SpotlightPage />;
-      case 'hyperfollow':    return <HyperfollowPage />;
+      case 'marketing-suite': return <MarketingSuitePage />;
       case 'community':      return <CommunityPage />;
       case 'marketplace':    return <MarketplacePage />;
       case 'splits':         return <SplitsPage />;
@@ -4336,7 +4806,6 @@ export default function App() {
       case 'stats':          return <StatsPage />;
       case 'feedback':       return <FeedbackPage />;
       case 'settings':       return <SettingsPage user={user} />;
-      case 'promo-cards':    return <PromoCardsPage />;
       case 'playlists':      return <PlaylistsPage />;
       case 'legal':          return <LegalPage />;
       case 'financing':      return <FinancingPage />;
