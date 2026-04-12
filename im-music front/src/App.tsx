@@ -120,39 +120,63 @@ function CursorTrail() {
   );
 }
 
-// ─── GlassIcon ───────────────────────────────────────────────────────────────
-function GlassIcon({ icon: Icon, color, size = 48 }: { icon: any; color: string; size?: number }) {
+// ─── Icon3D ─────────────────────────────────────────────────────────────────
+function Icon3D({ icon: Icon, color, size = 48, label }: { icon: any; color: string; size?: number; label?: string }) {
   const [hovered, setHovered] = useState(false);
+  const [clicked, setClicked] = useState(false);
   return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        width: size, height: size,
-        borderRadius: size * 0.35,
-        background: hovered
-          ? `linear-gradient(135deg, ${color}40, ${color}20)`
-          : `linear-gradient(135deg, ${color}20, ${color}08)`,
-        border: `1px solid ${color}${hovered ? '60' : '30'}`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        boxShadow: hovered
-          ? `0 0 30px ${color}50, 0 0 60px ${color}20, inset 0 1px 0 rgba(255,255,255,0.1)`
-          : `0 0 15px ${color}20, inset 0 1px 0 rgba(255,255,255,0.05)`,
-        transform: hovered ? 'scale(1.15) translateZ(8px)' : 'scale(1)',
-        transition: 'all 0.3s cubic-bezier(0.34,1.56,0.64,1)',
-        position: 'relative', overflow: 'hidden', flexShrink: 0,
-      }}>
-      <Icon size={size * 0.42} color={hovered ? '#fff' : color} strokeWidth={1.5} />
-      {hovered && (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+      <div
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => { setHovered(false); setClicked(false); }}
+        onMouseDown={() => setClicked(true)}
+        onMouseUp={() => setClicked(false)}
+        style={{
+          width: size, height: size,
+          borderRadius: size * 0.28,
+          position: 'relative',
+          transform: clicked
+            ? 'scale(0.88) translateY(4px) rotateX(15deg)'
+            : hovered
+            ? 'scale(1.12) translateY(-6px) rotateX(-8deg) rotateY(5deg)'
+            : 'scale(1) rotateX(0deg) rotateY(0deg)',
+          transformStyle: 'preserve-3d',
+          transition: clicked ? 'transform 0.08s ease' : 'transform 0.4s cubic-bezier(0.34,1.56,0.64,1)',
+          cursor: 'pointer',
+          boxShadow: clicked
+            ? `0 2px 0 ${color}80, 0 2px 10px ${color}30`
+            : hovered
+            ? `0 20px 0 ${color}40, 0 20px 40px ${color}40, 0 0 60px ${color}30`
+            : `0 8px 0 ${color}50, 0 8px 20px ${color}20`,
+        }}>
+        {/* Main face */}
         <div style={{
-          position: 'absolute', inset: 0,
-          background: `radial-gradient(circle at 30% 30%, rgba(255,255,255,0.15), transparent 60%)`,
-          borderRadius: 'inherit', pointerEvents: 'none',
-        }} />
-      )}
+          position: 'absolute', inset: 0, borderRadius: 'inherit',
+          background: hovered
+            ? `linear-gradient(135deg, ${color}50 0%, ${color}30 50%, ${color}20 100%)`
+            : `linear-gradient(135deg, ${color}30 0%, ${color}15 100%)`,
+          border: `1px solid ${color}${hovered ? '70' : '40'}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          backdropFilter: 'blur(10px)', overflow: 'hidden',
+        }}>
+          {/* Top shine */}
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '50%', background: 'linear-gradient(180deg, rgba(255,255,255,0.15), transparent)', borderRadius: `${size * 0.28}px ${size * 0.28}px 0 0`, pointerEvents: 'none' }} />
+          <Icon size={size * 0.44} color={hovered ? '#fff' : color} strokeWidth={1.8}
+            style={{ filter: hovered ? `drop-shadow(0 0 8px ${color})` : 'none', transition: 'all 0.3s ease', position: 'relative', zIndex: 1 }} />
+          {/* Bottom reflection */}
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '30%', background: `linear-gradient(0deg, ${color}20, transparent)`, pointerEvents: 'none' }} />
+        </div>
+        {/* 3D bottom edge */}
+        <div style={{ position: 'absolute', bottom: `${-size * 0.14}px`, left: '4%', right: '4%', height: size * 0.14, background: `linear-gradient(180deg, ${color}60, ${color}20)`, borderRadius: `0 0 ${size * 0.28}px ${size * 0.28}px`, transform: 'rotateX(-90deg)', transformOrigin: 'top', filter: 'blur(1px)' }} />
+        {/* Glow ring on hover */}
+        {hovered && <div style={{ position: 'absolute', inset: -8, borderRadius: size * 0.35, border: `1px solid ${color}40`, animation: 'glowRingPulse 1s ease-in-out infinite', pointerEvents: 'none' }} />}
+      </div>
+      {label && <span style={{ fontFamily: "'Anton', sans-serif", fontSize: '9px', fontWeight: 700, color: hovered ? '#fff' : 'rgba(255,255,255,0.35)', letterSpacing: '0.12em', textTransform: 'uppercase', transition: 'color 0.2s', textAlign: 'center' }}>{label}</span>}
     </div>
   );
 }
+// Keep GlassIcon as alias for backward compat
+const GlassIcon = Icon3D;
 
 // Group → color map for icons
 const GROUP_COLORS: Record<string, string> = {
@@ -208,73 +232,68 @@ function Btn3D({ children, onClick, disabled = false, type = 'button', variant =
 }) {
   const [pressed, setPressed] = useState(false);
   const [hovered, setHovered] = useState(false);
-  const bg = variant === 'danger' ? '#7f1d1d' : variant === 'ghost' ? 'rgba(255,255,255,0.07)' : P;
-  let shadow: string;
-  if (variant === 'primary') {
-    if (pressed)  shadow = `0 2px 0 #2D0B6B, 0 0 12px rgba(94,23,235,0.3)`;
-    else if (hovered) shadow = `0 4px 0 #2D0B6B, 0 0 30px rgba(94,23,235,0.5), 0 0 60px rgba(94,23,235,0.2)`;
-    else          shadow = `0 6px 0 #2D0B6B, 0 0 20px rgba(94,23,235,0.3)`;
-  } else if (variant === 'danger') {
-    shadow = `0 ${pressed ? '1px' : hovered ? '3px' : '4px'} 0 rgba(80,0,0,0.9)`;
-  } else {
-    shadow = pressed ? `0 1px 0 rgba(0,0,0,0.8)` : hovered ? `0 0 20px rgba(94,23,235,0.3), 0 3px 0 rgba(0,0,0,0.5)` : `0 3px 0 rgba(0,0,0,0.6)`;
-  }
-  let translateY = '0';
-  if (pressed)  translateY = '6px';
-  else if (hovered) translateY = '-3px';
+  const [ripples, setRipples] = useState<{ id: number; x: number; y: number }[]>([]);
 
-  const createRipple = (e: React.MouseEvent<HTMLButtonElement>) => {
-    const btn = e.currentTarget;
-    const circle = document.createElement('span');
-    const diameter = Math.max(btn.clientWidth, btn.clientHeight);
-    const radius = diameter / 2;
-    circle.style.cssText = `
-      width:${diameter}px;height:${diameter}px;
-      left:${e.clientX - btn.getBoundingClientRect().left - radius}px;
-      top:${e.clientY - btn.getBoundingClientRect().top - radius}px;
-      position:absolute;border-radius:50%;
-      background:rgba(255,255,255,0.28);
-      transform:scale(0);animation:ripple 0.6s linear;
-      pointer-events:none;
-    `;
-    btn.appendChild(circle);
-    setTimeout(() => circle.remove(), 600);
-    if (variant === 'primary') particleBurst(e);
+  const isPrimary = variant === 'primary';
+  const isDanger = variant === 'danger';
+
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const id = Date.now();
+    setRipples(r => [...r, { id, x: e.clientX - rect.left, y: e.clientY - rect.top }]);
+    setTimeout(() => setRipples(r => r.filter(x => x.id !== id)), 650);
+    // Particle burst on primary
+    if (isPrimary) {
+      const colors = ['#5E17EB', '#7B3FFF', '#C084FC', '#F2EDE5', '#fff'];
+      for (let i = 0; i < 12; i++) {
+        const p = document.createElement('div');
+        const angle = (i / 12) * Math.PI * 2;
+        const dist = 50 + Math.random() * 50;
+        const sz = 3 + Math.random() * 5;
+        p.style.cssText = `position:fixed;left:${e.clientX}px;top:${e.clientY}px;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:50%;pointer-events:none;z-index:99999;transition:all 0.7s cubic-bezier(0.25,0.46,0.45,0.94);transform:translate(-50%,-50%) scale(1);opacity:1;`;
+        document.body.appendChild(p);
+        requestAnimationFrame(() => { p.style.transform = `translate(calc(-50% + ${Math.cos(angle)*dist}px),calc(-50% + ${Math.sin(angle)*dist-30}px)) scale(0)`; p.style.opacity = '0'; });
+        setTimeout(() => p.remove(), 700);
+      }
+    }
     onClick?.();
   };
 
+  const bg = isDanger ? 'linear-gradient(135deg,#7f1d1d,#991b1b)' : isPrimary ? 'linear-gradient(135deg,#6B21FF 0%,#5E17EB 50%,#4A12C0 100%)' : 'rgba(255,255,255,0.06)';
+  const shadow = pressed
+    ? isPrimary ? '0 2px 0 #2D0B6B, 0 2px 10px rgba(94,23,235,0.3)' : '0 1px 0 rgba(0,0,0,0.5)'
+    : hovered
+    ? isPrimary ? '0 12px 0 #2D0B6B, 0 12px 40px rgba(94,23,235,0.5), 0 0 60px rgba(94,23,235,0.3)' : '0 8px 0 rgba(0,0,0,0.4), 0 0 20px rgba(255,255,255,0.1)'
+    : isPrimary ? '0 6px 0 #2D0B6B, 0 6px 20px rgba(94,23,235,0.3)' : '0 4px 0 rgba(0,0,0,0.5)';
+
   return (
-    <button type={type} onClick={createRipple} disabled={disabled}
-      onMouseDown={() => setPressed(true)}
-      onMouseUp={() => { setPressed(false); }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => { setPressed(false); setHovered(false); }}
+    <button type={type} disabled={disabled} onClick={handleClick}
+      onMouseDown={() => setPressed(true)} onMouseUp={() => setPressed(false)}
+      onMouseEnter={() => setHovered(true)} onMouseLeave={() => { setPressed(false); setHovered(false); }}
       style={{
-        background: bg, color: '#fff',
-        border: variant === 'ghost' ? '1px solid rgba(255,255,255,0.18)' : 'none',
+        position: 'relative', overflow: 'hidden', background: bg, color: '#fff',
+        border: variant === 'ghost' ? '1px solid rgba(255,255,255,0.15)' : 'none',
         borderRadius: '14px',
         padding: small ? '10px 22px' : '15px 36px',
-        minHeight: small ? '40px' : '52px',
-        minWidth: small ? '80px' : '160px',
-        fontFamily: "'Anton', sans-serif",
-        letterSpacing: '0.15em',
-        textTransform: 'uppercase',
+        minHeight: small ? '40px' : '52px', minWidth: small ? '80px' : '160px',
+        fontFamily: "'Anton', sans-serif", letterSpacing: '0.15em', textTransform: 'uppercase',
         fontSize: small ? '11px' : '13px',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        opacity: disabled ? 0.5 : 1,
-        display: 'inline-flex', alignItems: 'center', justifyContent: fullWidth ? 'center' : undefined,
-        gap: '8px',
-        transform: `translateY(${translateY})`,
+        cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.5 : 1,
+        display: 'inline-flex', alignItems: 'center', justifyContent: fullWidth ? 'center' : undefined, gap: '8px',
+        transform: pressed ? 'translateY(6px) scale(0.97)' : hovered ? 'translateY(-4px) scale(1.02)' : 'translateY(0) scale(1)',
         boxShadow: shadow,
-        transition: pressed
-          ? 'transform 0.06s ease, box-shadow 0.06s ease'
-          : `transform 0.35s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s ease`,
-        width: fullWidth ? '100%' : undefined,
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        position: 'relative',
+        transition: pressed ? 'all 0.06s ease' : 'all 0.4s cubic-bezier(0.34,1.56,0.64,1)',
+        width: fullWidth ? '100%' : undefined, whiteSpace: 'nowrap',
       }}>
-      {children}
+      {/* Top highlight */}
+      <div style={{ position:'absolute', top:0, left:0, right:0, height:'42%', background:'linear-gradient(180deg,rgba(255,255,255,0.13),transparent)', borderRadius:'14px 14px 0 0', pointerEvents:'none' }} />
+      {/* Shine sweep on hover */}
+      {hovered && isPrimary && <div style={{ position:'absolute', top:0, left:0, width:'60%', height:'100%', background:'linear-gradient(90deg,transparent,rgba(255,255,255,0.14),transparent)', animation:'btnShine 0.6s ease forwards', pointerEvents:'none' }} />}
+      {/* Ripples */}
+      {ripples.map(r => (
+        <div key={r.id} style={{ position:'absolute', left:r.x, top:r.y, width:0, height:0, background:'rgba(255,255,255,0.3)', borderRadius:'50%', transform:'translate(-50%,-50%)', animation:'rippleExpand 0.65s ease-out forwards', pointerEvents:'none' }} />
+      ))}
+      <span style={{ position:'relative', zIndex:1, display:'inline-flex', alignItems:'center', gap:'8px' }}>{children}</span>
     </button>
   );
 }
@@ -1534,10 +1553,10 @@ function DashboardPage() {
   ];
 
   const quickActions = [
-    { label: 'Subir Track', icon: Upload, action: () => toast('Abre Catálogo para subir tu track', 'info'), grad: 'linear-gradient(135deg,#5E17EB,#7B3FFF)' },
-    { label: 'Nuevo Split', icon: Users, action: () => toast('Abre Splits para crear un nuevo split', 'info'), grad: 'linear-gradient(135deg,#3b82f6,#06b6d4)' },
-    { label: 'Ver Regalías', icon: DollarSign, action: () => toast('Revisa tus regalías', 'info'), grad: 'linear-gradient(135deg,#22c55e,#16a34a)' },
-    { label: 'Preguntar IA', icon: Sparkles, action: () => toast('¡La IA está lista para ayudarte!', 'info'), grad: 'linear-gradient(135deg,#f59e0b,#ec4899)' },
+    { label: 'Subir Track', icon: Upload, action: () => toast('Abre Catálogo para subir tu track', 'info'), color: '#5E17EB' },
+    { label: 'Nuevo Split', icon: Users, action: () => toast('Abre Splits para crear un nuevo split', 'info'), color: '#3b82f6' },
+    { label: 'Ver Regalías', icon: DollarSign, action: () => toast('Revisa tus regalías', 'info'), color: '#22c55e' },
+    { label: 'Preguntar IA', icon: Sparkles, action: () => toast('¡La IA está lista para ayudarte!', 'info'), color: '#f59e0b' },
   ];
 
   return (
@@ -1553,17 +1572,14 @@ function DashboardPage() {
             <h1 style={{ fontFamily: "'Anton',sans-serif", fontSize: '40px', background: `linear-gradient(135deg, #fff 30%, ${PL} 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', margin: 0, letterSpacing: '0.04em' }}>DASHBOARD</h1>
           </div>
 
-          {/* Quick Actions — 4-column icon grid */}
+          {/* Quick Actions — 4-column Icon3D grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', marginBottom: '32px' }}>
             {quickActions.map((qa) => (
               <button key={qa.label} onClick={qa.action}
-                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', height: '88px', background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', cursor: 'pointer', transition: 'all 0.25s cubic-bezier(0.34,1.56,0.64,1)' }}
-                onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(255,255,255,0.06)'; el.style.borderColor = 'rgba(94,23,235,0.3)'; el.style.transform = 'translateY(-3px) scale(1.03)'; el.style.boxShadow = '0 10px 30px rgba(94,23,235,0.2)'; }}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', paddingTop: '18px', paddingBottom: '18px', background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '20px', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.34,1.56,0.64,1)', position: 'relative', overflow: 'hidden' }}
+                onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(255,255,255,0.05)'; el.style.borderColor = 'rgba(94,23,235,0.3)'; el.style.transform = 'translateY(-4px) scale(1.04)'; el.style.boxShadow = '0 14px 40px rgba(94,23,235,0.2)'; }}
                 onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(255,255,255,0.03)'; el.style.borderColor = 'rgba(255,255,255,0.07)'; el.style.transform = ''; el.style.boxShadow = ''; }}>
-                <div style={{ width: '38px', height: '38px', background: qa.grad, borderRadius: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 16px rgba(0,0,0,0.3)` }}>
-                  <qa.icon size={16} color="#fff" />
-                </div>
-                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontFamily: "'Space Grotesk',sans-serif", fontWeight: 500 }}>{qa.label}</span>
+                <Icon3D icon={qa.icon} color={qa.color} size={44} label={qa.label} />
               </button>
             ))}
           </div>
@@ -1817,7 +1833,17 @@ function RoyaltiesPage() {
     <FloatingOrbs colors={['#22c55e', '#16a34a', '#5E17EB']} />
     <PageShell title="Regalías">
       {/* Hero balance — 280px flagship card */}
-      <div style={{ position:'relative', background:'linear-gradient(135deg, #000d08 0%, #001a10 50%, #000d08 100%)', border:'1px solid rgba(34,197,94,0.15)', borderRadius:'28px', padding:'44px 52px', marginBottom:'28px', height:'280px', display:'flex', alignItems:'center', justifyContent:'space-between', overflow:'hidden', boxShadow:'inset 0 1px 0 rgba(255,255,255,0.05), 0 0 120px rgba(34,197,94,0.08)' }}>
+      <div style={{ position:'relative', background:'linear-gradient(135deg, #000d08 0%, #001a10 50%, #000d08 100%)', border:'1px solid rgba(34,197,94,0.15)', borderRadius:'28px', padding:'44px 52px', marginBottom:'28px', height:'280px', display:'flex', alignItems:'center', justifyContent:'space-between', overflow:'hidden', boxShadow:'inset 0 1px 0 rgba(255,255,255,0.05), 0 0 120px rgba(34,197,94,0.08)', animation:'holoBorder 4s ease-in-out infinite' }}>
+        {/* Matrix falling numbers */}
+        {['14','$','82','05','$','37'].map((digit, col) => (
+          <div key={col} style={{ position:'absolute', top:0, left:`${8 + col * 16}%`, width:'20px', overflow:'hidden', height:'100%', pointerEvents:'none', zIndex:1 }}>
+            {[0,1,2,3].map(row => (
+              <div key={row} style={{ position:'absolute', top:0, left:0, width:'100%', fontFamily:"'Space Grotesk',sans-serif", fontSize:'11px', color:'rgba(34,197,94,1)', textAlign:'center', animation:`matrixFall ${2.5 + (col+row)*0.4}s linear ${(col*0.3 + row*0.7)}s infinite`, userSelect:'none' }}>
+                {digit}
+              </div>
+            ))}
+          </div>
+        ))}
         {/* Scan line moving top→bottom */}
         <div style={{ position:'absolute', left:0, right:0, height:'2px', background:'linear-gradient(90deg, transparent, rgba(34,197,94,0.35), transparent)', animation:'scanLine 3s ease-in-out infinite', pointerEvents:'none', zIndex:2 }} />
         {/* Money float particles — 8 dots */}
@@ -1966,13 +1992,21 @@ function AIChatPage() {
         <div style={{ position:'relative', zIndex:1, flex:1, overflowY:'auto', display:'flex', flexDirection:'column', gap:'14px', padding:'20px 20px 8px', scrollbarWidth:'none' }}>
           {messages.map((m,i)=>(
             <div key={i} style={{display:'flex',justifyContent:m.role==='user'?'flex-end':'flex-start',alignItems:'flex-end',gap:'8px'}}>
-              {m.role==='assistant' && <div style={{width:'28px',height:'28px',background:`rgba(94,23,235,0.25)`,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid rgba(94,23,235,0.3)`}}><Sparkles size={11} color={PL}/></div>}
-              <div style={{maxWidth:'72%',padding:'13px 16px',borderRadius:m.role==='user'?'18px 18px 4px 18px':'4px 18px 18px 18px',fontSize:'13px',lineHeight:'1.65',background:m.role==='user'?`linear-gradient(135deg,${P},${PL})`:'rgba(255,255,255,0.06)',color:'#fff',border:m.role==='user'?'none':'1px solid rgba(255,255,255,0.08)',fontFamily:"'Space Grotesk',sans-serif",boxShadow:m.role==='user'?`0 4px 20px rgba(94,23,235,0.3)`:'none'}}>{m.content}</div>
+              {m.role==='assistant' && (
+                <div style={{width:'28px',height:'28px',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,position:'relative',overflow:'hidden'}}>
+                  <div style={{position:'absolute',inset:0,borderRadius:'50%',background:`conic-gradient(${P},${PL},#C084FC,${P})`,animation:'conicSpin 3s linear infinite'}}/>
+                  <div style={{position:'relative',zIndex:1,width:'22px',height:'22px',borderRadius:'50%',background:'#0a0414',display:'flex',alignItems:'center',justifyContent:'center'}}><Sparkles size={10} color={PL}/></div>
+                </div>
+              )}
+              <div style={{maxWidth:'72%',padding:'13px 16px',borderRadius:m.role==='user'?'18px 18px 4px 18px':'4px 18px 18px 18px',fontSize:'13px',lineHeight:'1.65',background:m.role==='user'?`linear-gradient(300deg,${P},${PL},#C084FC,${P})`:'rgba(255,255,255,0.06)',backgroundSize:m.role==='user'?'300% 300%':'auto',animation:m.role==='user'?'bubbleGradient 4s ease infinite':undefined,color:'#fff',border:m.role==='user'?'none':'1px solid rgba(255,255,255,0.08)',fontFamily:"'Space Grotesk',sans-serif",boxShadow:m.role==='user'?`0 4px 20px rgba(94,23,235,0.4), 0 0 40px rgba(94,23,235,0.15)`:'none'}}>{m.content}</div>
             </div>
           ))}
           {loading && (
             <div style={{display:'flex',justifyContent:'flex-start',alignItems:'flex-end',gap:'8px'}}>
-              <div style={{width:'28px',height:'28px',background:`rgba(94,23,235,0.25)`,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid rgba(94,23,235,0.3)`}}><Sparkles size={11} color={PL}/></div>
+              <div style={{width:'28px',height:'28px',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,position:'relative',overflow:'hidden'}}>
+                <div style={{position:'absolute',inset:0,borderRadius:'50%',background:`conic-gradient(${P},${PL},#C084FC,${P})`,animation:'conicSpin 3s linear infinite'}}/>
+                <div style={{position:'relative',zIndex:1,width:'22px',height:'22px',borderRadius:'50%',background:'#0a0414',display:'flex',alignItems:'center',justifyContent:'center'}}><Sparkles size={10} color={PL}/></div>
+              </div>
               <div style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.08)',padding:'14px 18px',borderRadius:'4px 18px 18px 18px',display:'flex',gap:'5px',alignItems:'center'}}>
                 {[0,1,2].map(i=><div key={i} style={{width:'7px',height:'7px',background:PL,borderRadius:'50%',animation:`typingBounce 1.2s ease-in-out ${i*0.18}s infinite`}}/>)}
               </div>
@@ -3675,6 +3709,49 @@ export default function App() {
         @keyframes typingBounce {
           0%, 60%, 100% { transform: translateY(0); }
           30%            { transform: translateY(-8px); }
+        }
+
+        /* ── Btn3D / Icon3D ─────────────────────────────────────── */
+        @keyframes glowRingPulse {
+          0%, 100% { opacity: 0.6; transform: scale(1); }
+          50%       { opacity: 1;   transform: scale(1.06); }
+        }
+        @keyframes btnShine {
+          from { left: -100%; }
+          to   { left: 200%; }
+        }
+        @keyframes rippleExpand {
+          0%   { width: 0;     height: 0;     opacity: 0.55; }
+          100% { width: 320px; height: 320px; opacity: 0; }
+        }
+
+        /* ── Holographic border ─────────────────────────────────── */
+        @keyframes holoBorder {
+          0%   { border-color: rgba(34,197,94,0.30); }
+          25%  { border-color: rgba(94,23,235,0.35); }
+          50%  { border-color: rgba(34,197,94,0.30); }
+          75%  { border-color: rgba(192,132,252,0.35); }
+          100% { border-color: rgba(34,197,94,0.30); }
+        }
+
+        /* ── Animated chat bubbles ──────────────────────────────── */
+        @keyframes bubbleGradient {
+          0%   { background-position: 0%   50%; }
+          50%  { background-position: 100% 50%; }
+          100% { background-position: 0%   50%; }
+        }
+
+        /* ── Matrix digits ──────────────────────────────────────── */
+        @keyframes matrixFall {
+          0%   { transform: translateY(-100%); opacity: 0; }
+          10%  { opacity: 0.06; }
+          90%  { opacity: 0.06; }
+          100% { transform: translateY(300px); opacity: 0; }
+        }
+
+        /* ── Spinning conic avatar ──────────────────────────────── */
+        @keyframes conicSpin {
+          to { transform: rotate(360deg); }
         }
 
         /* ── Global resets ───────────────────────────────────────── */
