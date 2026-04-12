@@ -126,60 +126,6 @@ function CursorTrail() {
   return <div ref={containerRef} style={{ position:'fixed', inset:0, pointerEvents:'none', zIndex:9999 }} />;
 }
 
-// ─── Magnetic Cursor ─────────────────────────────────────────────────────────
-function MagneticCursor() {
-  const dotRef = useRef<HTMLDivElement>(null);
-  const ringRef = useRef<HTMLDivElement>(null);
-  const pos = useRef({ x: -100, y: -100 });
-  const ring = useRef({ x: -100, y: -100 });
-  const hovering = useRef(false);
-
-  useEffect(() => {
-    const onMove = (e: MouseEvent) => { pos.current = { x: e.clientX, y: e.clientY }; };
-    const onEnter = () => { hovering.current = true; };
-    const onLeave = () => { hovering.current = false; };
-
-    const attach = () => {
-      document.querySelectorAll('button, a, [data-magnetic]').forEach(el => {
-        el.addEventListener('mouseenter', onEnter);
-        el.addEventListener('mouseleave', onLeave);
-      });
-    };
-    attach();
-    const mo = new MutationObserver(attach);
-    mo.observe(document.body, { childList: true, subtree: true });
-
-    window.addEventListener('mousemove', onMove, { passive: true });
-    let raf: number;
-    const loop = () => {
-      ring.current.x += (pos.current.x - ring.current.x) * 0.1;
-      ring.current.y += (pos.current.y - ring.current.y) * 0.1;
-      if (dotRef.current) {
-        dotRef.current.style.left = pos.current.x - 5 + 'px';
-        dotRef.current.style.top = pos.current.y - 5 + 'px';
-      }
-      if (ringRef.current) {
-        const sz = hovering.current ? '52px' : '40px';
-        ringRef.current.style.left = ring.current.x - 20 + 'px';
-        ringRef.current.style.top = ring.current.y - 20 + 'px';
-        ringRef.current.style.width = sz;
-        ringRef.current.style.height = sz;
-        ringRef.current.style.background = hovering.current ? 'rgba(94,23,235,0.18)' : 'transparent';
-        ringRef.current.style.borderColor = hovering.current ? '#7B3FFF' : 'rgba(94,23,235,0.6)';
-      }
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => { cancelAnimationFrame(raf); window.removeEventListener('mousemove', onMove); mo.disconnect(); };
-  }, []);
-
-  return (
-    <>
-      <div ref={dotRef} style={{ position:'fixed', width:10, height:10, background:'#fff', borderRadius:'50%', pointerEvents:'none', zIndex:99999, mixBlendMode:'difference', transform:'translate(0,0)' }} />
-      <div ref={ringRef} style={{ position:'fixed', width:40, height:40, border:'1.5px solid rgba(94,23,235,0.6)', borderRadius:'50%', pointerEvents:'none', zIndex:99998, transition:'width 0.3s ease, height 0.3s ease, background 0.3s ease, border-color 0.3s ease' }} />
-    </>
-  );
-}
 
 // ─── Page Background ──────────────────────────────────────────────────────────
 function PageBackground({ color = '#5E17EB' }: { color?: string }) {
@@ -496,8 +442,6 @@ function fireConfetti(originEl?: HTMLElement) {
 function LandingPage({ onEnter }: { onEnter: () => void }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const cursorDotRef = useRef<HTMLDivElement>(null);
-  const cursorRingRef = useRef<HTMLDivElement>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
 
   // Scroll: only trigger React re-render when threshold crosses, progress via direct DOM
@@ -516,37 +460,6 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Cursor dot: direct DOM mutation — zero React re-renders
-  useEffect(() => {
-    const onMove = (e: MouseEvent) => {
-      if (cursorDotRef.current) {
-        cursorDotRef.current.style.left = `${e.clientX - 4}px`;
-        cursorDotRef.current.style.top = `${e.clientY - 4}px`;
-      }
-    };
-    window.addEventListener('mousemove', onMove, { passive: true });
-    return () => window.removeEventListener('mousemove', onMove);
-  }, []);
-
-  // Cursor ring: lag via RAF, direct DOM mutation — zero React re-renders
-  useEffect(() => {
-    let target = { x: -100, y: -100 };
-    const pos = { x: -100, y: -100 };
-    const onMove = (e: MouseEvent) => { target = { x: e.clientX, y: e.clientY }; };
-    window.addEventListener('mousemove', onMove, { passive: true });
-    let rafId: number;
-    const loop = () => {
-      pos.x += (target.x - pos.x) * 0.12;
-      pos.y += (target.y - pos.y) * 0.12;
-      if (cursorRingRef.current) {
-        cursorRingRef.current.style.left = `${pos.x - 18}px`;
-        cursorRingRef.current.style.top = `${pos.y - 18}px`;
-      }
-      rafId = requestAnimationFrame(loop);
-    };
-    rafId = requestAnimationFrame(loop);
-    return () => { cancelAnimationFrame(rafId); window.removeEventListener('mousemove', onMove); };
-  }, []);
 
   // Scroll reveal observer
   useEffect(() => {
@@ -559,7 +472,7 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
   }, []);
 
   return (
-    <div style={{ minHeight: '100vh', background: '#020202', color: '#fff', overflowX: 'hidden', cursor: 'none' }}>
+    <div style={{ minHeight: '100vh', background: '#020202', color: '#fff', overflowX: 'hidden' }}>
       {/* Global styles */}
       <style>{`
         @keyframes marquee { from{transform:translateX(0)} to{transform:translateX(-50%)} }
@@ -607,7 +520,7 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
         }
         .confetti-particle{position:fixed;width:8px;height:8px;border-radius:2px;pointer-events:none;z-index:99999;animation:confettiFall linear forwards}
 
-        * { box-sizing: border-box; cursor: none !important; }
+        * { box-sizing: border-box; }
         html { scroll-behavior: smooth; }
         ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-track{background:#000} ::-webkit-scrollbar-thumb{background:${P};border-radius:3px}
 
@@ -648,10 +561,6 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
         .mobile-nav a{color:rgba(255,255,255,0.7);font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer;transition:color 0.2s}
         .mobile-nav a:hover{color:#fff}
       `}</style>
-
-      {/* ── CUSTOM CURSOR — refs only, no React state ── */}
-      <div ref={cursorDotRef} style={{ position: 'fixed', left: '-100px', top: '-100px', width: '8px', height: '8px', background: '#fff', borderRadius: '50%', pointerEvents: 'none', zIndex: 99999, mixBlendMode: 'difference' }} />
-      <div ref={cursorRingRef} style={{ position: 'fixed', left: '-100px', top: '-100px', width: '36px', height: '36px', border: `1.5px solid rgba(94,23,235,0.8)`, borderRadius: '50%', pointerEvents: 'none', zIndex: 99998 }} />
 
       {/* ── SCROLL PROGRESS BAR — ref only, no React state ── */}
       <div ref={progressBarRef} style={{ position: 'fixed', top: 0, left: 0, height: '3px', background: `linear-gradient(90deg, ${P}, ${PL}, #C084FC)`, width: '0%', zIndex: 9999, boxShadow: `0 0 8px rgba(94,23,235,0.8)` }} />
@@ -3733,7 +3642,6 @@ export default function App() {
       <div style={{ position: 'fixed', top: '-300px', right: '-200px', width: '700px', height: '700px', background: `radial-gradient(circle, rgba(94,23,235,0.06) 0%, transparent 65%)`, pointerEvents: 'none', zIndex: 0, animation: 'orbFloat 20s ease-in-out infinite' }} />
       <div style={{ position: 'fixed', bottom: '-200px', left: `${SIDEBAR_W - 100}px`, width: '500px', height: '500px', background: `radial-gradient(circle, rgba(123,63,255,0.04) 0%, transparent 65%)`, pointerEvents: 'none', zIndex: 0, animation: 'orbFloat 26s ease-in-out infinite reverse' }} />
 
-      <MagneticCursor />
       <CursorTrail />
       <ToastContainer />
       <Sidebar active={activePage} onNav={setActivePage} user={user} onLogout={handleLogout} open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
