@@ -23,7 +23,7 @@ import { motion, AnimatePresence } from 'motion/react';
 // ─── Constants ───────────────────────────────────────────────────────────────
 const P = '#5E17EB';
 const PL = '#7B3FFF';
-const SIDEBAR_W = 256;
+const SIDEBAR_W = 280;
 const API = '/api';
 const token = () => localStorage.getItem('im_token') || '';
 
@@ -1055,30 +1055,25 @@ function SidebarItem({ m, isActive, onNav, onClose }: { m: typeof MODULES[0]; is
     <button key={m.id} onClick={() => { onNav(m.id); onClose(); }}
       onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{
-        width: '100%', display: 'flex', alignItems: 'center', gap: '9px',
-        padding: '8px 10px', borderRadius: '10px', border: 'none', cursor: 'pointer',
-        background: isActive ? `linear-gradient(90deg, rgba(94,23,235,0.28) 0%, rgba(94,23,235,0.05) 100%)` : hov ? 'rgba(255,255,255,0.04)' : 'transparent',
-        color: isActive ? '#C084FC' : hov ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.32)',
-        fontSize: '12px', fontFamily: "'Space Grotesk', sans-serif",
+        width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+        padding: '9px 16px', margin: '1px 0', borderRadius: '10px', cursor: 'pointer',
+        border: 'none',
+        borderLeft: isActive ? `2px solid ${P}` : '2px solid transparent',
+        background: isActive
+          ? 'linear-gradient(90deg, rgba(94,23,235,0.22) 0%, rgba(94,23,235,0.05) 100%)'
+          : hov ? 'rgba(94,23,235,0.08)' : 'transparent',
+        color: isActive ? '#C084FC' : hov ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.35)',
+        fontSize: '12.5px', fontFamily: "'Space Grotesk', sans-serif",
         fontWeight: isActive ? 600 : 400,
         transition: 'all 0.2s cubic-bezier(0.34,1.56,0.64,1)',
         textAlign: 'left',
         transform: isActive ? 'translateX(4px)' : hov ? 'translateX(2px)' : 'translateX(0)',
-        boxShadow: isActive ? `inset 2px 0 0 ${P}, inset 4px 0 20px rgba(94,23,235,0.18)` : 'none',
+        boxShadow: isActive ? 'inset 0 0 16px rgba(94,23,235,0.12)' : 'none',
         position: 'relative',
       }}>
-      <span style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        width: '26px', height: '26px', borderRadius: '7px', flexShrink: 0,
-        background: isActive ? `rgba(94,23,235,0.25)` : hov ? 'rgba(255,255,255,0.06)' : 'transparent',
-        transition: 'all 0.18s ease',
-        transform: hov || isActive ? 'scale(1.15)' : 'scale(1)',
-        boxShadow: isActive ? `0 0 12px rgba(94,23,235,0.4)` : 'none',
-      }}>
-        <m.icon size={13} color={isActive ? PL : hov ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.28)'} />
-      </span>
-      <span>{m.label}</span>
-      {isActive && <span style={{ marginLeft:'auto', width:'5px', height:'5px', borderRadius:'50%', background:PL, boxShadow:`0 0 8px ${PL}`, animation:'glowPulse 2s ease-in-out infinite' }} />}
+      <m.icon size={16} color={isActive ? PL : hov ? 'rgba(94,23,235,0.7)' : 'rgba(255,255,255,0.25)'} style={{ flexShrink: 0, transition: 'all 0.18s ease', transform: hov || isActive ? 'scale(1.1)' : 'scale(1)' }} />
+      <span style={{ flex: 1 }}>{m.label}</span>
+      {isActive && <span style={{ width:'6px', height:'6px', borderRadius:'50%', background: P, boxShadow:`0 0 8px ${P}, 0 0 16px ${P}55`, animation:'glowPulse 2s ease-in-out infinite', flexShrink: 0 }} />}
     </button>
   );
 }
@@ -1093,27 +1088,28 @@ function Sidebar({ active, onNav, user, onLogout, open, onClose }: {
   return (
     <>
       {open && <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 20 }} />}
-      <aside style={{ position: 'fixed', top: 0, left: 0, height: '100%', width: `${SIDEBAR_W}px`, background: 'linear-gradient(180deg, #0a0612 0%, #050308 100%)', backdropFilter: 'blur(24px)', borderRight: '1px solid rgba(94,23,235,0.15)', zIndex: 30, display: 'flex', flexDirection: 'column' }}>
-        {/* Floating orb behind logo */}
-        <div style={{ position:'absolute', top:'-20px', left:'-20px', width:'140px', height:'140px', borderRadius:'50%', background:'radial-gradient(circle, rgba(94,23,235,0.18) 0%, transparent 65%)', filter:'blur(30px)', pointerEvents:'none', zIndex:0 }} />
+      <aside style={{ position: 'fixed', top: 0, left: 0, height: '100%', width: `${SIDEBAR_W}px`, background: 'linear-gradient(180deg, #0D0618 0%, #080410 50%, #050208 100%)', backdropFilter: 'blur(24px)', borderRight: '1px solid rgba(94,23,235,0.12)', zIndex: 30, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* Ambient ellipse glow top-left */}
+        <div style={{ position:'absolute', top:0, left:0, width:'200px', height:'200px', background:'radial-gradient(ellipse at 0% 0%, rgba(94,23,235,0.15) 0%, transparent 70%)', pointerEvents:'none', zIndex:0 }} />
         {/* Logo header */}
-        <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '11px', position:'relative', zIndex:1 }}>
-          <div style={{ width: '34px', height: '34px', background: `linear-gradient(135deg, ${P}, ${PL})`, borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 20px rgba(94,23,235,0.5), 0 0 40px rgba(94,23,235,0.2)`, animation: 'logoFloat 4s ease-in-out infinite', flexShrink: 0 }}>
-            <Music size={16} color="#fff" />
+        <div style={{ padding: '22px 20px 18px', borderBottom: '1px solid rgba(255,255,255,0.03)', display: 'flex', alignItems: 'center', gap: '12px', position:'relative', zIndex:1 }}>
+          <div style={{ width: '36px', height: '36px', background: `linear-gradient(135deg, ${P}, ${PL})`, borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 20px rgba(94,23,235,0.5), 0 4px 0 #2D0B6B`, animation: 'logoFloat 4s ease-in-out infinite', flexShrink: 0 }}>
+            <Music size={17} color="#fff" />
           </div>
           <div>
-            <span style={{ fontFamily: "'Anton', sans-serif", fontSize: '16px', letterSpacing: '0.08em', color: '#fff', display: 'block', lineHeight: 1 }}>IM MUSIC</span>
-            <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: '9px', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.18em', textTransform: 'uppercase' }}>Platform</span>
+            <span style={{ fontFamily: "'Anton', sans-serif", fontSize: '18px', letterSpacing: '0.06em', color: '#F2EDE5', display: 'block', lineHeight: 1 }}>IM MUSIC</span>
+            <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: '9px', color: 'rgba(94,23,235,0.7)', letterSpacing: '0.3em', textTransform: 'uppercase' }}>PLATFORM</span>
           </div>
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 8px 0', scrollbarWidth: 'none' }}>
-          {groups.map(group => {
+        <div style={{ flex: 1, overflowY: 'auto', padding: '10px 8px 0', scrollbarWidth: 'none' }}>
+          {groups.map((group, gi) => {
             const items = MODULES.filter(m => m.group === group);
             const isCollapsed = collapsed.has(group);
             return (
-              <div key={group} style={{ marginBottom: '2px' }}>
-                <button onClick={() => toggle(group)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px 4px', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.18)', fontSize: '9px', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase' }}>
+              <div key={group} style={{ marginBottom: '4px' }}>
+                {gi > 0 && <div style={{ height: '1px', background: 'rgba(255,255,255,0.03)', margin: '6px 8px 10px' }} />}
+                <button onClick={() => toggle(group)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 16px 6px', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)', fontSize: '9px', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, letterSpacing: '0.25em', textTransform: 'uppercase' }}>
                   <span>{group}</span>
                   <ChevronDown size={9} style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.2s', opacity: 0.5 }} />
                 </button>
@@ -1126,14 +1122,14 @@ function Sidebar({ active, onNav, user, onLogout, open, onClose }: {
         </div>
 
         {/* User footer */}
-        <div style={{ padding: '10px 12px 14px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+        <div style={{ padding: '10px 12px 14px', borderTop: '1px solid rgba(255,255,255,0.04)', background: 'rgba(94,23,235,0.05)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '8px 10px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '6px' }}>
-            <div style={{ width: '30px', height: '30px', background: `linear-gradient(135deg,${P},${PL})`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '13px', fontFamily: "'Anton',sans-serif", color: '#fff' }}>
+            <div style={{ width: '32px', height: '32px', background: `linear-gradient(135deg,${P},${PL})`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '13px', fontFamily: "'Anton',sans-serif", color: '#fff', boxShadow: `0 0 12px rgba(94,23,235,0.4)` }}>
               {(user?.name || user?.email || 'U')[0].toUpperCase()}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ color: '#fff', fontSize: '12px', fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.name || user?.email}</p>
-              <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '10px', margin: 0, textTransform: 'capitalize' }}>{user?.role || 'artist'}</p>
+              <p style={{ color: '#F2EDE5', fontSize: '12px', fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.name || user?.email}</p>
+              <p style={{ color: 'rgba(255,255,255,0.28)', fontSize: '10px', margin: 0, textTransform: 'capitalize' }}>{user?.role || 'artist'}</p>
             </div>
           </div>
           <button onClick={onLogout} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '7px', padding: '7px 10px', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.22)', fontSize: '11px', fontFamily: "'Space Grotesk', sans-serif", borderRadius: '8px', transition: 'all 0.15s' }}
@@ -1374,10 +1370,10 @@ function DashboardPage() {
   ];
 
   const quickActions = [
-    { label: 'Subir Track', icon: Upload, action: () => toast('Abre Catálogo para subir tu track', 'info') },
-    { label: 'Nuevo Split', icon: Users, action: () => toast('Abre Splits para crear un nuevo split', 'info') },
-    { label: 'Ver Regalías', icon: DollarSign, action: () => toast('Revisa tus regalías', 'info') },
-    { label: 'Preguntar IA', icon: Sparkles, action: () => toast('¡La IA está lista para ayudarte!', 'info') },
+    { label: 'Subir Track', icon: Upload, action: () => toast('Abre Catálogo para subir tu track', 'info'), grad: 'linear-gradient(135deg,#5E17EB,#7B3FFF)' },
+    { label: 'Nuevo Split', icon: Users, action: () => toast('Abre Splits para crear un nuevo split', 'info'), grad: 'linear-gradient(135deg,#3b82f6,#06b6d4)' },
+    { label: 'Ver Regalías', icon: DollarSign, action: () => toast('Revisa tus regalías', 'info'), grad: 'linear-gradient(135deg,#22c55e,#16a34a)' },
+    { label: 'Preguntar IA', icon: Sparkles, action: () => toast('¡La IA está lista para ayudarte!', 'info'), grad: 'linear-gradient(135deg,#f59e0b,#ec4899)' },
   ];
 
   return (
@@ -1395,14 +1391,17 @@ function DashboardPage() {
             <h1 style={{ fontFamily: "'Anton',sans-serif", fontSize: '40px', background: `linear-gradient(135deg, #fff 30%, ${PL} 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', margin: 0, letterSpacing: '0.04em' }}>DASHBOARD</h1>
           </div>
 
-          {/* Quick Actions */}
-          <div style={{ display: 'flex', gap: '10px', marginBottom: '32px', flexWrap: 'wrap' }}>
-            {quickActions.map((qa, i) => (
+          {/* Quick Actions — 4-column icon grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', marginBottom: '32px' }}>
+            {quickActions.map((qa) => (
               <button key={qa.label} onClick={qa.action}
-                style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '100px', padding: '10px 18px', color: 'rgba(255,255,255,0.65)', fontSize: '12px', fontFamily: "'Space Grotesk',sans-serif", cursor: 'pointer', transition: 'all 0.25s cubic-bezier(0.34,1.56,0.64,1)', fontWeight: 500 }}
-                onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = `rgba(94,23,235,0.2)`; el.style.borderColor = `rgba(94,23,235,0.5)`; el.style.color = '#fff'; el.style.transform = 'translateY(-2px) scale(1.04)'; el.style.boxShadow = `0 8px 24px rgba(94,23,235,0.25)`; }}
-                onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(255,255,255,0.04)'; el.style.borderColor = 'rgba(255,255,255,0.08)'; el.style.color = 'rgba(255,255,255,0.65)'; el.style.transform = ''; el.style.boxShadow = ''; }}>
-                <qa.icon size={13} /> {qa.label}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', height: '88px', background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', cursor: 'pointer', transition: 'all 0.25s cubic-bezier(0.34,1.56,0.64,1)' }}
+                onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(255,255,255,0.06)'; el.style.borderColor = 'rgba(94,23,235,0.3)'; el.style.transform = 'translateY(-3px) scale(1.03)'; el.style.boxShadow = '0 10px 30px rgba(94,23,235,0.2)'; }}
+                onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(255,255,255,0.03)'; el.style.borderColor = 'rgba(255,255,255,0.07)'; el.style.transform = ''; el.style.boxShadow = ''; }}>
+                <div style={{ width: '38px', height: '38px', background: qa.grad, borderRadius: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 16px rgba(0,0,0,0.3)` }}>
+                  <qa.icon size={16} color="#fff" />
+                </div>
+                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontFamily: "'Space Grotesk',sans-serif", fontWeight: 500 }}>{qa.label}</span>
               </button>
             ))}
           </div>
@@ -1506,21 +1505,24 @@ function TrackGridCard({ track: t, onDel }: { track: any; onDel: () => void }) {
   return (
     <div ref={ref} onMouseMove={onMouseMove} onMouseEnter={() => setHov(true)} onMouseLeave={onMouseLeave}
       style={{ background:'rgba(10,6,18,0.85)', backdropFilter:'blur(24px)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:'20px', overflow:'hidden', transition:hov?'border-color 0.15s':'all 0.5s cubic-bezier(0.34,1.56,0.64,1)', height:'200px', display:'flex', flexDirection:'column', ...tiltStyle }}>
-      {/* Cover art */}
-      <div style={{ height:'128px', background:COVER_GRADIENTS[t.id % COVER_GRADIENTS.length], display:'flex', alignItems:'center', justifyContent:'center', position:'relative', overflow:'hidden', flexShrink:0 }}>
-        <div style={{ transform:hov?'scale(1.06)':'scale(1)', transition:'transform 0.4s ease', display:'flex', alignItems:'center', justifyContent:'center' }}>
-          <Music size={42} color="rgba(255,255,255,0.35)" />
+      {/* Cover art 140px */}
+      <div style={{ height:'140px', background:COVER_GRADIENTS[t.id % COVER_GRADIENTS.length], display:'flex', alignItems:'center', justifyContent:'center', position:'relative', overflow:'hidden', flexShrink:0 }}>
+        <div style={{ transform:hov?'scale(1.08)':'scale(1)', transition:'transform 0.4s ease', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <Music size={44} color="rgba(255,255,255,0.3)" />
         </div>
-        {/* Status dot top-right */}
-        <div style={{ position:'absolute', top:'10px', right:'10px', width:'8px', height:'8px', borderRadius:'50%', background:statusDot[t.status]||'#71717a', boxShadow:`0 0 10px ${statusDot[t.status]||'#71717a'}` }} />
+        {/* Status pill top-right */}
+        <div style={{ position:'absolute', top:'10px', right:'10px', background:`${statusDot[t.status]||'#71717a'}22`, border:`1px solid ${statusDot[t.status]||'#71717a'}66`, borderRadius:'100px', padding:'3px 8px', display:'flex', alignItems:'center', gap:'4px' }}>
+          <div style={{ width:'5px', height:'5px', borderRadius:'50%', background:statusDot[t.status]||'#71717a', boxShadow:`0 0 6px ${statusDot[t.status]||'#71717a'}` }} />
+          <span style={{ color:statusDot[t.status]||'#71717a', fontSize:'9px', fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em' }}>{t.status||'draft'}</span>
+        </div>
         {/* Gradient overlay at bottom */}
-        <div style={{ position:'absolute', bottom:0, left:0, right:0, height:'40px', background:'linear-gradient(to top, rgba(10,6,18,0.9), transparent)' }} />
+        <div style={{ position:'absolute', bottom:0, left:0, right:0, height:'48px', background:'linear-gradient(to top, rgba(10,6,18,0.95), transparent)' }} />
       </div>
       {/* Track info */}
-      <div style={{ padding:'10px 12px', flex:1, display:'flex', flexDirection:'column', justifyContent:'space-between' }}>
-        <p style={{ color:'#fff', fontSize:'12px', fontWeight:600, margin:0, fontFamily:"'Space Grotesk',sans-serif", overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.title}</p>
+      <div style={{ padding:'10px 14px', flex:1, display:'flex', flexDirection:'column', justifyContent:'space-between' }}>
+        <p style={{ color:'#F2EDE5', fontSize:'14px', fontWeight:700, margin:0, fontFamily:"'Space Grotesk',sans-serif", overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.title}</p>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-          <span style={{ color:'rgba(255,255,255,0.3)', fontSize:'10px', fontFamily:"'Space Grotesk',sans-serif" }}>{t.genre||'Sin género'}</span>
+          <span style={{ color:'rgba(255,255,255,0.35)', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif" }}>{t.genre||'Sin género'}</span>
           <button onClick={e => { e.stopPropagation(); onDel(); }} style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.2)', padding:'2px', transition:'color 0.15s' }}
             onMouseEnter={e => (e.currentTarget as HTMLElement).style.color='#ef4444'}
             onMouseLeave={e => (e.currentTarget as HTMLElement).style.color='rgba(255,255,255,0.2)'}>
@@ -1687,17 +1689,22 @@ function RoyaltiesPage() {
           <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'15px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 18px' }}>POR PLATAFORMA</h3>
           {loadingData && [0,1,2].map(i=><div key={i} style={{marginBottom:'14px'}}><Skeleton h="32px" radius="8px"/></div>)}
           {!loadingData && platforms.length === 0 && <p style={{color:'rgba(255,255,255,0.25)',fontSize:'13px',fontFamily:"'Space Grotesk',sans-serif"}}>Sin datos</p>}
-          {platforms.map(([p,v]:any) => (
-            <div key={p} style={{ marginBottom:'14px' }}>
-              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'6px' }}>
-                <span style={{color:'rgba(255,255,255,0.7)',textTransform:'capitalize',fontSize:'13px',fontFamily:"'Space Grotesk',sans-serif",fontWeight:500}}>{p}</span>
+          {platforms.map(([p,v]:any, pi:number) => {
+            const pct = Math.min(100,(Number(v)/maxPlatform)*100);
+            const platColors = [P, PL, '#3b82f6', '#22c55e', '#f59e0b', '#ec4899'];
+            const c = platColors[pi % platColors.length];
+            return (
+            <div key={p} style={{ marginBottom:'14px', background:'rgba(255,255,255,0.02)', border:'1px solid rgba(255,255,255,0.05)', borderRadius:'12px', padding:'12px 14px' }}>
+              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'8px' }}>
+                <span style={{color:'rgba(255,255,255,0.75)',textTransform:'capitalize',fontSize:'13px',fontFamily:"'Space Grotesk',sans-serif",fontWeight:600}}>{p}</span>
                 <span style={{color:'#22c55e',fontWeight:700,fontSize:'13px',fontFamily:"'Space Grotesk',sans-serif"}}>${Number(v).toFixed(2)}</span>
               </div>
-              <div style={{ height:'6px', background:'rgba(255,255,255,0.05)', borderRadius:'100px', overflow:'hidden' }}>
-                <div style={{ height:'100%', background:`linear-gradient(90deg, ${P}, ${PL})`, borderRadius:'100px', width:`${Math.min(100,(Number(v)/maxPlatform)*100)}%`, transition:'width 1.2s cubic-bezier(0.22,1,0.36,1)' }} />
+              <div style={{ height:'5px', background:'rgba(255,255,255,0.05)', borderRadius:'100px', overflow:'hidden' }}>
+                <div style={{ height:'100%', background:`linear-gradient(90deg, ${c}88, ${c})`, borderRadius:'100px', width:'0%', animation:`barFill 1.2s cubic-bezier(0.34,1.56,0.64,1) ${pi*0.15}s forwards`, '--target-width':`${pct}%`, boxShadow:`0 0 8px ${c}60` } as React.CSSProperties} />
               </div>
             </div>
-          ))}
+            );
+          })}
         </Card>
         <Card>
           <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'15px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 18px' }}>HISTORIAL MENSUAL</h3>
@@ -1759,27 +1766,53 @@ function AIChatPage() {
 
   return (
     <PageShell title="IA Chat">
-      <Card style={{display:'flex',flexDirection:'column',height:'560px'}}>
-        <div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column',gap:'12px',paddingRight:'4px'}}>
+      <div style={{ position:'relative', background:'rgba(8,4,16,0.92)', backdropFilter:'blur(24px)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:'20px', overflow:'hidden', display:'flex', flexDirection:'column', height:'calc(100vh - 160px)', minHeight:'480px' }}>
+        {/* Neural dot pattern background */}
+        <div style={{ position:'absolute', inset:0, backgroundImage:'radial-gradient(rgba(94,23,235,0.08) 1px, transparent 1px)', backgroundSize:'32px 32px', pointerEvents:'none', zIndex:0 }} />
+        {/* Chat header */}
+        <div style={{ position:'relative', zIndex:1, display:'flex', alignItems:'center', gap:'12px', padding:'16px 20px', borderBottom:'1px solid rgba(255,255,255,0.06)', flexShrink:0 }}>
+          <div style={{ position:'relative', flexShrink:0 }}>
+            <div style={{ width:'38px', height:'38px', background:`linear-gradient(135deg,${P},${PL})`, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:`0 0 16px rgba(94,23,235,0.5)` }}>
+              <Sparkles size={16} color="#fff"/>
+            </div>
+            {/* Pulse ring */}
+            <div style={{ position:'absolute', inset:'-4px', borderRadius:'50%', border:`2px solid ${P}44`, animation:'glowPulse 2s ease-in-out infinite' }} />
+          </div>
+          <div>
+            <p style={{ color:'#F2EDE5', fontSize:'14px', fontWeight:700, margin:0, fontFamily:"'Space Grotesk',sans-serif" }}>Asistente IA Musical</p>
+            <p style={{ color:'rgba(94,23,235,0.7)', fontSize:'11px', margin:0, fontFamily:"'Space Grotesk',sans-serif", letterSpacing:'0.05em' }}>● Activo ahora</p>
+          </div>
+        </div>
+
+        {/* Messages */}
+        <div style={{ position:'relative', zIndex:1, flex:1, overflowY:'auto', display:'flex', flexDirection:'column', gap:'14px', padding:'20px 20px 8px', scrollbarWidth:'none' }}>
           {messages.map((m,i)=>(
             <div key={i} style={{display:'flex',justifyContent:m.role==='user'?'flex-end':'flex-start',alignItems:'flex-end',gap:'8px'}}>
               {m.role==='assistant' && <div style={{width:'28px',height:'28px',background:`rgba(94,23,235,0.25)`,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid rgba(94,23,235,0.3)`}}><Sparkles size={11} color={PL}/></div>}
-              <div style={{maxWidth:'72%',padding:'13px 16px',borderRadius:m.role==='user'?'18px 18px 4px 18px':'18px 18px 18px 4px',fontSize:'13px',lineHeight:'1.65',background:m.role==='user'?`linear-gradient(135deg,${P},${PL})`:'rgba(255,255,255,0.07)',color:'#fff',border:m.role==='user'?'none':'1px solid rgba(255,255,255,0.08)',fontFamily:"'Space Grotesk',sans-serif",boxShadow:m.role==='user'?`0 4px 20px rgba(94,23,235,0.3)`:'none'}}>{m.content}</div>
+              <div style={{maxWidth:'72%',padding:'13px 16px',borderRadius:m.role==='user'?'18px 18px 4px 18px':'4px 18px 18px 18px',fontSize:'13px',lineHeight:'1.65',background:m.role==='user'?`linear-gradient(135deg,${P},${PL})`:'rgba(255,255,255,0.06)',color:'#fff',border:m.role==='user'?'none':'1px solid rgba(255,255,255,0.08)',fontFamily:"'Space Grotesk',sans-serif",boxShadow:m.role==='user'?`0 4px 20px rgba(94,23,235,0.3)`:'none'}}>{m.content}</div>
             </div>
           ))}
-          {loading && <div style={{display:'flex',justifyContent:'flex-start',alignItems:'flex-end',gap:'8px'}}><div style={{width:'28px',height:'28px',background:`rgba(94,23,235,0.25)`,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Sparkles size={11} color={PL}/></div><div style={{background:'rgba(255,255,255,0.07)',border:'1px solid rgba(255,255,255,0.08)',padding:'14px 16px',borderRadius:'18px 18px 18px 4px',display:'flex',gap:'5px',alignItems:'center'}}>{[0,1,2].map(i=><div key={i} style={{width:'7px',height:'7px',background:PL,borderRadius:'50%',animation:`bounce 1.2s ease-in-out ${i*0.15}s infinite`}}/>)}</div></div>}
+          {loading && (
+            <div style={{display:'flex',justifyContent:'flex-start',alignItems:'flex-end',gap:'8px'}}>
+              <div style={{width:'28px',height:'28px',background:`rgba(94,23,235,0.25)`,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid rgba(94,23,235,0.3)`}}><Sparkles size={11} color={PL}/></div>
+              <div style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.08)',padding:'14px 18px',borderRadius:'4px 18px 18px 18px',display:'flex',gap:'5px',alignItems:'center'}}>
+                {[0,1,2].map(i=><div key={i} style={{width:'7px',height:'7px',background:PL,borderRadius:'50%',animation:`typingBounce 1.2s ease-in-out ${i*0.18}s infinite`}}/>)}
+              </div>
+            </div>
+          )}
           <div ref={bottomRef}/>
         </div>
 
         {/* Suggestion chips */}
         {showChips && (
-          <div style={{marginTop:'12px',paddingTop:'12px',borderTop:'1px solid rgba(255,255,255,0.05)'}}>
-            <p style={{color:'rgba(255,255,255,0.25)',fontSize:'11px',fontFamily:"'Space Grotesk',sans-serif",margin:'0 0 8px',letterSpacing:'0.08em'}}>SUGERENCIAS</p>
+          <div style={{ position:'relative', zIndex:1, padding:'12px 20px 0', borderTop:'1px solid rgba(255,255,255,0.05)' }}>
+            <p style={{color:'rgba(255,255,255,0.2)',fontSize:'10px',fontFamily:"'Space Grotesk',sans-serif",margin:'0 0 8px',letterSpacing:'0.12em',textTransform:'uppercase'}}>Sugerencias</p>
             <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
               {CHAT_CHIPS.map(chip=>(
-                <button key={chip} onClick={()=>send(chip)} style={{background:'rgba(94,23,235,0.1)',border:'1px solid rgba(94,23,235,0.25)',borderRadius:'100px',padding:'6px 14px',color:'rgba(255,255,255,0.7)',fontSize:'11px',fontFamily:"'Space Grotesk',sans-serif",cursor:'pointer',transition:'all 0.15s',whiteSpace:'nowrap'}}
-                  onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.background='rgba(94,23,235,0.25)';(e.currentTarget as HTMLElement).style.color='#fff';}}
-                  onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.background='rgba(94,23,235,0.1)';(e.currentTarget as HTMLElement).style.color='rgba(255,255,255,0.7)';}}>
+                <button key={chip} onClick={()=>send(chip)}
+                  style={{background:'rgba(94,23,235,0.08)',border:'1px solid rgba(94,23,235,0.22)',borderRadius:'100px',padding:'6px 14px',color:'rgba(255,255,255,0.65)',fontSize:'11px',fontFamily:"'Space Grotesk',sans-serif",cursor:'pointer',transition:'all 0.2s cubic-bezier(0.34,1.56,0.64,1)',whiteSpace:'nowrap'}}
+                  onMouseEnter={e=>{const el=e.currentTarget as HTMLElement;el.style.background='rgba(94,23,235,0.2)';el.style.color='#fff';el.style.transform='translateY(-2px)';el.style.boxShadow=`0 6px 20px rgba(94,23,235,0.25)`;}}
+                  onMouseLeave={e=>{const el=e.currentTarget as HTMLElement;el.style.background='rgba(94,23,235,0.08)';el.style.color='rgba(255,255,255,0.65)';el.style.transform='';el.style.boxShadow='';}}>
                   {chip}
                 </button>
               ))}
@@ -1787,14 +1820,20 @@ function AIChatPage() {
           </div>
         )}
 
-        <div style={{display:'flex',gap:'10px',marginTop:'12px',paddingTop:'14px',borderTop:'1px solid rgba(255,255,255,0.06)',alignItems:'center'}}>
-          <button title="Voz (próximamente)" style={{width:'40px',height:'40px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',cursor:'not-allowed',flexShrink:0,opacity:0.5}} onClick={()=>toast('Entrada de voz próximamente','info')}>
-            <Mic size={15} color="rgba(255,255,255,0.5)"/>
+        {/* Input bar */}
+        <div style={{ position:'relative', zIndex:1, display:'flex', gap:'10px', padding:'14px 20px 18px', borderTop:'1px solid rgba(255,255,255,0.06)', alignItems:'center', flexShrink:0 }}>
+          <button title="Voz (próximamente)" onClick={()=>toast('Entrada de voz próximamente','info')}
+            style={{width:'42px',height:'42px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',cursor:'not-allowed',flexShrink:0,opacity:0.45}}>
+            <Mic size={16} color="rgba(255,255,255,0.5)"/>
           </button>
-          <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&send()} placeholder="Escribe tu pregunta..." style={{flex:1,background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'12px',padding:'12px 16px',color:'#fff',fontFamily:"'Space Grotesk',sans-serif",fontSize:'13px',outline:'none'}}/>
+          <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&send()} placeholder="Escribe tu pregunta musical..."
+            style={{flex:1,background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'14px',padding:'12px 18px',color:'#fff',fontFamily:"'Space Grotesk',sans-serif",fontSize:'13px',outline:'none',transition:'border-color 0.2s, box-shadow 0.2s'}}
+            onFocus={e=>{(e.currentTarget as HTMLElement).style.borderColor='rgba(94,23,235,0.5)';(e.currentTarget as HTMLElement).style.boxShadow='0 0 20px rgba(94,23,235,0.15)';}}
+            onBlur={e=>{(e.currentTarget as HTMLElement).style.borderColor='rgba(255,255,255,0.08)';(e.currentTarget as HTMLElement).style.boxShadow='none';}}
+          />
           <Btn3D small onClick={()=>send()} disabled={loading||!input.trim()}><Send size={14}/></Btn3D>
         </div>
-      </Card>
+      </div>
     </PageShell>
   );
 }
@@ -3302,12 +3341,17 @@ export default function App() {
       <Sidebar active={activePage} onNav={setActivePage} user={user} onLogout={handleLogout} open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div style={{ marginLeft: `${SIDEBAR_W}px`, position: 'relative', zIndex: 1 }}>
         {/* Top bar */}
-        <div style={{ position: 'sticky', top: 0, background: 'rgba(5,3,8,0.88)', backdropFilter: 'blur(24px) saturate(160%)', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '12px 32px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', zIndex: 10 }}>
+        <div style={{ position: 'sticky', top: 0, height: '56px', background: 'rgba(5,3,8,0.88)', backdropFilter: 'blur(24px) saturate(160%)', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '0 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 10 }}>
+          <span style={{ fontFamily: "'Anton', sans-serif", fontSize: '22px', letterSpacing: '0.05em', color: '#F2EDE5' }}>
+            {MODULES.find(m => m.id === activePage)?.label || 'Dashboard'}
+          </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <button onClick={() => toast('Sin notificaciones nuevas', 'info')} style={{ background:'none', border:'none', cursor:'pointer', position:'relative', padding:'4px' }}>
-              <Bell size={17} color="rgba(255,255,255,0.28)" />
+            <button onClick={() => toast('Sin notificaciones nuevas', 'info')} style={{ width:'36px', height:'36px', display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'10px', cursor:'pointer', backdropFilter:'blur(12px)', transition:'all 0.2s' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background='rgba(94,23,235,0.12)'; (e.currentTarget as HTMLElement).style.borderColor='rgba(94,23,235,0.3)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background='rgba(255,255,255,0.05)'; (e.currentTarget as HTMLElement).style.borderColor='rgba(255,255,255,0.08)'; }}>
+              <Bell size={16} color="rgba(255,255,255,0.55)" />
             </button>
-            <div style={{ width: '32px', height: '32px', background: `linear-gradient(135deg,${P},${PL})`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 12px rgba(94,23,235,0.35)`, fontSize:'13px', fontFamily:"'Anton',sans-serif", color:'#fff' }}>
+            <div style={{ width: '36px', height: '36px', background: `linear-gradient(135deg,${P},${PL})`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 14px rgba(94,23,235,0.45)`, fontSize:'14px', fontFamily:"'Anton',sans-serif", color:'#fff', cursor:'pointer' }}>
               {(user?.name || user?.email || 'U')[0].toUpperCase()}
             </div>
           </div>
@@ -3391,6 +3435,12 @@ export default function App() {
         @keyframes barFill {
           from { width: 0; }
           to   { width: var(--target-width, 100%); }
+        }
+
+        /* ── Typing bounce ───────────────────────────────────────── */
+        @keyframes typingBounce {
+          0%, 60%, 100% { transform: translateY(0); }
+          30%            { transform: translateY(-8px); }
         }
 
         /* ── Global resets ───────────────────────────────────────── */
