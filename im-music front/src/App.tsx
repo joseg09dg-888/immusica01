@@ -1,11 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import Magnet from './components/Magnet';
 import SpotlightCard from './components/SpotlightCard';
-import BlurText from './components/BlurText';
 import RotatingText from './components/RotatingText';
 import ShinyText from './components/ShinyText';
 import CountUp from './components/CountUp';
-import TiltCard from './components/TiltCard';
 import {
   LayoutDashboard, Music, TrendingUp, DollarSign, Settings,
   Plus, Bell, User as UserIcon, BarChart3, Globe,
@@ -66,58 +64,67 @@ function AnimatedCounter({ target, suffix = '' }: { target: number; suffix?: str
   return <span ref={ref}>{count}{suffix}</span>;
 }
 
-// ─── useTilt hook ────────────────────────────────────────────────────────────
+// ─── useTilt hook — RAF throttled, zero re-renders ───────────────────────────
 function useTilt() {
   const ref = useRef<HTMLDivElement>(null);
-  const onMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!ref.current) return;
-    const r = ref.current.getBoundingClientRect();
-    const x = (e.clientX - r.left) / r.width - 0.5;
-    const y = (e.clientY - r.top) / r.height - 0.5;
-    ref.current.style.transform = `perspective(900px) rotateX(${-y * 10}deg) rotateY(${x * 10}deg) translateZ(12px)`;
-    ref.current.style.boxShadow = `${-x * 25}px ${-y * 25}px 60px rgba(94,23,235,0.25), 0 25px 50px rgba(0,0,0,0.5)`;
-    ref.current.style.borderColor = 'rgba(94,23,235,0.45)';
-  };
-  const onMouseLeave = () => {
+  const rafId = useRef<number>(0);
+  const onMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    cancelAnimationFrame(rafId.current);
+    const cx = e.clientX; const cy = e.clientY;
+    rafId.current = requestAnimationFrame(() => {
+      if (!ref.current) return;
+      const r = ref.current.getBoundingClientRect();
+      const x = (cx - r.left) / r.width - 0.5;
+      const y = (cy - r.top) / r.height - 0.5;
+      ref.current.style.transform = `perspective(900px) rotateX(${-y * 10}deg) rotateY(${x * 10}deg) translateZ(12px)`;
+      ref.current.style.boxShadow = `${-x * 25}px ${-y * 25}px 60px rgba(94,23,235,0.25), 0 25px 50px rgba(0,0,0,0.5)`;
+      ref.current.style.borderColor = 'rgba(94,23,235,0.45)';
+    });
+  }, []);
+  const onMouseLeave = useCallback(() => {
+    cancelAnimationFrame(rafId.current);
     if (!ref.current) return;
     ref.current.style.transform = '';
     ref.current.style.boxShadow = '';
     ref.current.style.borderColor = '';
     ref.current.style.transition = 'transform 0.6s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.6s ease, border-color 0.4s ease';
     setTimeout(() => { if (ref.current) ref.current.style.transition = ''; }, 600);
-  };
+  }, []);
   return { ref, onMouseMove, onMouseLeave };
 }
 
-// ─── Cursor Trail ────────────────────────────────────────────────────────────
+// ─── Cursor Trail — pure DOM, zero React re-renders ──────────────────────────
 function CursorTrail() {
-  const [dots, setDots] = useState<{ x: number; y: number; id: number }[]>([]);
-  const idRef = useRef(0);
+  const containerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    const container = containerRef.current; if (!container) return;
+    const MAX = 7;
+    const dots: HTMLDivElement[] = [];
+    // Pre-create fixed pool of dots
+    for (let i = 0; i < MAX; i++) {
+      const d = document.createElement('div');
+      d.style.cssText = `position:absolute;border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);transition:opacity 0.5s ease;opacity:0;`;
+      container.appendChild(d);
+      dots.push(d);
+    }
+    let idx = 0;
     const handler = (e: MouseEvent) => {
-      const id = idRef.current++;
-      setDots(prev => [...prev.slice(-6), { x: e.clientX, y: e.clientY, id }]);
-      setTimeout(() => setDots(prev => prev.filter(d => d.id !== id)), 500);
+      const d = dots[idx % MAX];
+      const sz = 4 + (idx % MAX) * 1.2;
+      const alpha = 0.08 + (idx % MAX) * 0.06;
+      d.style.left = e.clientX + 'px';
+      d.style.top = e.clientY + 'px';
+      d.style.width = sz + 'px';
+      d.style.height = sz + 'px';
+      d.style.background = `rgba(94,23,235,${alpha})`;
+      d.style.opacity = '1';
+      setTimeout(() => { d.style.opacity = '0'; }, 500);
+      idx++;
     };
-    window.addEventListener('mousemove', handler);
+    window.addEventListener('mousemove', handler, { passive: true });
     return () => window.removeEventListener('mousemove', handler);
   }, []);
-  return (
-    <>
-      {dots.map((d, i) => (
-        <div key={d.id} style={{
-          position: 'fixed', left: d.x - 4, top: d.y - 4,
-          width: `${4 + i * 1.2}px`, height: `${4 + i * 1.2}px`,
-          borderRadius: '50%',
-          background: `rgba(94,23,235,${0.08 + i * 0.06})`,
-          boxShadow: `0 0 ${6 + i * 2}px rgba(94,23,235,${0.2 + i * 0.04})`,
-          pointerEvents: 'none', zIndex: 9999,
-          transform: 'translate(-50%,-50%)',
-          transition: 'opacity 0.5s ease',
-        }} />
-      ))}
-    </>
-  );
+  return <div ref={containerRef} style={{ position:'fixed', inset:0, pointerEvents:'none', zIndex:9999 }} />;
 }
 
 // ─── Magnetic Cursor ─────────────────────────────────────────────────────────
@@ -189,7 +196,7 @@ function PageBackground({ color = '#5E17EB' }: { color?: string }) {
 }
 
 // ─── Icon3D ─────────────────────────────────────────────────────────────────
-function Icon3D({ icon: Icon, color, size = 48, label }: { icon: any; color: string; size?: number; label?: string }) {
+const Icon3D = memo(function Icon3D({ icon: Icon, color, size = 48, label }: { icon: any; color: string; size?: number; label?: string }) {
   const [hovered, setHovered] = useState(false);
   const [clicked, setClicked] = useState(false);
   return (
@@ -242,7 +249,7 @@ function Icon3D({ icon: Icon, color, size = 48, label }: { icon: any; color: str
       {label && <span style={{ fontFamily: "'Anton', sans-serif", fontSize: '9px', fontWeight: 700, color: hovered ? '#fff' : 'rgba(255,255,255,0.35)', letterSpacing: '0.12em', textTransform: 'uppercase', transition: 'color 0.2s', textAlign: 'center' }}>{label}</span>}
     </div>
   );
-}
+});
 // Keep GlassIcon as alias for backward compat
 const GlassIcon = Icon3D;
 
@@ -294,7 +301,7 @@ function particleBurst(e: React.MouseEvent) {
 }
 
 // ─── 3D Button ───────────────────────────────────────────────────────────────
-function Btn3D({ children, onClick, disabled = false, type = 'button', variant = 'primary', small = false, fullWidth = false }: {
+const Btn3D = memo(function Btn3D({ children, onClick, disabled = false, type = 'button', variant = 'primary', small = false, fullWidth = false }: {
   children: React.ReactNode; onClick?: () => void; disabled?: boolean;
   type?: 'button' | 'submit'; variant?: 'primary' | 'ghost' | 'danger'; small?: boolean; fullWidth?: boolean;
 }) {
@@ -364,7 +371,7 @@ function Btn3D({ children, onClick, disabled = false, type = 'button', variant =
       <span style={{ position:'relative', zIndex:1, display:'inline-flex', alignItems:'center', gap:'8px' }}>{children}</span>
     </button>
   );
-}
+});
 
 // ─── ══════════════════════════════════════════════════════════════
 //      LANDING PAGE
@@ -1325,7 +1332,7 @@ function SidebarItem({ m, isActive, onNav, onClose }: { m: typeof MODULES[0]; is
   );
 }
 
-function Sidebar({ active, onNav, user, onLogout, open, onClose }: {
+const Sidebar = memo(function Sidebar({ active, onNav, user, onLogout, open, onClose }: {
   active: string; onNav: (id: string) => void; user: any; onLogout: () => void; open: boolean; onClose: () => void;
 }) {
   const groups = [...new Set(MODULES.map(m => m.group))];
@@ -1392,7 +1399,7 @@ function Sidebar({ active, onNav, user, onLogout, open, onClose }: {
       </aside>
     </>
   );
-}
+});
 
 // ─── TOAST NOTIFICATION SYSTEM ────────────────────────────────────────────────
 type ToastType = 'success' | 'error' | 'info';
@@ -1472,59 +1479,71 @@ function PageShell({ title, children, action }: { title: string; children: React
   );
 }
 
-// ─── HoloCard — holographic tilt card ────────────────────────────────────────
-function HoloCard({ children, style = {}, color = P, intense = false }: { children: React.ReactNode; style?: React.CSSProperties; color?: string; intense?: boolean }) {
+// ─── HoloCard — holographic tilt card (zero-state, pure DOM mutations) ────────
+const HoloCard = memo(function HoloCard({ children, style = {}, color = P, intense = false }: { children: React.ReactNode; style?: React.CSSProperties; color?: string; intense?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [mouse, setMouse] = useState({ x: 50, y: 50 });
-  const [hovered, setHovered] = useState(false);
+  const glowRef = useRef<HTMLDivElement>(null);
+  const foilRef = useRef<HTMLDivElement>(null);
+  const rafId = useRef<number>(0);
 
-  const onMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!ref.current) return;
-    const r = ref.current.getBoundingClientRect();
-    const x = ((e.clientX - r.left) / r.width) * 100;
-    const y = ((e.clientY - r.top) / r.height) * 100;
-    setMouse({ x, y });
-    const rx = ((e.clientY - r.top - r.height / 2) / r.height) * -10;
-    const ry = ((e.clientX - r.left - r.width / 2) / r.width) * 10;
-    ref.current.style.transform = `perspective(1000px) rotateX(${rx}deg) rotateY(${ry}deg) translateZ(${intense ? 18 : 10}px) scale(1.01)`;
-    ref.current.style.transition = 'box-shadow 0.2s ease, border-color 0.2s ease';
-  };
-  const onLeave = () => {
-    if (!ref.current) return;
-    ref.current.style.transform = '';
-    ref.current.style.transition = 'transform 0.55s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease, border-color 0.3s ease';
-    setHovered(false);
-  };
+  const onMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    cancelAnimationFrame(rafId.current);
+    rafId.current = requestAnimationFrame(() => {
+      const el = ref.current; const glow = glowRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const x = ((e.clientX - r.left) / r.width) * 100;
+      const y = ((e.clientY - r.top) / r.height) * 100;
+      const rx = ((e.clientY - r.top - r.height / 2) / r.height) * -10;
+      const ry = ((e.clientX - r.left - r.width / 2) / r.width) * 10;
+      el.style.transform = `perspective(1000px) rotateX(${rx}deg) rotateY(${ry}deg) translateZ(${intense ? 18 : 10}px) scale(1.01)`;
+      el.style.borderColor = color + '45';
+      el.style.boxShadow = `0 30px 80px rgba(0,0,0,0.5), 0 0 60px ${color}18, inset 0 1px 0 rgba(255,255,255,0.08)`;
+      if (glow) glow.style.background = `radial-gradient(circle 220px at ${x}% ${y}%, ${color}16, transparent 60%)`;
+      if (intense && foilRef.current) foilRef.current.style.background = `linear-gradient(${x + y * 0.5}deg, rgba(255,0,128,0.03), ${color}08, rgba(0,200,255,0.03))`;
+    });
+  }, [color, intense]);
+
+  const onLeave = useCallback(() => {
+    cancelAnimationFrame(rafId.current);
+    const el = ref.current; const glow = glowRef.current;
+    if (!el) return;
+    el.style.transform = '';
+    el.style.borderColor = 'rgba(255,255,255,0.07)';
+    el.style.boxShadow = '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)';
+    el.style.transition = 'transform 0.55s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease, border-color 0.3s ease';
+    setTimeout(() => { if (el) el.style.transition = 'box-shadow 0.3s ease, border-color 0.3s ease'; }, 550);
+    if (glow) glow.style.background = 'none';
+    if (intense && foilRef.current) foilRef.current.style.background = 'none';
+  }, [intense]);
 
   return (
-    <div ref={ref} onMouseMove={onMove} onMouseEnter={() => setHovered(true)} onMouseLeave={onLeave}
+    <div ref={ref} onMouseMove={onMove} onMouseLeave={onLeave}
       style={{
         position: 'relative', overflow: 'hidden',
         background: 'rgba(8,5,16,0.88)',
-        border: `1px solid ${hovered ? color + '45' : 'rgba(255,255,255,0.07)'}`,
+        border: '1px solid rgba(255,255,255,0.07)',
         borderRadius: 24, backdropFilter: 'blur(28px) saturate(180%)',
-        boxShadow: hovered
-          ? `0 30px 80px rgba(0,0,0,0.5), 0 0 60px ${color}18, inset 0 1px 0 rgba(255,255,255,0.08)`
-          : `0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)`,
+        boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)',
         transition: 'box-shadow 0.3s ease, border-color 0.3s ease',
         padding: '24px',
         ...style,
       }}>
-      {/* Mouse-follow radial shine */}
-      <div style={{ position:'absolute', inset:0, pointerEvents:'none', zIndex:1, borderRadius:'inherit', background: hovered ? `radial-gradient(circle 220px at ${mouse.x}% ${mouse.y}%, ${color}16, transparent 60%)` : 'none', transition:'background 0.12s ease' }} />
-      {/* Rainbow foil on intense cards */}
-      {intense && hovered && <div style={{ position:'absolute', inset:0, pointerEvents:'none', zIndex:2, borderRadius:'inherit', background:`linear-gradient(${mouse.x + mouse.y * 0.5}deg, rgba(255,0,128,0.03), ${color}08, rgba(0,200,255,0.03))`, mixBlendMode:'screen' }} />}
+      {/* Mouse-follow radial shine — mutated directly, no re-render */}
+      <div ref={glowRef} style={{ position:'absolute', inset:0, pointerEvents:'none', zIndex:1, borderRadius:'inherit' }} />
+      {/* Rainbow foil for intense cards */}
+      {intense && <div ref={foilRef} style={{ position:'absolute', inset:0, pointerEvents:'none', zIndex:2, borderRadius:'inherit', mixBlendMode:'screen' }} />}
       {/* Top glass rim */}
       <div style={{ position:'absolute', top:0, left:0, right:0, height:1, background:'linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent)', pointerEvents:'none', zIndex:3 }} />
       <div style={{ position:'relative', zIndex:4 }}>{children}</div>
     </div>
   );
-}
+});
 
 // Card — thin wrapper around HoloCard for backward compat
-function Card({ children, style = {}, glow = false, color }: { children: React.ReactNode; style?: React.CSSProperties; glow?: boolean; color?: string }) {
-  return <HoloCard style={style} color={color || (glow ? P : P)} intense={glow}>{children}</HoloCard>;
-}
+const Card = memo(function Card({ children, style = {}, glow = false, color }: { children: React.ReactNode; style?: React.CSSProperties; glow?: boolean; color?: string }) {
+  return <HoloCard style={style} color={color || P} intense={glow}>{children}</HoloCard>;
+});
 
 // Icon circle — premium 52x52 with glow
 function IconCircle({ icon: Icon, color = PL, size = 52, iconSize = 20 }: { icon: any; color?: string; size?: number; iconSize?: number }) {
@@ -1537,33 +1556,68 @@ function IconCircle({ icon: Icon, color = PL, size = 52, iconSize = 20 }: { icon
   );
 }
 
-function StatCard({ label, value, icon: Icon, trend, sparkline, glowColor = PL }: { label: string; value: string | number; icon: any; key?: React.Key; trend?: 'up' | 'down'; sparkline?: number[]; glowColor?: string }) {
-  const tilt = useTilt();
-  const [isHov, setIsHov] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
+const StatCard = memo(function StatCard({ label, value, icon: Icon, trend, sparkline, glowColor = PL }: { label: string; value: string | number; icon: any; key?: React.Key; trend?: 'up' | 'down'; sparkline?: number[]; glowColor?: string }) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const glowRef = useRef<HTMLDivElement>(null);
+  const shimRef = useRef<HTMLDivElement>(null);
+  const barsContRef = useRef<HTMLDivElement>(null);
+  const rafId = useRef<number>(0);
   const bars = sparkline || [40, 55, 35, 70, 50, 80, 65, 90];
   const maxBar = Math.max(...bars, 1);
 
-  useEffect(() => { const t = setTimeout(() => setMounted(true), 50); return () => clearTimeout(t); }, []);
+  // Reveal bars on first viewport entry (once only)
+  useEffect(() => {
+    const el = barsContRef.current; if (!el) return;
+    const obs = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return;
+      obs.disconnect();
+      Array.from(el.children).forEach((bar, i) => {
+        const b = bars[i];
+        setTimeout(() => { (bar as HTMLDivElement).style.height = `${(b / maxBar) * 28}px`; }, i * 60);
+      });
+    }, { threshold: 0.3 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []); // eslint-disable-line
 
-  const handleMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    tilt.onMouseMove(e);
-    const r = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
-    setMousePos({ x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 });
-  };
+  const onMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    cancelAnimationFrame(rafId.current);
+    rafId.current = requestAnimationFrame(() => {
+      const el = wrapRef.current; if (!el) return;
+      const r = el.getBoundingClientRect();
+      const x = ((e.clientX - r.left) / r.width) * 100;
+      const y = ((e.clientY - r.top) / r.height) * 100;
+      const rx = ((e.clientY - r.top - r.height / 2) / r.height) * -8;
+      const ry = ((e.clientX - r.left - r.width / 2) / r.width) * 8;
+      el.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg) translateZ(10px)`;
+      el.style.boxShadow = `${-ry * 2}px ${rx * 2}px 40px rgba(0,0,0,0.5), 0 0 30px ${glowColor}22`;
+      if (glowRef.current) glowRef.current.style.background = `radial-gradient(circle 150px at ${x}% ${y}%, ${glowColor}18, transparent)`;
+      if (shimRef.current) shimRef.current.style.opacity = '1';
+    });
+  }, [glowColor]);
+
+  const onLeave = useCallback(() => {
+    cancelAnimationFrame(rafId.current);
+    const el = wrapRef.current; if (!el) return;
+    el.style.transform = '';
+    el.style.boxShadow = '';
+    el.style.transition = 'transform 0.55s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.4s ease';
+    setTimeout(() => { if (el) el.style.transition = ''; }, 550);
+    if (glowRef.current) glowRef.current.style.background = 'none';
+    if (shimRef.current) shimRef.current.style.opacity = '0';
+  }, []);
 
   return (
-    <div ref={tilt.ref} onMouseMove={handleMove} onMouseEnter={() => setIsHov(true)} onMouseLeave={() => { tilt.onMouseLeave(); setIsHov(false); }}
-      style={{ background: 'rgba(10,6,18,0.88)', backdropFilter: 'blur(40px) saturate(200%)', border: `1px solid ${glowColor}30`, borderRadius: '24px', padding: '22px', position: 'relative', overflow: 'hidden', minHeight: '160px', display:'flex', flexDirection:'column', justifyContent:'space-between' }}>
+    <div ref={wrapRef} onMouseMove={onMove} onMouseLeave={onLeave}
+      style={{ background: 'rgba(10,6,18,0.88)', backdropFilter: 'blur(40px) saturate(200%)', border: `1px solid ${glowColor}30`, borderRadius: '24px', padding: '22px', position: 'relative', overflow: 'hidden', minHeight: '160px', display:'flex', flexDirection:'column', justifyContent:'space-between', willChange:'transform' }}>
       {/* Watermark icon */}
       <div style={{ position: 'absolute', right: '-16px', bottom: '-16px', opacity: 0.04, pointerEvents: 'none' }}>
         <Icon size={120} color={glowColor} />
       </div>
-      {/* Holographic shimmer on hover */}
-      {isHov && <div style={{ position:'absolute', inset:0, background:'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.07) 50%, transparent 60%)', backgroundSize:'200% 200%', animation:'holographic 3s linear infinite', pointerEvents:'none', borderRadius:'24px' }} />}
-      {/* Mouse-follow inner glow */}
-      <div style={{ position:'absolute', inset:0, borderRadius:'24px', pointerEvents:'none', background:`radial-gradient(circle 150px at ${mousePos.x}% ${mousePos.y}%, ${glowColor}18, transparent)`, transition:'background 0.1s ease' }} />
+      {/* Holographic shimmer — opacity toggled via ref */}
+      <div ref={shimRef} style={{ position:'absolute', inset:0, background:'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.07) 50%, transparent 60%)', backgroundSize:'200% 200%', animation:'holographic 3s linear infinite', pointerEvents:'none', borderRadius:'24px', opacity:0, transition:'opacity 0.3s ease' }} />
+      {/* Mouse-follow inner glow — mutated directly */}
+      <div ref={glowRef} style={{ position:'absolute', inset:0, borderRadius:'24px', pointerEvents:'none' }} />
       {/* Static ambient glow */}
       <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(circle at 80% 20%, ${glowColor}0e 0%, transparent 55%)`, pointerEvents: 'none' }} />
 
@@ -1589,15 +1643,15 @@ function StatCard({ label, value, icon: Icon, trend, sparkline, glowColor = PL }
         <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', margin: '0', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.1em', textTransform: 'uppercase' }}>{label}</p>
       </div>
 
-      {/* Sparkline at bottom */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '28px', position: 'relative', zIndex: 1 }}>
+      {/* Sparkline — heights animated via IntersectionObserver */}
+      <div ref={barsContRef} style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '28px', position: 'relative', zIndex: 1 }}>
         {bars.map((b, i) => (
-          <div key={i} style={{ flex: 1, height: mounted ? `${(b / maxBar) * 28}px` : '2px', background: i === bars.length - 1 ? glowColor : `${glowColor}40`, borderRadius: '2px 2px 0 0', transition: `height 0.7s cubic-bezier(0.34,1.56,0.64,1) ${i * 0.06}s`, minWidth: '4px', boxShadow: i === bars.length - 1 ? `0 0 12px ${glowColor}88` : 'none' }} />
+          <div key={i} style={{ flex: 1, height: '2px', background: i === bars.length - 1 ? glowColor : `${glowColor}40`, borderRadius: '2px 2px 0 0', transition: `height 0.7s cubic-bezier(0.34,1.56,0.64,1)`, minWidth: '4px', boxShadow: i === bars.length - 1 ? `0 0 12px ${glowColor}88` : 'none' }} />
         ))}
       </div>
     </div>
   );
-}
+});
 
 function AppMarqueeStrip() {
   const items = [...MARQUEE_WORDS, ...MARQUEE_WORDS];
@@ -1760,20 +1814,25 @@ const COVER_GRADIENTS = [
   'linear-gradient(135deg,#5E17EB,#22c55e)',
 ];
 
+const WAVE_BARS_CONST = [4,8,5,12,6,14,4,10,7,13,5,11,8,15,6,9];
 function TrackGridCard({ track: t, onDel }: { track: any; onDel: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const [hov, setHov] = useState(false);
+  const rafId = useRef<number>(0);
   const statusColors: Record<string,string> = { draft:'#71717a', published:'#22c55e', scheduled:'#3b82f6' };
   const sc = statusColors[t.status] || '#71717a';
-  const WAVE_BARS = [4,8,5,12,6,14,4,10,7,13,5,11,8,15,6,9];
 
   const onMouseMove = (e: React.MouseEvent) => {
-    const el = ref.current; if (!el) return;
-    const r = el.getBoundingClientRect();
-    const nx = (e.clientX - r.left) / r.width;
-    const ny = (e.clientY - r.top) / r.height;
-    el.style.transform = `perspective(900px) rotateX(${(ny-0.5)*-8}deg) rotateY(${(nx-0.5)*8}deg) translateY(-6px)`;
-    el.style.boxShadow = `0 20px 60px rgba(94,23,235,0.25), 0 0 0 1px rgba(94,23,235,0.35)`;
+    const cx = e.clientX; const cy = e.clientY;
+    cancelAnimationFrame(rafId.current);
+    rafId.current = requestAnimationFrame(() => {
+      const el = ref.current; if (!el) return;
+      const r = el.getBoundingClientRect();
+      const nx = (cx - r.left) / r.width;
+      const ny = (cy - r.top) / r.height;
+      el.style.transform = `perspective(900px) rotateX(${(ny-0.5)*-8}deg) rotateY(${(nx-0.5)*8}deg) translateY(-6px)`;
+      el.style.boxShadow = `0 20px 60px rgba(94,23,235,0.25), 0 0 0 1px rgba(94,23,235,0.35)`;
+    });
   };
   const onMouseLeave = () => {
     setHov(false);
@@ -1811,7 +1870,7 @@ function TrackGridCard({ track: t, onDel }: { track: any; onDel: () => void }) {
         <div style={{ position:'absolute', bottom:0, left:0, right:0, height:56, background:'linear-gradient(to top, rgba(8,5,16,1), transparent)' }} />
         {/* 16-bar waveform */}
         <div style={{ position:'absolute', bottom:8, left:'50%', transform:'translateX(-50%)', display:'flex', alignItems:'flex-end', gap:2, height:24 }}>
-          {WAVE_BARS.map((h,i) => (
+          {WAVE_BARS_CONST.map((h,i) => (
             <div key={i} style={{ width:3, background:'rgba(255,255,255,0.3)', borderRadius:2, height:`${h}px`, animation:`waveformPulse 1.4s ease-in-out ${i*0.09}s infinite`, '--wh':`${h}px` } as React.CSSProperties} />
           ))}
         </div>

@@ -16,14 +16,20 @@ export default defineConfig(({ mode }) => {
       },
     },
     build: {
+      minify: 'esbuild',
       rollupOptions: {
         output: {
           manualChunks: {
             vendor: ['react', 'react-dom'],
             motion: ['motion/react'],
+            icons: ['lucide-react'],
           },
         },
       },
+      chunkSizeWarningLimit: 500,
+    },
+    optimizeDeps: {
+      include: ['react', 'react-dom', 'motion/react', 'lucide-react'],
     },
     server: {
       hmr: process.env.DISABLE_HMR !== 'true',
