@@ -4,7 +4,9 @@ import SpotlightCard from './components/SpotlightCard';
 import RotatingText from './components/RotatingText';
 import ShinyText from './components/ShinyText';
 import CountUp from './components/CountUp';
-import LightPillar from './components/LightPillar';
+const LightPillarLazy = React.lazy(() =>
+  import('./components/LightPillar').catch(() => ({ default: () => null as any }))
+);
 import {
   LayoutDashboard, Music, TrendingUp, DollarSign, Settings,
   Plus, Bell, BarChart3, Globe,
@@ -327,11 +329,11 @@ const MARQUEE_WORDS = ['DISTRIBUCIÓN GLOBAL', 'REGALÍAS EN TIEMPO REAL', 'IA M
 function Marquee({ reverse = false }: { reverse?: boolean }) {
   const items = [...MARQUEE_WORDS, ...MARQUEE_WORDS];
   return (
-    <div style={{ overflow: 'hidden', borderTop: '1px solid rgba(94,23,235,0.2)', borderBottom: '1px solid rgba(94,23,235,0.2)', background: 'rgba(94,23,235,0.08)', padding: '12px 0' }}>
+    <div style={{ overflow: 'hidden', borderTop: '1px solid rgba(94,23,235,0.25)', borderBottom: '1px solid rgba(94,23,235,0.25)', background: 'linear-gradient(90deg,#5E17EB,#7B3FFF,#5E17EB)', backgroundSize: '200% 100%', animation: 'gradientShift 4s linear infinite', padding: '12px 0' }}>
       <div style={{ display: 'flex', width: 'max-content', animation: `marquee${reverse ? 'Rev' : ''} 28s linear infinite` }}>
         {items.map((w, i) => (
-          <span key={i} style={{ fontFamily: "'Anton', sans-serif", fontSize: '11px', letterSpacing: '0.25em', color: reverse ? 'rgba(255,255,255,0.3)' : PL, padding: '0 28px', whiteSpace: 'nowrap' }}>
-            {w} <span style={{ color: P, opacity: 0.5 }}>✦</span>
+          <span key={i} style={{ fontFamily: "'Anton', sans-serif", fontSize: '11px', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.9)', padding: '0 28px', whiteSpace: 'nowrap' }}>
+            {w} <span style={{ color: 'rgba(255,255,255,0.5)' }}>✦</span>
           </span>
         ))}
       </div>
@@ -369,12 +371,12 @@ function RotatingCube() {
 }
 
 const SERVICES = [
-  { icon: Disc, title: 'Distribución Global', desc: 'Tu música en +150 plataformas: Spotify, Apple Music, YouTube, TikTok y más. ISRC y UPC incluidos.' },
-  { icon: DollarSign, title: 'Regalías en Tiempo Real', desc: 'Dashboard con ingresos actualizados diariamente. Histórico completo y proyecciones inteligentes.' },
-  { icon: Sparkles, title: 'Marketing con IA', desc: 'Identifica tu arquetipo artístico, genera estrategias y automatiza campañas con inteligencia artificial.' },
-  { icon: Users, title: 'Splits y Colaboraciones', desc: 'Divide regalías automáticamente entre colaboradores. Contratos digitales, pagos en tiempo real.' },
-  { icon: Shield, title: 'Publishing y Registro', desc: 'Registra tus composiciones, gestiona derechos de autor y cobra royalties de sincronización.' },
-  { icon: Headphones, title: 'Spotlight Playlists', desc: 'Envía tu música a curadores verificados. Acceso directo a playlists editoriales de alto alcance.' },
+  { icon: Disc, color: '#5E17EB', title: 'Distribución Global', desc: 'Tu música en +150 plataformas: Spotify, Apple Music, YouTube, TikTok y más. ISRC y UPC incluidos.' },
+  { icon: DollarSign, color: '#22c55e', title: 'Regalías en Tiempo Real', desc: 'Dashboard con ingresos actualizados diariamente. Histórico completo y proyecciones inteligentes.' },
+  { icon: Sparkles, color: '#f59e0b', title: 'Marketing con IA', desc: 'Identifica tu arquetipo artístico, genera estrategias y automatiza campañas con inteligencia artificial.' },
+  { icon: Users, color: '#C084FC', title: 'Splits y Colaboraciones', desc: 'Divide regalías automáticamente entre colaboradores. Contratos digitales, pagos en tiempo real.' },
+  { icon: BookOpen, color: '#3b82f6', title: 'Publishing y Registro', desc: 'Registra tus composiciones, gestiona derechos de autor y cobra royalties de sincronización.' },
+  { icon: Radio, color: '#7B3FFF', title: 'Spotlight Playlists', desc: 'Envía tu música a curadores verificados. Acceso directo a playlists editoriales de alto alcance.' },
 ];
 
 const PLANS = [
@@ -449,7 +451,13 @@ class LightPillarBoundary extends React.Component<{children:React.ReactNode},{er
 function LandingPage({ onEnter }: { onEnter: () => void }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showPillar, setShowPillar] = useState(false);
   const progressBarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowPillar(true), 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Scroll: only trigger React re-render when threshold crosses, progress via direct DOM
   useEffect(() => {
@@ -626,27 +634,33 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
 
       {/* ── HERO ── */}
       <section className="landing-hero-section" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', padding: '100px 72px 80px', position: 'relative', zIndex: 1, overflow: 'hidden', background: '#000', contain: 'layout style paint', transform: 'translateZ(0)' }}>
-        {/* LightPillar WebGL background */}
-        <LightPillarBoundary>
-          <div style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 0 }}>
-            <LightPillar
-              topColor="#5E17EB"
-              bottomColor="#7B3FFF"
-              intensity={1.5}
-              rotationSpeed={0.5}
-              glowAmount={0.002}
-              pillarWidth={3}
-              pillarHeight={0.4}
-              noiseIntensity={0.5}
-              pillarRotation={25}
-              interactive={true}
-              mixBlendMode="screen"
-              quality="high"
-            />
-          </div>
-        </LightPillarBoundary>
+        {/* CSS gradient fallback — always visible */}
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 80% 60% at 30% 50%, rgba(94,23,235,0.3) 0%, transparent 60%), radial-gradient(ellipse 60% 80% at 80% 20%, rgba(123,63,255,0.2) 0%, transparent 60%), #000', pointerEvents: 'none', zIndex: 0 }} />
+        {/* LightPillar WebGL — loads after 1000ms, sits on top via mixBlendMode screen */}
+        {showPillar && (
+          <LightPillarBoundary>
+            <div style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 1 }}>
+              <React.Suspense fallback={null}>
+                <LightPillarLazy
+                  topColor="#5E17EB"
+                  bottomColor="#7B3FFF"
+                  intensity={1.5}
+                  rotationSpeed={0.5}
+                  glowAmount={0.002}
+                  pillarWidth={3}
+                  pillarHeight={0.4}
+                  noiseIntensity={0.5}
+                  pillarRotation={25}
+                  interactive={true}
+                  mixBlendMode="screen"
+                  quality="high"
+                />
+              </React.Suspense>
+            </div>
+          </LightPillarBoundary>
+        )}
 
-        <div className="landing-hero-grid" style={{ maxWidth: '1340px', margin: '0 auto', width: '100%', display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '80px', alignItems: 'center', position: 'relative' }}>
+        <div className="landing-hero-grid" style={{ maxWidth: '1340px', margin: '0 auto', width: '100%', display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '80px', alignItems: 'center', position: 'relative', zIndex: 2 }}>
           {/* Left: text */}
           <div>
             {/* Badge */}
@@ -778,17 +792,17 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
       </div>
 
       {/* ── STATS BAR ── */}
-      <section className="landing-stats-section" style={{ background: `linear-gradient(135deg, rgba(94,23,235,0.12) 0%, rgba(45,11,107,0.18) 100%)`, borderTop: '1px solid rgba(94,23,235,0.2)', borderBottom: '1px solid rgba(94,23,235,0.2)', padding: '64px 48px', position: 'relative', zIndex: 1, overflow: 'hidden' }}>
+      <section className="landing-stats-section" style={{ background: `linear-gradient(135deg, rgba(94,23,235,0.15) 0%, rgba(45,11,107,0.25) 100%)`, borderTop: '1px solid rgba(94,23,235,0.2)', borderBottom: '1px solid rgba(94,23,235,0.2)', padding: '64px 48px', position: 'relative', zIndex: 1, overflow: 'hidden', backdropFilter: 'blur(10px)' }}>
         <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '600px', height: '300px', background: `radial-gradient(ellipse, rgba(94,23,235,0.12) 0%, transparent 70%)`, pointerEvents: 'none' }} />
         <div className="landing-stats-grid" style={{ maxWidth: '1100px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0', position: 'relative' }}>
           {[
-            { end: 150, suffix: '+', label: 'Plataformas globales', icon: Globe },
-            { end: 50, suffix: 'K+', label: 'Artistas activos', icon: Users },
-            { end: 2, suffix: 'M+', prefix: '$', label: 'En regalías pagadas', icon: DollarSign },
-            { end: 98, suffix: '%', label: 'Tasa de satisfacción', icon: Star },
+            { end: 150, suffix: '+', label: 'Plataformas globales', icon: Globe, color: '#5E17EB' },
+            { end: 50, suffix: 'K+', label: 'Artistas activos', icon: Users, color: '#C084FC' },
+            { end: 2, suffix: 'M+', prefix: '$', label: 'En regalías pagadas', icon: DollarSign, color: '#22c55e' },
+            { end: 98, suffix: '%', label: 'Tasa de satisfacción', icon: Star, color: '#f59e0b' },
           ].map((stat, i) => (
             <div key={i} className={`reveal reveal-delay-${i + 1}`} style={{ textAlign: 'center', padding: '0 24px', borderRight: i < 3 ? '1px solid rgba(94,23,235,0.2)' : 'none' }}>
-              <stat.icon size={22} color={PL} style={{ marginBottom: '14px', display: 'block', margin: '0 auto 14px' }} />
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '14px' }}><Icon3D icon={stat.icon} color={stat.color} size={40} /></div>
               <div style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(2.5rem, 4vw, 3.75rem)', color: '#F2EDE5', letterSpacing: '-0.02em', lineHeight: 1, marginBottom: '10px' }}>
                 {stat.prefix || ''}<CountUp end={stat.end} suffix={stat.suffix} duration={2000} />
               </div>
@@ -799,7 +813,9 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
       </section>
 
       {/* ── SERVICES ── */}
-      <section id="servicios" className="landing-section-padding" style={{ padding: '120px 48px', position: 'relative', zIndex: 1 }}>
+      <section id="servicios" className="landing-section-padding" style={{ padding: '120px 48px', position: 'relative', zIndex: 1, background: '#000' }}>
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 80% 60% at 50% 50%, rgba(94,23,235,0.06) 0%, transparent 70%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(94,23,235,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(94,23,235,0.03) 1px, transparent 1px)', backgroundSize: '60px 60px', pointerEvents: 'none' }} />
         <div style={{ textAlign: 'center', marginBottom: '72px' }}>
           <span className="reveal" style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', color: PL, display: 'block', marginBottom: '16px' }}>LO QUE OFRECEMOS</span>
           <h2 className="reveal reveal-delay-1 landing-services-title" style={{ fontFamily: "'Anton', sans-serif", fontSize: 'clamp(2.5rem, 5vw, 3.75rem)', color: '#F2EDE5', margin: '0 0 8px', letterSpacing: '0.01em' }}>
@@ -812,7 +828,7 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
         {/* Service cards grid */}
         <div className="reveal reveal-delay-2" style={{ maxWidth: '1200px', margin: '0 auto 60px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
           {SERVICES.map((s, i) => (
-            <ServiceCard key={i} icon={s.icon} title={s.title} desc={s.desc} />
+            <ServiceCard key={i} icon={s.icon} color={s.color} title={s.title} desc={s.desc} />
           ))}
         </div>
         {/* Pure CSS scroll-snap feature carousel — zero WebGL */}
@@ -888,8 +904,8 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
               onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = 'translateY(-8px)'; el.style.borderColor = artist.color + '60'; el.style.boxShadow = `0 20px 40px rgba(0,0,0,0.4), 0 0 30px ${artist.color}25`; }}
               onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = 'translateY(0)'; el.style.borderColor = 'rgba(255,255,255,0.08)'; el.style.boxShadow = 'none'; }}
             >
-              <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: `linear-gradient(135deg, ${artist.color}40, ${artist.color}20)`, border: `2px solid ${artist.color}60`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', margin: '0 auto 16px' }}>
-                {artist.img}
+              <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: `linear-gradient(135deg, ${artist.color}, ${artist.color}80)`, border: `2px solid ${artist.color}60`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', flexShrink: 0 }}>
+                <span style={{ fontFamily: "'Anton', sans-serif", fontSize: '26px', color: '#fff', letterSpacing: 0 }}>{artist.name[0]}</span>
               </div>
               <h4 style={{ fontFamily: "'Anton', sans-serif", fontSize: '16px', color: '#fff', margin: '0 0 4px', letterSpacing: '0.03em' }}>{artist.name}</h4>
               <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.35)', margin: '0 0 16px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{artist.genre}</p>
@@ -939,9 +955,9 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
       </section>
 
       {/* ── PRICING ── */}
-      <section id="precios" className="landing-section-padding" style={{ padding: '120px 48px', position: 'relative', zIndex: 1 }}>
-        {/* Glow behind section */}
-        <div style={{ position: 'absolute', top: '30%', left: '50%', transform: 'translateX(-50%)', width: '900px', height: '500px', background: 'radial-gradient(ellipse, rgba(94,23,235,0.1) 0%, transparent 65%)', pointerEvents: 'none' }} />
+      <section id="precios" className="landing-section-padding" style={{ padding: '120px 48px', position: 'relative', zIndex: 1, background: '#000', overflow: 'hidden' }}>
+        {/* Large purple glow orb */}
+        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '800px', height: '800px', background: 'radial-gradient(circle, rgba(94,23,235,0.08) 0%, transparent 65%)', pointerEvents: 'none', filter: 'blur(60px)' }} />
         <div style={{ maxWidth: '1100px', margin: '0 auto', position: 'relative' }}>
           <div style={{ textAlign: 'center', marginBottom: '72px' }}>
             <span className="reveal" style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', color: PL, display: 'block', marginBottom: '16px' }}>PLANES Y PRECIOS</span>
@@ -957,8 +973,11 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
       </section>
 
       {/* ── CTA FINAL ── */}
-      <section className="landing-section-padding" style={{ padding: '120px 48px', position: 'relative', zIndex: 1, textAlign: 'center' }}>
-        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '800px', height: '400px', background: `radial-gradient(ellipse, rgba(94,23,235,0.18) 0%, transparent 70%)`, pointerEvents: 'none' }} />
+      <section className="landing-section-padding" style={{ padding: '120px 48px', position: 'relative', zIndex: 1, textAlign: 'center', background: '#000', overflow: 'hidden' }}>
+        {/* Massive orb */}
+        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '1000px', height: '1000px', background: `radial-gradient(circle, rgba(94,23,235,0.12) 0%, transparent 65%)`, pointerEvents: 'none', filter: 'blur(40px)' }} />
+        {/* Rotating ring */}
+        <div style={{ position: 'absolute', top: '50%', left: '50%', width: '600px', height: '600px', border: '1px solid rgba(94,23,235,0.08)', borderRadius: '50%', pointerEvents: 'none', animation: 'ctaSpin 30s linear infinite' }} />
         <div style={{ maxWidth: '700px', margin: '0 auto', position: 'relative' }}>
           <div className="reveal" style={{ width: '88px', height: '88px', background: `linear-gradient(135deg, ${P}, ${PL})`, borderRadius: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 32px', boxShadow: `0 0 80px rgba(94,23,235,0.6), 0 20px 40px rgba(94,23,235,0.3)` }}>
             <Music size={40} color="#fff" />
@@ -1047,16 +1066,15 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
   );
 }
 
-function ServiceCard({ icon: Icon, title, desc }: { key?: React.Key; icon: any; title: string; desc: string }) {
-  const [hover, setHover] = useState(false);
+function ServiceCard({ icon: Icon, color = P, title, desc }: { key?: React.Key; icon: any; color?: string; title: string; desc: string }) {
   return (
     <SpotlightCard
-      spotlightColor="rgba(94,23,235,0.3)"
+      spotlightColor={`${color}50`}
       style={{ padding: '32px', borderRadius: '20px' }}
     >
-      <div onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
-        <div style={{ width: '48px', height: '48px', background: hover ? `rgba(94,23,235,0.3)` : `rgba(94,23,235,0.12)`, borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', border: `1px solid ${hover ? 'rgba(94,23,235,0.5)' : 'rgba(94,23,235,0.2)'}`, transition: 'all 0.3s', boxShadow: hover ? `0 0 20px rgba(94,23,235,0.3)` : 'none' }}>
-          <Icon size={22} color={hover ? '#fff' : PL} />
+      <div>
+        <div style={{ marginBottom: '20px' }}>
+          <Icon3D icon={Icon} color={color} size={56} />
         </div>
         <h3 style={{ fontFamily: "'Anton', sans-serif", fontSize: '18px', color: '#fff', margin: '0 0 10px', letterSpacing: '0.03em' }}>{title}</h3>
         <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.7, margin: 0 }}>{desc}</p>

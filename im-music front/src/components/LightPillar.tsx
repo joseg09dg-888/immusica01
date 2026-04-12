@@ -101,7 +101,21 @@ const LightPillar: React.FC<LightPillarProps> = ({
 
     renderer.setSize(width, height);
     renderer.setPixelRatio(settings.pixelRatio);
-    container.appendChild(renderer.domElement);
+
+    // WebGL context loss recovery
+    const canvas = renderer.domElement;
+    const onContextLost = (e: Event) => {
+      e.preventDefault();
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+    const onContextRestored = () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(animate);
+    };
+    canvas.addEventListener('webglcontextlost', onContextLost, false);
+    canvas.addEventListener('webglcontextrestored', onContextRestored, false);
+
+    container.appendChild(canvas);
     rendererRef.current = renderer;
 
     const parseColor = (hex: string): THREE.Vector3 => {
@@ -286,6 +300,8 @@ const LightPillar: React.FC<LightPillarProps> = ({
     return () => {
       window.removeEventListener('resize', handleResize);
       if (interactive) container.removeEventListener('mousemove', handleMouseMove);
+      canvas.removeEventListener('webglcontextlost', onContextLost);
+      canvas.removeEventListener('webglcontextrestored', onContextRestored);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       if (rendererRef.current) {
         rendererRef.current.dispose();
