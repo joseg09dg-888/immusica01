@@ -115,17 +115,17 @@ app.post('/api/wompi/webhook', express.raw({ type: 'application/json' }), (req, 
   }
 });
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use('/uploads', express.static('uploads'));
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 1000,
+  max: 100,
   message: { error: 'Demasiadas peticiones, intenta más tarde' }
 });
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20,
+  max: 10,
   message: { error: 'Demasiados intentos de autenticación, intenta más tarde' }
 });
 app.use('/api', limiter);

@@ -228,7 +228,7 @@ const GlassIcon = Icon3D;
 const GROUP_COLORS: Record<string, string> = {
   'Principal': '#5E17EB', 'Música': '#C084FC', 'Finanzas': '#22c55e',
   'Marketing': '#f59e0b', 'Distribución': '#3b82f6', 'Archivos': '#06b6d4',
-  'Gestión': '#94a3b8',
+  'Gestión': '#94a3b8', 'IA': '#22d3ee', 'Social': '#f43f5e', 'General': '#5E17EB',
 };
 
 // ─── FloatingOrbs ─────────────────────────────────────────────────────────────
@@ -1389,29 +1389,32 @@ function LoginPage({ onLogin, onBack }: { onLogin: (u: any) => void; onBack: () 
 
 // ─── SIDEBAR ─────────────────────────────────────────────────────────────────
 const MODULES = [
-  { id: 'dashboard',       label: 'Dashboard',       icon: LayoutDashboard, group: 'General' },
+  { id: 'dashboard',       label: 'Dashboard',        icon: LayoutDashboard, group: 'General' },
   // MÚSICA
-  { id: 'catalog',         label: 'Catálogo',         icon: Music,           group: 'Música' },
-  { id: 'royalties',       label: 'Regalías',         icon: DollarSign,      group: 'Música' },
-  { id: 'splits',          label: 'Splits',           icon: Users,           group: 'Música' },
-  { id: 'releases',        label: 'Releases',         icon: Package,         group: 'Música' },
-  { id: 'videos',          label: 'Videos & YouTube', icon: Video,           group: 'Música' },
+  { id: 'catalog',         label: 'Catálogo',          icon: Music,           group: 'Música' },
+  { id: 'royalties',       label: 'Regalías',          icon: DollarSign,      group: 'Música' },
+  { id: 'splits',          label: 'Splits',            icon: Users,           group: 'Música' },
+  { id: 'releases',        label: 'Releases',          icon: Package,         group: 'Música' },
+  { id: 'videos',          label: 'Videos & YouTube',  icon: Video,           group: 'Música' },
   // MARKETING
-  { id: 'marketing-suite', label: 'Marketing Suite',  icon: Sparkles,        group: 'Marketing' },
-  { id: 'community',       label: 'Comunidad',        icon: MessageCircle,   group: 'Marketing' },
-  { id: 'marketplace',     label: 'Marketplace',      icon: ShoppingBag,     group: 'Marketing' },
+  { id: 'marketing-suite', label: 'Marketing Suite',   icon: Sparkles,        group: 'Marketing' },
+  { id: 'community',       label: 'Comunidad',         icon: MessageCircle,   group: 'Marketing' },
+  // SOCIAL
+  { id: 'marketplace',     label: 'Marketplace Beats', icon: ShoppingBag,     group: 'Social' },
+  { id: 'playlists',       label: 'Playlists',         icon: Play,            group: 'Social' },
   // IA
-  { id: 'ai-chat',         label: 'IA Chat',          icon: Zap,             group: 'IA' },
-  { id: 'legal',           label: 'Legal IA',         icon: Scale,           group: 'IA' },
+  { id: 'ai-chat',         label: 'IA Chat',           icon: Zap,             group: 'IA' },
+  { id: 'legal',           label: 'Legal IA',          icon: Scale,           group: 'IA' },
   // FINANZAS
-  { id: 'financing',       label: 'Financiamiento',   icon: CreditCard,      group: 'Finanzas' },
+  { id: 'financing',       label: 'Financiamiento',    icon: CreditCard,      group: 'Finanzas' },
   // DISTRIBUCIÓN
-  { id: 'store-maximizer', label: 'Store Maximizer',  icon: Store,           group: 'Distribución' },
+  { id: 'store-maximizer', label: 'Store Maximizer',   icon: Store,           group: 'Distribución' },
   // GESTIÓN
-  { id: 'label',           label: 'Mi Sello',         icon: Award,           group: 'Gestión' },
-  { id: 'team',            label: 'Equipo',           icon: Users,           group: 'Gestión' },
-  { id: 'stats',           label: 'Estadísticas',     icon: BarChart3,       group: 'Gestión' },
-  { id: 'settings',        label: 'Ajustes',          icon: Settings,        group: 'Gestión' },
+  { id: 'label',           label: 'Mi Sello',          icon: Award,           group: 'Gestión' },
+  { id: 'team',            label: 'Equipo',            icon: Users,           group: 'Gestión' },
+  { id: 'stats',           label: 'Estadísticas',      icon: BarChart3,       group: 'Gestión' },
+  { id: 'feedback',        label: 'Feedback & Bugs',   icon: Star,            group: 'Gestión' },
+  { id: 'settings',        label: 'Ajustes',           icon: Settings,        group: 'Gestión' },
 ];
 
 function SidebarItem({ m, isActive, onNav, onClose }: { m: typeof MODULES[0]; isActive: boolean; onNav: (id:string)=>void; onClose: ()=>void }) {
@@ -3292,37 +3295,250 @@ function CommunityPage() {
 }
 
 // ─── MARKETPLACE ──────────────────────────────────────────────────────────────
-function MarketplacePage() {
-  const [beats, setBeats] = useState<any[]>([]);
-  const [playing, setPlaying] = useState<number|null>(null);
-  useEffect(() => { apiFetch('/marketplace/beats').then(d=>setBeats(Array.isArray(d)?d:[])).catch(()=>{}); }, []);
-  const DEMO_BEATS = [
-    { id:1, title:'Dark Trap 140bpm', producer:'ProducerX', price:49900, genre:'Trap', bpm:140 },
-    { id:2, title:'Reggaeton Loop Vol.3', producer:'BeatMaker', price:39900, genre:'Reggaeton', bpm:95 },
-    { id:3, title:'Afrobeats Groove', producer:'AfroStudio', price:59900, genre:'Afrobeats', bpm:108 },
-    { id:4, title:'Sad Piano RnB', producer:'EmotionBeat', price:44900, genre:'R&B', bpm:75 },
-    { id:5, title:'Cumbia Electrónica', producer:'LaBocha', price:34900, genre:'Cumbia', bpm:120 },
-    { id:6, title:'Perreo Intenso', producer:'UrbanProd', price:54900, genre:'Reggaeton', bpm:100 },
+// ─── BEAT CARD ───────────────────────────────────────────────────────────────
+function BeatCard({ beat, showBuy, showEdit, showRating }: { beat: any; showBuy?: boolean; showEdit?: boolean; showRating?: boolean }) {
+  const GRADIENTS = [
+    'linear-gradient(135deg,#5E17EB,#C084FC)',
+    'linear-gradient(135deg,#7B3FFF,#2D0B6B)',
+    'linear-gradient(135deg,#1a0533,#5E17EB)',
+    'linear-gradient(135deg,#C084FC,#7B3FFF)',
   ];
-  const list = beats.length>0 ? beats : DEMO_BEATS;
+  const gIdx = Math.abs(((beat.title || beat.titulo || '').charCodeAt(0) || 0)) % 4;
+  const title = beat.title || beat.titulo || 'Sin título';
+  const genre = beat.genre || beat.genero || '--';
+  const bpm = beat.bpm || '--';
+  const key = beat.key || beat.tonalidad || '--';
+  const price = beat.price ?? beat.precio ?? 0;
+  const rating = beat.rating || beat.rating_promedio;
+  return (
+    <HoloCard color="#5E17EB" style={{ padding: 0, overflow: 'hidden' }}>
+      <div style={{ height: 120, background: GRADIENTS[gIdx], display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+        <Music size={36} color="rgba(255,255,255,0.3)" />
+        <div style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.5)', borderRadius: 100, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 10, fontWeight: 700, color: '#F2EDE5' }}>{bpm} BPM</span>
+        </div>
+        {showRating && rating && (
+          <div style={{ position: 'absolute', bottom: 10, right: 10, background: 'rgba(0,0,0,0.5)', borderRadius: 100, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <Star size={10} color="#fbbf24" fill="#fbbf24" />
+            <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 10, fontWeight: 700, color: '#F2EDE5' }}>{Number(rating).toFixed(1)}</span>
+          </div>
+        )}
+      </div>
+      <div style={{ padding: '16px 20px' }}>
+        <p style={{ fontFamily: "'Anton',sans-serif", fontSize: 15, color: '#F2EDE5', margin: '0 0 4px' }}>{title}</p>
+        <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 11, color: 'rgba(255,255,255,0.35)', margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{genre} · {key}</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontFamily: "'Anton',sans-serif", fontSize: 18, color: '#22c55e' }}>${Number(price).toLocaleString()} COP</span>
+          {showBuy && <Btn3D small onClick={() => toast('Procesando compra...', 'info')}><ShoppingBag size={12} /> Comprar</Btn3D>}
+          {showEdit && <Btn3D small variant="ghost" onClick={() => toast('Editar beat', 'info')}>EDITAR</Btn3D>}
+        </div>
+      </div>
+    </HoloCard>
+  );
+}
+
+function MarketplaceStore() {
+  const [beats, setBeats] = useState<any[]>([]);
+  const [filter, setFilter] = useState('all');
+  const [search, setSearch] = useState('');
+  const GENRES = ['Todos','Trap','Reggaeton','R&B','Hip-Hop','Afrobeats','Drill','Pop','Electrónica'];
+  const DEMO_BEATS = [
+    { id:1, titulo:'Dark Trap 140', genero:'Trap', precio:49900, bpm:140, tonalidad:'Am' },
+    { id:2, titulo:'Reggaeton Loop Vol.3', genero:'Reggaeton', precio:39900, bpm:95, tonalidad:'Dm' },
+    { id:3, titulo:'Afrobeats Groove', genero:'Afrobeats', precio:59900, bpm:108, tonalidad:'Cm' },
+    { id:4, titulo:'Sad Piano RnB', genero:'R&B', precio:44900, bpm:75, tonalidad:'Fm' },
+    { id:5, titulo:'Hip-Hop Classic', genero:'Hip-Hop', precio:34900, bpm:90, tonalidad:'Gm' },
+    { id:6, titulo:'Perreo Intenso', genero:'Reggaeton', precio:54900, bpm:100, tonalidad:'Cm' },
+  ];
+  useEffect(() => { apiFetch('/marketplace/beats').then(d => setBeats(Array.isArray(d) ? d : [])).catch(() => {}); }, []);
+  const list = beats.length > 0 ? beats : DEMO_BEATS;
+  const filtered = list.filter(b =>
+    (filter === 'all' || (b.genre || b.genero) === filter) &&
+    (search === '' || (b.title || b.titulo || '').toLowerCase().includes(search.toLowerCase()))
+  );
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar beats..."
+          style={{ flex: 1, minWidth: 200, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '10px 16px', color: '#fff', fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, outline: 'none' }} />
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {GENRES.map(g => (
+            <button key={g} onClick={() => setFilter(g === 'Todos' ? 'all' : g)}
+              style={{ background: filter === (g === 'Todos' ? 'all' : g) ? 'rgba(94,23,235,0.3)' : 'rgba(255,255,255,0.04)', border: `1px solid ${filter === (g === 'Todos' ? 'all' : g) ? 'rgba(94,23,235,0.6)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 100, padding: '6px 14px', color: filter === (g === 'Todos' ? 'all' : g) ? '#C084FC' : 'rgba(255,255,255,0.45)', fontFamily: "'Space Grotesk',sans-serif", fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+              {g}
+            </button>
+          ))}
+        </div>
+      </div>
+      {filtered.length === 0 ? (
+        <HoloCard color="#5E17EB" style={{ padding: 40, textAlign: 'center' }}>
+          <ShoppingBag size={48} color="rgba(255,255,255,0.1)" style={{ marginBottom: 16 }} />
+          <h3 style={{ fontFamily: "'Anton',sans-serif", fontSize: 20, color: 'rgba(255,255,255,0.2)', margin: '0 0 8px' }}>SIN BEATS AÚN</h3>
+          <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 14, color: 'rgba(255,255,255,0.15)' }}>Sé el primero en subir un beat al marketplace.</p>
+        </HoloCard>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 20 }}>
+          {filtered.map((beat: any, i: number) => <BeatCard key={beat.id || i} beat={beat} showBuy />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MyBeatsStore() {
+  const [beats, setBeats] = useState<any[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ title: '', genre: '', price: '', bpm: '', key: '', description: '' });
+  const [loading, setLoading] = useState(false);
+  useEffect(() => { apiFetch('/marketplace/my-beats').then(d => setBeats(Array.isArray(d) ? d : [])).catch(() => {}); }, []);
+  const submit = async () => {
+    setLoading(true);
+    try {
+      await apiFetch('/marketplace/beats', { method: 'POST', body: JSON.stringify(form) });
+      toast('Beat publicado exitosamente', 'success');
+      setShowForm(false);
+      setForm({ title: '', genre: '', price: '', bpm: '', key: '', description: '' });
+      apiFetch('/marketplace/my-beats').then(d => setBeats(Array.isArray(d) ? d : [])).catch(() => {});
+    } catch (e: any) { toast(e.message, 'error'); }
+    setLoading(false);
+  };
+  const FORM_FIELDS = [
+    { key: 'title', label: 'Nombre del beat', placeholder: 'Ej: Dark Trap 140' },
+    { key: 'price', label: 'Precio (COP)', placeholder: 'Ej: 50000' },
+    { key: 'bpm', label: 'BPM', placeholder: 'Ej: 140' },
+    { key: 'key', label: 'Tonalidad', placeholder: 'Ej: Am' },
+  ];
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <div>
+          <h3 style={{ fontFamily: "'Anton',sans-serif", fontSize: 20, color: '#F2EDE5', margin: '0 0 4px' }}>MI TIENDA</h3>
+          <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, color: 'rgba(255,255,255,0.4)', margin: 0 }}>{beats.length} beats publicados · Comisión plataforma: 5%</p>
+        </div>
+        <Btn3D small onClick={() => setShowForm(!showForm)}>+ SUBIR BEAT</Btn3D>
+      </div>
+      {showForm && (
+        <HoloCard color="#5E17EB" style={{ padding: 28, marginBottom: 24 }}>
+          <h4 style={{ fontFamily: "'Anton',sans-serif", fontSize: 16, color: '#F2EDE5', margin: '0 0 20px' }}>PUBLICAR NUEVO BEAT</h4>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+            {FORM_FIELDS.map(f => (
+              <div key={f.key}>
+                <label style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 11, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.15em', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>{f.label}</label>
+                <input value={(form as any)[f.key]} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))} placeholder={f.placeholder}
+                  style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 14px', color: '#fff', fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+              </div>
+            ))}
+          </div>
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 11, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.15em', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Género</label>
+            <select value={form.genre} onChange={e => setForm(p => ({ ...p, genre: e.target.value }))}
+              style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 14px', color: '#fff', fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, outline: 'none' }}>
+              <option value="">Selecciona género</option>
+              {['Trap','Reggaeton','R&B','Hip-Hop','Afrobeats','Drill','Pop','Electrónica'].map(g => <option key={g}>{g}</option>)}
+            </select>
+          </div>
+          <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="Descripción del beat..."
+            style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 14px', color: '#fff', fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, outline: 'none', resize: 'vertical', minHeight: 80, boxSizing: 'border-box', marginBottom: 16 }} />
+          <div style={{ display: 'flex', gap: 12 }}>
+            <Btn3D onClick={submit} disabled={loading || !form.title || !form.price}>{loading ? 'PUBLICANDO...' : 'PUBLICAR BEAT'}</Btn3D>
+            <Btn3D variant="ghost" onClick={() => setShowForm(false)}>Cancelar</Btn3D>
+          </div>
+        </HoloCard>
+      )}
+      {beats.length === 0 ? (
+        <HoloCard color="#5E17EB" style={{ padding: 40, textAlign: 'center' }}>
+          <Music size={48} color="rgba(255,255,255,0.1)" style={{ marginBottom: 16 }} />
+          <h3 style={{ fontFamily: "'Anton',sans-serif", fontSize: 18, color: 'rgba(255,255,255,0.2)', margin: '0 0 8px' }}>SIN BEATS PUBLICADOS</h3>
+          <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, color: 'rgba(255,255,255,0.15)' }}>Sube tu primer beat y empieza a vender.</p>
+        </HoloCard>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 20 }}>
+          {beats.map((beat: any, i: number) => <BeatCard key={beat.id || i} beat={beat} showEdit />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function HotRanking() {
+  const [beats, setBeats] = useState<any[]>([]);
+  useEffect(() => { apiFetch('/marketplace/hot').then(d => setBeats(Array.isArray(d) ? d : [])).catch(() => {}); }, []);
+  return (
+    <div>
+      <HoloCard color="#f59e0b" style={{ padding: 28, marginBottom: 20 }}>
+        <h3 style={{ fontFamily: "'Anton',sans-serif", fontSize: 20, color: '#F2EDE5', margin: '0 0 4px' }}>🔥 HOT RANKING</h3>
+        <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, color: 'rgba(255,255,255,0.4)', margin: 0 }}>Los beats más vendidos esta semana</p>
+      </HoloCard>
+      {beats.length === 0 ? (
+        <HoloCard color="#f59e0b" style={{ padding: 40, textAlign: 'center' }}>
+          <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 14, color: 'rgba(255,255,255,0.25)' }}>El ranking se actualiza con las primeras ventas.</p>
+        </HoloCard>
+      ) : beats.map((beat: any, i: number) => (
+        <HoloCard key={beat.id || i} color="#f59e0b" style={{ padding: 20, marginBottom: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ width: 48, height: 48, borderRadius: 12, background: i === 0 ? 'linear-gradient(135deg,#fbbf24,#f59e0b)' : i === 1 ? 'linear-gradient(135deg,#94a3b8,#64748b)' : 'linear-gradient(135deg,#cd7c32,#92400e)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <span style={{ fontFamily: "'Anton',sans-serif", fontSize: 20, color: '#fff' }}>#{i + 1}</span>
+            </div>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontFamily: "'Anton',sans-serif", fontSize: 16, color: '#F2EDE5', margin: 0 }}>{beat.title || beat.titulo}</p>
+              <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 12, color: 'rgba(255,255,255,0.4)', margin: 0 }}>{beat.genre || beat.genero} · {beat.bpm} BPM · {beat.sales || beat.total_compras || 0} ventas</p>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <p style={{ fontFamily: "'Anton',sans-serif", fontSize: 18, color: '#f59e0b', margin: '0 0 8px' }}>${Number(beat.price || beat.precio || 0).toLocaleString()}</p>
+              <Btn3D small onClick={() => toast('Comprando beat...', 'info')}>COMPRAR</Btn3D>
+            </div>
+          </div>
+        </HoloCard>
+      ))}
+    </div>
+  );
+}
+
+function TopRatedBeats() {
+  const [beats, setBeats] = useState<any[]>([]);
+  useEffect(() => { apiFetch('/marketplace/top-rated').then(d => setBeats(Array.isArray(d) ? d : [])).catch(() => {}); }, []);
+  return (
+    <div>
+      <HoloCard color="#C084FC" style={{ padding: 28, marginBottom: 20 }}>
+        <h3 style={{ fontFamily: "'Anton',sans-serif", fontSize: 20, color: '#F2EDE5', margin: '0 0 4px' }}>⭐ MEJOR PUNTUADOS</h3>
+        <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, color: 'rgba(255,255,255,0.4)', margin: 0 }}>Los beats con mejores reseñas de la comunidad</p>
+      </HoloCard>
+      {beats.length === 0 ? (
+        <HoloCard color="#C084FC" style={{ padding: 40, textAlign: 'center' }}>
+          <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 14, color: 'rgba(255,255,255,0.25)' }}>Las puntuaciones aparecerán cuando los artistas dejen reseñas.</p>
+        </HoloCard>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 20 }}>
+          {beats.map((beat: any, i: number) => <BeatCard key={beat.id || i} beat={beat} showRating showBuy />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const MKT_TABS = [
+  { id: 'store' as const, label: 'Tienda General', icon: ShoppingBag },
+  { id: 'my-beats' as const, label: 'Mi Tienda', icon: Music },
+  { id: 'hot' as const, label: '🔥 Hot Ranking', icon: TrendingUp },
+  { id: 'top-rated' as const, label: '⭐ Mejor Puntuados', icon: Star },
+];
+
+function MarketplacePage() {
+  const [tab, setTab] = useState<'store' | 'my-beats' | 'hot' | 'top-rated'>('store');
   return (
     <PageShell title="Marketplace de Beats">
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))', gap:'16px' }}>
-        {list.map(b=>(
-          <Card key={b.id} style={{ position:'relative' }}>
-            <div style={{ height:'80px', background:`linear-gradient(135deg,rgba(94,23,235,0.15),rgba(123,63,255,0.1))`, borderRadius:'12px', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'14px', position:'relative', overflow:'hidden' }}>
-              {[...Array(12)].map((_,i)=><div key={i} style={{ width:'3px', background:playing===b.id?PL:'rgba(255,255,255,0.15)', borderRadius:'3px', height:`${20+Math.random()*40}px`, margin:'0 2px', animation: playing===b.id?`waveBar ${0.8+Math.random()*0.6}s ease-in-out ${i*0.06}s infinite`:'none' }}/>)}
-              <button onClick={()=>setPlaying(playing===b.id?null:b.id)} style={{ position:'absolute', width:'36px', height:'36px', background:`rgba(94,23,235,0.9)`, border:'none', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', boxShadow:`0 0 20px rgba(94,23,235,0.5)` }}>{playing===b.id?<div style={{ width:'10px', height:'10px', background:'#fff', borderRadius:'2px' }}/>:<Play size={14} color="#fff" style={{ marginLeft:'2px' }}/>}</button>
-            </div>
-            <p style={{ color:'#fff', fontSize:'14px', fontWeight:600, margin:'0 0 3px', fontFamily:"'Space Grotesk',sans-serif" }}>{b.title}</p>
-            <p style={{ color:'rgba(255,255,255,0.35)', fontSize:'11px', margin:'0 0 12px', fontFamily:"'Space Grotesk',sans-serif" }}>{b.producer} · {b.genre} · {b.bpm} BPM</p>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-              <span style={{ fontFamily:"'Anton',sans-serif", fontSize:'18px', color:PL }}>${(b.price/100).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}<span style={{ fontSize:'11px', color:'rgba(255,255,255,0.3)', fontFamily:"'Space Grotesk',sans-serif" }}> COP</span></span>
-              <Btn3D small><ShoppingBag size={12}/> Comprar</Btn3D>
-            </div>
-          </Card>
+      <div style={{ display: 'flex', gap: 4, marginBottom: 24, background: 'rgba(255,255,255,0.03)', borderRadius: 14, padding: 4 }}>
+        {MKT_TABS.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', background: tab === t.id ? 'rgba(94,23,235,0.25)' : 'transparent', color: tab === t.id ? '#C084FC' : 'rgba(255,255,255,0.35)', fontFamily: "'Space Grotesk',sans-serif", fontSize: 11, fontWeight: 700, transition: 'all 0.2s' }}>
+            <t.icon size={13} />{t.label}
+          </button>
         ))}
       </div>
+      {tab === 'store' && <MarketplaceStore />}
+      {tab === 'my-beats' && <MyBeatsStore />}
+      {tab === 'hot' && <HotRanking />}
+      {tab === 'top-rated' && <TopRatedBeats />}
     </PageShell>
   );
 }
@@ -3880,47 +4096,132 @@ function StatsPage() {
 }
 
 // ─── FEEDBACK ────────────────────────────────────────────────────────────────
+const ROADMAP_SECTIONS = [
+  { status: 'done', label: 'COMPLETADO', color: '#22c55e', items: ['Distribución en 150+ plataformas', 'Splits automáticos', 'Marketing Suite con IA', 'Legal IA con legislación colombiana', 'Marketplace de beats', 'Sistema de playlists'] },
+  { status: 'progress', label: 'EN PROGRESO', color: '#f59e0b', items: ['Dockerización y deploy en producción', 'Integración Wompi pagos reales', 'Content ID YouTube', 'Distribución directa a plataformas'] },
+  { status: 'planned', label: 'PLANIFICADO', color: '#5E17EB', items: ['App móvil iOS y Android', 'Integración Spotify for Artists API', 'Dashboard de labels avanzado', 'Campamentos musicales online', 'Producción de videos musicales'] },
+];
+
 function FeedbackPage() {
-  const [list, setList] = useState<any[]>([]);
-  const [form, setForm] = useState({ category:'bug', subject:'', message:'' });
+  const [tab, setTab] = useState<'feedback' | 'bugs' | 'roadmap'>('feedback');
+  const [feedbacks, setFeedbacks] = useState<any[]>([]);
+  const [form, setForm] = useState({ type: 'sugerencia', title: '', description: '', priority: 'media' });
   const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
-  const load = () => apiFetch('/feedback').then(d=>setList(Array.isArray(d)?d:[])).catch(()=>{});
+  const load = () => apiFetch('/feedback').then(d => setFeedbacks(Array.isArray(d) ? d : [])).catch(() => {});
   useEffect(() => { load(); }, []);
   const submit = async () => {
-    if (!form.subject||!form.message) return; setLoading(true);
-    try { await apiFetch('/feedback', { method:'POST', body: JSON.stringify(form) }); setForm({ category:'bug', subject:'', message:'' }); setSent(true); setTimeout(()=>setSent(false),3000); load(); } catch {}
+    setLoading(true);
+    try {
+      await apiFetch('/feedback', { method: 'POST', body: JSON.stringify(form) });
+      toast('¡Gracias por tu feedback! Lo revisaremos pronto.', 'success');
+      setForm({ type: 'sugerencia', title: '', description: '', priority: 'media' });
+      load();
+    } catch (e: any) { toast(e.message, 'error'); }
     setLoading(false);
   };
-  const catColor: Record<string,string> = { bug:'#ef4444', feature:'#3b82f6', improvement:'#22c55e', other:'#71717a' };
   return (
-    <PageShell title="Feedback">
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'20px' }}>
-        <Card>
-          <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'14px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 16px' }}>ENVIAR FEEDBACK</h3>
-          <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
-            <select style={IS} value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))}>
-              <option value="bug">🐛 Bug / Error</option>
-              <option value="feature">✨ Nueva función</option>
-              <option value="improvement">⚡ Mejora</option>
-              <option value="other">💬 Otro</option>
-            </select>
-            <input style={IS} placeholder="Asunto" value={form.subject} onChange={e=>setForm(f=>({...f,subject:e.target.value}))}/>
-            <textarea style={{...IS,resize:'vertical',minHeight:'120px'}} placeholder="Describe tu feedback..." value={form.message} onChange={e=>setForm(f=>({...f,message:e.target.value}))}/>
-            <Btn3D onClick={submit} disabled={loading||!form.subject||!form.message}>{loading?'Enviando...':sent?<><Check size={14}/> ¡Enviado!</>:<><Send size={14}/> Enviar feedback</>}</Btn3D>
-          </div>
-        </Card>
-        <Card>
-          <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'14px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 16px' }}>MIS REPORTES</h3>
-          {list.length===0 && <EmptyState icon={Star} text="Sin reportes enviados." />}
-          {list.map(fb=>(
-            <div key={fb.id} style={{ padding:'12px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
-              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'4px' }}><p style={{ color:'#fff', fontSize:'13px', fontWeight:600, margin:0, fontFamily:"'Space Grotesk',sans-serif" }}>{fb.subject}</p><Badge color={catColor[fb.category]||'#71717a'} label={fb.category}/></div>
-              <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'12px', margin:0, fontFamily:"'Space Grotesk',sans-serif", lineHeight:1.5 }}>{fb.message}</p>
-            </div>
-          ))}
-        </Card>
+    <PageShell title="Feedback & Mejoras">
+      <div style={{ display: 'flex', gap: 4, marginBottom: 24, background: 'rgba(255,255,255,0.03)', borderRadius: 14, padding: 4 }}>
+        {[{ id: 'feedback', label: '💡 Sugerencias' }, { id: 'bugs', label: '🐛 Reportar Bug' }, { id: 'roadmap', label: '🗺️ Roadmap' }].map(t => (
+          <button key={t.id} onClick={() => setTab(t.id as any)}
+            style={{ flex: 1, padding: '10px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', background: tab === t.id ? 'rgba(94,23,235,0.25)' : 'transparent', color: tab === t.id ? '#C084FC' : 'rgba(255,255,255,0.35)', fontFamily: "'Space Grotesk',sans-serif", fontSize: 12, fontWeight: 700, transition: 'all 0.2s' }}>
+            {t.label}
+          </button>
+        ))}
       </div>
+
+      {(tab === 'feedback' || tab === 'bugs') && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+          <HoloCard color="#5E17EB" style={{ padding: 28 }}>
+            <h3 style={{ fontFamily: "'Anton',sans-serif", fontSize: 16, color: '#F2EDE5', margin: '0 0 20px' }}>
+              {tab === 'feedback' ? '💡 NUEVA SUGERENCIA' : '🐛 REPORTAR BUG'}
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 11, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.15em', textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>Tipo</label>
+                <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value }))} style={{ ...IS }}>
+                  {tab === 'feedback' ? (
+                    <>
+                      <option value="sugerencia">Sugerencia de mejora</option>
+                      <option value="nueva_funcion">Nueva función</option>
+                      <option value="ux">Mejora de UX/UI</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="bug_critico">Bug crítico (no puedo usar la plataforma)</option>
+                      <option value="bug_medio">Bug medio (funciona con dificultad)</option>
+                      <option value="bug_menor">Bug menor (problema visual)</option>
+                    </>
+                  )}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 11, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.15em', textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>Título</label>
+                <input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
+                  placeholder={tab === 'feedback' ? 'Ej: Agregar modo oscuro al editor de letras' : 'Ej: El botón de subir track no funciona en móvil'}
+                  style={{ ...IS, boxSizing: 'border-box' as any }} />
+              </div>
+              <div>
+                <label style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 11, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.15em', textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>Descripción detallada</label>
+                <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+                  placeholder={tab === 'feedback' ? 'Describe tu sugerencia...' : 'Describe el bug paso a paso: ¿qué hiciste?, ¿qué pasó?, ¿qué esperabas?'}
+                  style={{ ...IS, resize: 'vertical' as any, minHeight: 120, boxSizing: 'border-box' as any }} />
+              </div>
+              <div>
+                <label style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 11, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.15em', textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>Prioridad</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {['baja', 'media', 'alta'].map(p => (
+                    <button key={p} onClick={() => setForm(prev => ({ ...prev, priority: p }))}
+                      style={{ flex: 1, padding: 8, borderRadius: 8, border: `1px solid ${form.priority === p ? 'rgba(94,23,235,0.6)' : 'rgba(255,255,255,0.08)'}`, background: form.priority === p ? 'rgba(94,23,235,0.2)' : 'rgba(255,255,255,0.03)', color: form.priority === p ? '#C084FC' : 'rgba(255,255,255,0.4)', fontFamily: "'Space Grotesk',sans-serif", fontSize: 11, fontWeight: 700, textTransform: 'uppercase', cursor: 'pointer', letterSpacing: '0.1em' }}>
+                      {p === 'baja' ? '🟢' : p === 'media' ? '🟡' : '🔴'} {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <Btn3D onClick={submit} disabled={loading || !form.title || !form.description} fullWidth>
+                {loading ? 'ENVIANDO...' : tab === 'feedback' ? 'ENVIAR SUGERENCIA' : 'REPORTAR BUG'}
+              </Btn3D>
+            </div>
+          </HoloCard>
+          <div>
+            <HoloCard color="#5E17EB" style={{ padding: 24 }}>
+              <h4 style={{ fontFamily: "'Anton',sans-serif", fontSize: 14, color: '#F2EDE5', margin: '0 0 12px' }}>REPORTES RECIENTES</h4>
+              {feedbacks.length === 0 ? (
+                <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, color: 'rgba(255,255,255,0.2)', textAlign: 'center', padding: '16px 0' }}>Sin reportes aún.</p>
+              ) : feedbacks.slice(0, 6).map((f: any, i: number) => (
+                <div key={f.id || i} style={{ padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 12, fontWeight: 600, color: '#F2EDE5' }}>{f.title || f.subject}</span>
+                    <Badge color={f.status === 'resuelto' ? '#22c55e' : '#f59e0b'} label={f.status || 'PENDIENTE'} />
+                  </div>
+                  <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 11, color: 'rgba(255,255,255,0.3)', margin: 0 }}>{f.type || f.category} · {f.priority || 'media'}</p>
+                </div>
+              ))}
+            </HoloCard>
+          </div>
+        </div>
+      )}
+
+      {tab === 'roadmap' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {ROADMAP_SECTIONS.map((section, i) => (
+            <HoloCard key={i} color={section.color} style={{ padding: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: section.color, boxShadow: `0 0 10px ${section.color}` }} />
+                <h3 style={{ fontFamily: "'Anton',sans-serif", fontSize: 14, color: section.color, margin: 0, letterSpacing: '0.2em' }}>{section.label}</h3>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {section.items.map((item, ii) => (
+                  <div key={ii} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ color: section.color, fontSize: 12 }}>{section.status === 'done' ? '✓' : section.status === 'progress' ? '◐' : '○'}</span>
+                    <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </HoloCard>
+          ))}
+        </div>
+      )}
     </PageShell>
   );
 }
@@ -4499,114 +4800,126 @@ function PromoCardsPage() {
 }
 
 // ─── PLAYLISTS ────────────────────────────────────────────────────────────────
-function PlaylistsPage() {
+const PL_DEMO = [
+  { id:1, name:'Trap Colombia 🇨🇴', curator:'IM Music Editorial', followers:'45.2K', genre:'Trap', mood:'Energético', accepts:true, platform:'Spotify' },
+  { id:2, name:'New Urban Latin', curator:'Playlist Pro Network', followers:'128K', genre:'Reggaeton', mood:'Fiesta', accepts:true, platform:'Spotify' },
+  { id:3, name:'R&B Vibes LATAM', curator:'Urban Curators', followers:'32.8K', genre:'R&B', mood:'Sensual', accepts:true, platform:'Apple Music' },
+  { id:4, name:'Trap & Drill MX', curator:'TrapMX Official', followers:'89K', genre:'Trap', mood:'Oscuro', accepts:false, platform:'Spotify' },
+  { id:5, name:'Pop Latino Rising', curator:'Latin Hits Network', followers:'215K', genre:'Pop Latino', mood:'Positivo', accepts:true, platform:'Spotify' },
+  { id:6, name:'Afrobeats Colombia', curator:'Afro Sounds COL', followers:'18.4K', genre:'Afrobeats', mood:'Groove', accepts:true, platform:'Spotify' },
+];
+
+function PlaylistDiscover() {
   const [playlists, setPlaylists] = useState<any[]>([]);
-  const [tracks, setTracks] = useState<any[]>([]);
-  const [genre, setGenre] = useState('');
-  const [mood, setMood] = useState('');
-  const [modal, setModal] = useState<any>(null);
-  const [selTrack, setSelTrack] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [history, setHistory] = useState<any[]>([]);
-  const [submitMsg, setSubmitMsg] = useState('');
-  useEffect(() => {
-    apiFetch('/playlists').then(d=>setPlaylists(Array.isArray(d)?d:[])).catch(()=>{});
-    apiFetch('/tracks').then(d=>setTracks(Array.isArray(d)?d:[])).catch(()=>{});
-  }, []);
-  const submit = async () => {
-    if (!selTrack||!modal) return; setSubmitting(true);
-    try {
-      await apiFetch('/playlists/submit', { method:'POST', body: JSON.stringify({ playlist_id: modal.id, track_id: selTrack }) });
-      const track = tracks.find(t=>String(t.id)===selTrack);
-      setHistory(h=>[{ playlist: modal.name||modal.title, track: track?.title||'Track', date: new Date().toLocaleDateString('es-CO'), status:'Enviado' }, ...h]);
-      setSubmitMsg('¡Track enviado correctamente!');
-    } catch(e:any) { setSubmitMsg(`Error: ${e.message}`); }
-    setSubmitting(false); setModal(null); setSelTrack('');
-    setTimeout(()=>setSubmitMsg(''),4000);
-  };
-  const DEMO_PLAYLISTS = [
-    { id:1, name:'Nuevos Talentos Latino', curator:'Spotify Editorial', followers:84200, genre:'Varios', mood:'Hype' },
-    { id:2, name:'Trap Colombia 2026', curator:'UrbanPlex', followers:32100, genre:'Trap', mood:'Oscuro' },
-    { id:3, name:'Pop Indie Español', curator:'IndieVibes', followers:19800, genre:'Indie', mood:'Alegre' },
-    { id:4, name:'Perreo Non-Stop', curator:'ReggaetonHQ', followers:124000, genre:'Reggaeton', mood:'Fiesta' },
-    { id:5, name:'Chill R&B Colombia', curator:'SoulCurator', followers:28500, genre:'R&B', mood:'Relajado' },
-    { id:6, name:'Beats para Estudiar', curator:'FocusFlow', followers:61000, genre:'Lo-fi', mood:'Concentración' },
-  ];
-  const list = playlists.length>0 ? playlists : DEMO_PLAYLISTS;
-  const filtered = list.filter(p=>{
-    const gOk = !genre || (p.genre||'').toLowerCase().includes(genre.toLowerCase());
-    const mOk = !mood || (p.mood||'').toLowerCase().includes(mood.toLowerCase());
-    return gOk && mOk;
-  });
+  const [filter, setFilter] = useState('all');
+  const GENRES = ['Todos','Trap','Reggaeton','R&B','Hip-Hop','Pop Latino','Electrónica'];
+  useEffect(() => { apiFetch('/playlists').then(d => setPlaylists(Array.isArray(d) ? d : [])).catch(() => {}); }, []);
+  const displayed = playlists.length > 0 ? playlists : PL_DEMO;
+  const filtered = filter === 'all' ? displayed : displayed.filter((p: any) => p.genre === filter);
   return (
-    <PageShell title="Playlists">
-      {submitMsg && <div style={{ background: submitMsg.includes('Error')?'rgba(239,68,68,0.1)':'rgba(34,197,94,0.1)', border:`1px solid ${submitMsg.includes('Error')?'rgba(239,68,68,0.3)':'rgba(34,197,94,0.3)'}`, borderRadius:'10px', padding:'10px 16px', marginBottom:'16px', color: submitMsg.includes('Error')?'#f87171':'#22c55e', fontSize:'13px', fontFamily:"'Space Grotesk',sans-serif" }}>{submitMsg}</div>}
-      {/* Filters */}
-      <div style={{ display:'flex', gap:'12px', marginBottom:'20px', flexWrap:'wrap' }}>
-        <input style={{...IS, maxWidth:'200px'}} placeholder="Filtrar por género..." value={genre} onChange={e=>setGenre(e.target.value)}/>
-        <input style={{...IS, maxWidth:'200px'}} placeholder="Filtrar por mood..." value={mood} onChange={e=>setMood(e.target.value)}/>
-        <span style={{ color:'rgba(255,255,255,0.3)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif", alignSelf:'center' }}>{filtered.length} playlists</span>
-      </div>
-      {/* Grid */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:'16px', marginBottom:'28px' }}>
-        {filtered.length===0 && <Card style={{ gridColumn:'1/-1' }}><EmptyState icon={Play} text="No hay playlists con esos filtros." /></Card>}
-        {filtered.map(pl=>(
-          <Card key={pl.id}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'12px' }}>
-              <div style={{ width:'44px', height:'44px', background:`linear-gradient(135deg,${P},${PL})`, borderRadius:'12px', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><Play size={18} color="#fff" style={{ marginLeft:'2px' }}/></div>
-              <div style={{ display:'flex', gap:'4px', flexWrap:'wrap', justifyContent:'flex-end' }}>
-                {pl.genre && <Badge color={PL} label={pl.genre}/>}
-                {pl.mood && <Badge color="#f59e0b" label={pl.mood}/>}
-              </div>
-            </div>
-            <p style={{ color:'#fff', fontSize:'14px', fontWeight:600, margin:'0 0 3px', fontFamily:"'Space Grotesk',sans-serif" }}>{pl.name||pl.title}</p>
-            <p style={{ color:'rgba(255,255,255,0.35)', fontSize:'11px', margin:'0 0 4px', fontFamily:"'Space Grotesk',sans-serif" }}>por {pl.curator||pl.owner||'Curador'}</p>
-            <div style={{ display:'flex', alignItems:'center', gap:'5px', marginBottom:'14px' }}>
-              <Users size={11} color="rgba(255,255,255,0.3)"/>
-              <span style={{ color:'rgba(255,255,255,0.3)', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif" }}>{(pl.followers||0).toLocaleString()} seguidores</span>
-            </div>
-            <Btn3D small onClick={()=>setModal(pl)}>Enviar track</Btn3D>
-          </Card>
+    <div>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
+        {GENRES.map(g => (
+          <button key={g} onClick={() => setFilter(g === 'Todos' ? 'all' : g)}
+            style={{ background: filter === (g === 'Todos' ? 'all' : g) ? 'rgba(94,23,235,0.3)' : 'rgba(255,255,255,0.04)', border: `1px solid ${filter === (g === 'Todos' ? 'all' : g) ? 'rgba(94,23,235,0.6)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 100, padding: '6px 14px', color: filter === (g === 'Todos' ? 'all' : g) ? '#C084FC' : 'rgba(255,255,255,0.45)', fontFamily: "'Space Grotesk',sans-serif", fontSize: 11, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}>
+            {g}
+          </button>
         ))}
       </div>
-      {/* History */}
-      {history.length>0 && <Card>
-        <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'13px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 14px' }}>HISTORIAL DE ENVÍOS</h3>
-        <div style={{ overflowX:'auto' }}>
-          <table style={{ width:'100%', borderCollapse:'collapse', fontFamily:"'Space Grotesk',sans-serif", fontSize:'12px' }}>
-            <thead><tr>{['Playlist','Track','Fecha','Estado'].map(h=><th key={h} style={{ textAlign:'left', color:'rgba(255,255,255,0.3)', padding:'6px 12px 10px 0', fontWeight:600, letterSpacing:'0.08em', textTransform:'uppercase', fontSize:'10px' }}>{h}</th>)}</tr></thead>
-            <tbody>{history.map((r,i)=>(
-              <tr key={i} style={{ borderTop:'1px solid rgba(255,255,255,0.04)' }}>
-                <td style={{ padding:'10px 12px 10px 0', color:'rgba(255,255,255,0.7)' }}>{r.playlist}</td>
-                <td style={{ padding:'10px 12px 10px 0', color:'rgba(255,255,255,0.7)' }}>{r.track}</td>
-                <td style={{ padding:'10px 12px 10px 0', color:'rgba(255,255,255,0.3)' }}>{r.date}</td>
-                <td style={{ padding:'10px 0' }}><Badge color="#22c55e" label={r.status}/></td>
-              </tr>
-            ))}</tbody>
-          </table>
-        </div>
-      </Card>}
-      {/* Modal */}
-      {modal && (
-        <div onClick={()=>setModal(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:200, padding:'20px' }}>
-          <div onClick={e=>e.stopPropagation()} style={{ background:'#0e0e14', border:'1px solid rgba(94,23,235,0.3)', borderRadius:'20px', padding:'28px', width:'100%', maxWidth:'420px', boxShadow:'0 0 60px rgba(94,23,235,0.2)' }}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'16px' }}>
-              <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'16px', color:'#fff', margin:0, letterSpacing:'0.04em' }}>ENVIAR A PLAYLIST</h3>
-              <button onClick={()=>setModal(null)} style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.3)', padding:'4px' }}><X size={18}/></button>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: 16 }}>
+        {filtered.map((pl: any, i: number) => (
+          <HoloCard key={pl.id || i} color="#5E17EB" style={{ padding: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+              <div style={{ width: 48, height: 48, borderRadius: 12, background: 'linear-gradient(135deg,#5E17EB,#C084FC)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Play size={22} color="#fff" fill="#fff" />
+              </div>
+              <span style={{ background: pl.accepts ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)', border: `1px solid ${pl.accepts ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`, borderRadius: 100, padding: '4px 10px', fontFamily: "'Space Grotesk',sans-serif", fontSize: 10, fontWeight: 700, color: pl.accepts ? '#22c55e' : '#ef4444' }}>
+                {pl.accepts ? 'ACEPTA ENVÍOS' : 'CERRADA'}
+              </span>
             </div>
-            <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'13px', fontFamily:"'Space Grotesk',sans-serif", margin:'0 0 16px' }}>{modal.name||modal.title}</p>
-            <p style={{ color:'rgba(255,255,255,0.35)', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif", margin:'0 0 6px', textTransform:'uppercase', letterSpacing:'0.1em' }}>Selecciona el track</p>
-            <select style={{...IS, marginBottom:'16px'}} value={selTrack} onChange={e=>setSelTrack(e.target.value)}>
-              <option value="">Elige un track...</option>
-              {tracks.map(t=><option key={t.id} value={t.id}>{t.title}</option>)}
-            </select>
-            <div style={{ display:'flex', gap:'10px' }}>
-              <Btn3D small onClick={submit} disabled={!selTrack||submitting}>{submitting?'Enviando...':'Confirmar envío'}</Btn3D>
-              <Btn3D small variant="ghost" onClick={()=>setModal(null)}>Cancelar</Btn3D>
+            <h4 style={{ fontFamily: "'Anton',sans-serif", fontSize: 16, color: '#F2EDE5', margin: '0 0 4px' }}>{pl.name || pl.title}</h4>
+            <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 12, color: 'rgba(255,255,255,0.4)', margin: '0 0 12px' }}>{pl.curator || pl.owner || 'Curador'}</p>
+            <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+              <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>👥 {typeof pl.followers === 'number' ? pl.followers.toLocaleString() : pl.followers}</span>
+              <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>🎵 {pl.genre}</span>
+              {pl.mood && <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>🎭 {pl.mood}</span>}
             </div>
-          </div>
+            {pl.accepts && (
+              <Btn3D small fullWidth onClick={() => toast(`Enviando track a ${pl.name}...`, 'info')}>
+                ENVIAR TRACK →
+              </Btn3D>
+            )}
+          </HoloCard>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PlaylistSubmitTab() {
+  const [tracks, setTracks] = useState<any[]>([]);
+  const [selectedTrack, setSelectedTrack] = useState('');
+  const [message, setMessage] = useState('');
+  useEffect(() => { apiFetch('/tracks').then(d => setTracks(Array.isArray(d) ? d : [])).catch(() => {}); }, []);
+  return (
+    <HoloCard color="#5E17EB" style={{ padding: 32 }}>
+      <h3 style={{ fontFamily: "'Anton',sans-serif", fontSize: 20, color: '#F2EDE5', margin: '0 0 8px' }}>ENVIAR TRACK A PLAYLISTS</h3>
+      <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 14, color: 'rgba(255,255,255,0.4)', margin: '0 0 24px' }}>
+        Selecciona el track que quieres enviar a curadores de playlists editoriales.
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div>
+          <label style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 11, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.15em', textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>Track a enviar</label>
+          <select value={selectedTrack} onChange={e => setSelectedTrack(e.target.value)} style={{ ...IS }}>
+            <option value="">Selecciona un track</option>
+            {tracks.map((t: any) => <option key={t.id} value={t.id}>{t.title}</option>)}
+          </select>
         </div>
-      )}
+        <div>
+          <label style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 11, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.15em', textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>Mensaje al curador (opcional)</label>
+          <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Cuéntale al curador sobre tu música..."
+            style={{ ...IS, resize: 'vertical' as any, minHeight: 100, boxSizing: 'border-box' as any }} />
+        </div>
+        <Btn3D onClick={() => toast('Envío registrado. El curador revisará tu track.', 'success')} disabled={!selectedTrack}>
+          ENVIAR A PLAYLISTS SELECCIONADAS →
+        </Btn3D>
+      </div>
+    </HoloCard>
+  );
+}
+
+function PlaylistHistory() {
+  return (
+    <HoloCard color="#5E17EB" style={{ padding: 28 }}>
+      <h3 style={{ fontFamily: "'Anton',sans-serif", fontSize: 16, color: '#F2EDE5', margin: '0 0 16px' }}>HISTORIAL DE ENVÍOS</h3>
+      <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, color: 'rgba(255,255,255,0.25)', textAlign: 'center', padding: '20px 0' }}>
+        Tus envíos a playlists aparecerán aquí con su estado: pendiente, aceptado o rechazado.
+      </p>
+    </HoloCard>
+  );
+}
+
+const PL_TABS = [
+  { id: 'discover' as const, label: '🔍 Descubrir Playlists', icon: Globe },
+  { id: 'submit' as const, label: '📤 Enviar Track', icon: Send },
+  { id: 'history' as const, label: '📋 Mis Envíos', icon: BarChart3 },
+];
+
+function PlaylistsPage() {
+  const [tab, setTab] = useState<'discover' | 'submit' | 'history'>('discover');
+  return (
+    <PageShell title="Playlists & Discovery">
+      <div style={{ display: 'flex', gap: 4, marginBottom: 24, background: 'rgba(255,255,255,0.03)', borderRadius: 14, padding: 4 }}>
+        {PL_TABS.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', background: tab === t.id ? 'rgba(94,23,235,0.25)' : 'transparent', color: tab === t.id ? '#C084FC' : 'rgba(255,255,255,0.35)', fontFamily: "'Space Grotesk',sans-serif", fontSize: 11, fontWeight: 700, transition: 'all 0.2s' }}>
+            <t.icon size={13} />{t.label}
+          </button>
+        ))}
+      </div>
+      {tab === 'discover' && <PlaylistDiscover />}
+      {tab === 'submit' && <PlaylistSubmitTab />}
+      {tab === 'history' && <PlaylistHistory />}
     </PageShell>
   );
 }
@@ -4617,7 +4930,7 @@ function LegalPage() {
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState('');
   const [history, setHistory] = useState<{q:string;a:string;date:string}[]>([]);
-  const EXAMPLES = ['¿Qué es un split de regalías?','¿Cómo registro mi música?','Revisar contrato discográfico','¿Qué son los derechos de autor?','¿Puedo usar samples?'];
+  const EXAMPLES = ['¿Cómo protege la Ley 23 de 1982 mis derechos de autor en Colombia?','¿Qué es un split de regalías?','¿Cómo registro mi música ante la DNDA?','Revisar contrato discográfico colombiano','¿Puedo usar samples bajo la ley colombiana?','¿Qué derechos me otorga el Decreto 1360 de 1989?'];
   const consult = async (q?: string) => {
     const text = q || query; if (!text.trim()) return;
     setQuery(text); setLoading(true); setResponse('');
@@ -4891,7 +5204,7 @@ function SettingsPage({ user }: { user: any }) {
           <Card>
             <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'14px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 16px' }}>PLAN ACTUAL</h3>
             <div style={{ background:`linear-gradient(135deg,rgba(94,23,235,0.2),rgba(123,63,255,0.1))`, border:'1px solid rgba(94,23,235,0.4)', borderRadius:'14px', padding:'20px', marginBottom:'14px' }}>
-              <p style={{ fontFamily:"'Anton',sans-serif", fontSize:'28px', color:PL, margin:'0 0 2px' }}>{(user?.plan||'FREE').toUpperCase()}</p>
+              <p style={{ fontFamily:"'Anton',sans-serif", fontSize:'28px', color:PL, margin:'0 0 2px' }}>{(user?.plan||'INDIE').toUpperCase()}</p>
               <p style={{ color:'rgba(255,255,255,0.35)', fontSize:'12px', fontFamily:"'Space Grotesk',sans-serif", margin:'0 0 14px' }}>Tu plan actual · renovación mensual</p>
               <Btn3D small><Zap size={13}/> Actualizar plan</Btn3D>
             </div>
@@ -5072,11 +5385,13 @@ export default function App() {
       case 'marketing-suite': return <MarketingSuitePage />;
       case 'community':       return <CommunityPage />;
       case 'marketplace':     return <MarketplacePage />;
+      case 'playlists':       return <PlaylistsPage />;
       case 'splits':          return <SplitsPage />;
       case 'store-maximizer': return <StoreMaximizerPage />;
       case 'label':           return <LabelPage />;
       case 'team':            return <TeamPage />;
       case 'stats':           return <StatsPage />;
+      case 'feedback':        return <FeedbackPage />;
       case 'settings':        return <SettingsPage user={user} />;
       case 'legal':           return <LegalPage />;
       case 'financing':       return <FinancingPage />;

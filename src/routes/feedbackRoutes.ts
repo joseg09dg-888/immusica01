@@ -17,7 +17,8 @@ router.use(authenticate);
 // Enviar feedback (cualquier usuario autenticado)
 router.post('/', validate(schemas.createFeedback), createFeedback);
 
-// Obtener mis feedbacks
+// Obtener mis feedbacks — alias raíz y /my
+router.get('/', getMyFeedback);
 router.get('/my', getMyFeedback);
 
 // Obtener un feedback por ID (propio o admin)

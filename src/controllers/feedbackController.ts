@@ -9,15 +9,9 @@ export const createFeedback = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
-    const { type, title, description } = req.body;
+    const { type, title, description, priority } = req.body;
     if (!type || !title || !description) {
       return res.status(400).json({ error: 'type, title y description son obligatorios' });
-    }
-
-    // Validar type
-    const validTypes = ['suggestion', 'bug', 'feature_request', 'support'];
-    if (!validTypes.includes(type)) {
-      return res.status(400).json({ error: 'Tipo de feedback no válido' });
     }
 
     const insert = db.prepare(`
