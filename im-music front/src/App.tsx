@@ -2064,6 +2064,7 @@ function CatalogPage() {
       setShowForm(false);
       load();
     } catch(e: any) {
+      console.log('CREATE ERROR:', e.message, e);
       toast('Error: ' + e.message, 'error');
     }
     setLoading(false);
@@ -2088,9 +2089,9 @@ function CatalogPage() {
     if(!bulkFiles.length) return; setBulkUploading(true);
     const newResults = bulkFiles.map(f=>({name:f.name,status:'uploading' as const})); setBulkResults(newResults);
     for (let i=0; i<bulkFiles.length; i++) {
-      const fd = new FormData(); fd.append('file', bulkFiles[i]);
+      const fd = new FormData(); fd.append('audio', bulkFiles[i]);
       try {
-        const res = await fetch(`${API}/upload`, { method:'POST', headers:{ Authorization:`Bearer ${token()}` }, body: fd });
+        const res = await fetch(`${API}/upload/audio`, { method:'POST', headers:{ Authorization:`Bearer ${token()}` }, body: fd });
         setBulkResults(r => r.map((x,idx)=>idx===i?{...x,status:res.ok?'ok':'error'}:x));
       } catch { setBulkResults(r=>r.map((x,idx)=>idx===i?{...x,status:'error'}:x)); }
     }
