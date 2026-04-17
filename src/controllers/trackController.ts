@@ -22,11 +22,12 @@ export const createTrack = async (req: AuthRequest, res: Response) => {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
     const artists = await ArtistModel.getArtistsByUser(req.user.id);
     if (artists.length === 0) return res.status(404).json({ error: 'Crea un artista primero' });
-    const { title, release_date, scheduled_date, cover, audio_url, isrc, upc, status } = req.body;
+    const { title, genre, release_date, scheduled_date, cover, audio_url, isrc, upc, status } = req.body;
     if (!title) return res.status(400).json({ error: 'El título es obligatorio' });
     const trackId = await TrackModel.createTrack({
       artist_id: artists[0].id,
       title,
+      genre: genre || null,
       release_date,
       scheduled_date,
       cover,
@@ -35,7 +36,8 @@ export const createTrack = async (req: AuthRequest, res: Response) => {
       upc,
       status
     });
-    res.status(201).json({ id: trackId, message: 'Track creado' });
+    const track = trackId ? await TrackModel.getTrackById(trackId) : null;
+    res.status(201).json(track || { id: trackId, title, genre, message: 'Track creado' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error al crear track' });

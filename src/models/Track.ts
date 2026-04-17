@@ -21,6 +21,7 @@ export interface Track {
 export const createTrack = async (trackData: {
   artist_id: number;
   title: string;
+  genre?: string | null;
   release_date?: string | null;
   scheduled_date?: string | null;
   cover?: string | null;
@@ -31,11 +32,13 @@ export const createTrack = async (trackData: {
 }): Promise<number> => {
   const result = await db.prepare(`
     INSERT INTO tracks (
-      artist_id, title, release_date, scheduled_date, cover, audio_url, status, isrc, upc
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
+      artist_id, title, genre, release_date, scheduled_date, cover, audio_url, status, isrc, upc
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    RETURNING id
+  `).get(
     trackData.artist_id,
     trackData.title,
+    trackData.genre || null,
     trackData.release_date || null,
     trackData.scheduled_date || null,
     trackData.cover || null,
@@ -43,8 +46,8 @@ export const createTrack = async (trackData: {
     trackData.status || 'draft',
     trackData.isrc || null,
     trackData.upc || null
-  );
-  return result.lastInsertRowid as number;
+  ) as { id: number } | undefined;
+  return result?.id ?? 0;
 };
 
 export const getTrackById = async (id: number): Promise<Track | undefined> => {

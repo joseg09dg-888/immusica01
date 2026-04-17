@@ -2051,14 +2051,21 @@ function CatalogPage() {
   }, [lyricsSelected]);
 
   const create = async () => {
-    if (!title) return; setLoading(true);
+    if (!title.trim()) { toast('Escribe el título', 'error'); return; }
+    setLoading(true);
     try {
-      const track = await apiFetch('/tracks', { method: 'POST', body: JSON.stringify({ title, genre }) });
-      // Auto-vault
-      apiFetch('/vault/files', { method: 'POST', body: JSON.stringify({ name: title, type: 'audio', metadata: { genre, track_id: track?.id } }) }).catch(()=>{});
-      setTitle(''); setGenre(''); setShowForm(false); load();
-      toast('Track creado exitosamente');
-    } catch(e: any) { toast(e.message, 'error'); }
+      const data = await apiFetch('/tracks', {
+        method: 'POST',
+        body: JSON.stringify({ title: title.trim(), genre: genre.trim() || 'Sin género' })
+      });
+      toast('✅ Track "' + (data.title || title.trim()) + '" creado', 'success');
+      setTitle('');
+      setGenre('');
+      setShowForm(false);
+      load();
+    } catch(e: any) {
+      toast('Error: ' + e.message, 'error');
+    }
     setLoading(false);
   };
   const del = async (id: number, name: string) => {
@@ -2109,14 +2116,35 @@ function CatalogPage() {
 
       {/* TRACKS tab */}
       {catalogTab === 'tracks' && <>
-        {showForm && <Card style={{ marginBottom: '20px' }}>
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Título" style={{...IS, flex: 1, minWidth: '140px'}} />
-            <input value={genre} onChange={e => setGenre(e.target.value)} placeholder="Género" style={{...IS, width: '110px'}} />
-            <Btn3D small onClick={create} disabled={loading}>{loading ? 'Creando...' : 'Crear'}</Btn3D>
-            <Btn3D small variant="ghost" onClick={() => setShowForm(false)}>Cancelar</Btn3D>
-          </div>
-        </Card>}
+        {showForm && (
+          <HoloCard color="#5E17EB" style={{padding:28, marginBottom:20}}>
+            <h3 style={{fontFamily:"'Anton',sans-serif", fontSize:16, color:'#F2EDE5', margin:'0 0 20px'}}>
+              SUBIR NUEVO TRACK
+            </h3>
+            <div style={{display:'flex', flexDirection:'column', gap:12}}>
+              <input
+                value={title}
+                onChange={e => setTitle(e.target.value)}
+                placeholder="Título de la canción *"
+                style={{background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:10, padding:'12px 16px', color:'#fff', fontFamily:"'Space Grotesk',sans-serif", fontSize:13, outline:'none'}}
+              />
+              <input
+                value={genre}
+                onChange={e => setGenre(e.target.value)}
+                placeholder="Género (Ej: Trap, Reggaeton, Pop)"
+                style={{background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:10, padding:'12px 16px', color:'#fff', fontFamily:"'Space Grotesk',sans-serif", fontSize:13, outline:'none'}}
+              />
+              <div style={{display:'flex', gap:12}}>
+                <Btn3D onClick={create} disabled={loading || !title} fullWidth>
+                  {loading ? 'CREANDO...' : 'CREAR TRACK'}
+                </Btn3D>
+                <Btn3D variant="ghost" onClick={() => setShowForm(false)}>
+                  Cancelar
+                </Btn3D>
+              </div>
+            </div>
+          </HoloCard>
+        )}
         <div style={{display:'flex',gap:'4px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'10px',padding:'4px',marginBottom:16,width:'fit-content'}}>
           {(['list','grid'] as const).map(mode => (
             <button key={mode} onClick={() => setViewMode(mode)} style={{ background: viewMode===mode ? 'rgba(94,23,235,0.4)' : 'transparent', border:'none', borderRadius:'7px', padding:'6px 12px', color: viewMode===mode ? '#fff' : 'rgba(255,255,255,0.3)', cursor:'pointer', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif", transition:'all 0.15s' }}>
