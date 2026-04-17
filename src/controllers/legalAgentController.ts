@@ -35,7 +35,7 @@ export const consultarLegal = async (req: AuthRequest, res: Response) => {
     const { pregunta } = req.body;
     if (!pregunta) return res.status(400).json({ error: 'La pregunta es obligatoria' });
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
     const result = await model.generateContent({
       contents: [
         { role: 'user', parts: [{ text: LEGAL_SYSTEM_PROMPT }] },
@@ -50,7 +50,11 @@ export const consultarLegal = async (req: AuthRequest, res: Response) => {
 
     await LegalQueryModel.createLegalQuery(artist.id, pregunta, respuesta);
     res.json({ respuesta });
-  } catch (error) {
+  } catch (error: any) {
+    const msg: string = error?.message || '';
+    if (msg.toLowerCase().includes('depleted') || msg.toLowerCase().includes('credits') || msg.includes('429')) {
+      return res.status(503).json({ error: 'Créditos de IA agotados. Recarga en AI Studio para continuar.' });
+    }
     console.error(error);
     res.status(500).json({ error: 'Error al procesar la consulta legal' });
   }

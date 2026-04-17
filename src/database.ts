@@ -444,10 +444,16 @@ async function initDB() {
     // Migrations: add columns that may not exist on older DBs
     const migrations = [
       `ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS max_artists INTEGER DEFAULT 1`,
+      `ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS plan_id TEXT DEFAULT 'free'`,
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_tokens_used INTEGER DEFAULT 0`,
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_tokens_reset TIMESTAMPTZ`,
       `ALTER TABLE tracks ADD COLUMN IF NOT EXISTS scheduled_date TEXT`,
       `ALTER TABLE tracks ADD COLUMN IF NOT EXISTS published_at TEXT`,
+      `ALTER TABLE tracks ADD COLUMN IF NOT EXISTS is_legacy BOOLEAN DEFAULT FALSE`,
+      `ALTER TABLE tracks ADD COLUMN IF NOT EXISTS legacy_purchased_at TIMESTAMPTZ`,
+      `ALTER TABLE tracks ADD COLUMN IF NOT EXISTS auto_distribute BOOLEAN DEFAULT FALSE`,
+      `ALTER TABLE tracks ADD COLUMN IF NOT EXISTS isrc TEXT`,
+      `ALTER TABLE tracks ADD COLUMN IF NOT EXISTS upc TEXT`,
       `ALTER TABLE royalties ADD COLUMN IF NOT EXISTS streams INTEGER DEFAULT 0`,
       `ALTER TABLE vault_files ADD COLUMN IF NOT EXISTS artist_id INTEGER`,
       `ALTER TABLE vault_files ADD COLUMN IF NOT EXISTS uploaded_at TIMESTAMPTZ DEFAULT NOW()`,
@@ -463,6 +469,24 @@ async function initDB() {
       `ALTER TABLE legal_queries ADD COLUMN IF NOT EXISTS artist_id INTEGER`,
       `ALTER TABLE videos ADD COLUMN IF NOT EXISTS artist_id INTEGER`,
       `ALTER TABLE videos ADD COLUMN IF NOT EXISTS track_id INTEGER`,
+      // chat tables (create if not exist)
+      `CREATE TABLE IF NOT EXISTS chat_messages (
+         id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, user_name TEXT NOT NULL,
+         message TEXT NOT NULL, link TEXT, flagged BOOLEAN DEFAULT FALSE,
+         created_at TIMESTAMPTZ DEFAULT NOW()
+       )`,
+      `ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS user_name TEXT`,
+      `ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS link TEXT`,
+      `ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS flagged BOOLEAN DEFAULT FALSE`,
+      `CREATE TABLE IF NOT EXISTS chat_bans (
+         id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL UNIQUE,
+         strike_count INTEGER DEFAULT 0, permanently_banned BOOLEAN DEFAULT FALSE,
+         ban_expires_at TIMESTAMPTZ, updated_at TIMESTAMPTZ DEFAULT NOW()
+       )`,
+      `CREATE TABLE IF NOT EXISTS user_infractions (
+         id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL,
+         reason TEXT, message TEXT, created_at TIMESTAMPTZ DEFAULT NOW()
+       )`,
     ];
     for (const sql of migrations) {
       await client.query(sql).catch(() => {});

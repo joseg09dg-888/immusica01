@@ -97,7 +97,7 @@ export const getDistributions = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: 'Track no encontrado o no pertenece al artista' });
     }
 
-    const distributions = db.prepare(`
+    const distributions = await db.prepare(`
       SELECT * FROM store_distributions
       WHERE track_id = ?
       ORDER BY created_at DESC

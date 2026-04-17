@@ -87,9 +87,9 @@ export const getReleaseInfo = async (req: AuthRequest, res: Response) => {
     if (artists.length === 0) return res.status(404).json({ error: 'Artista no encontrado' });
     const artistId = artists[0].id;
 
-    const track = db.prepare(`
+    const track = await db.prepare(`
       SELECT id, title, scheduled_date, release_date, published_at, status
-      FROM tracks 
+      FROM tracks
       WHERE id = ? AND artist_id = ?
     `).get(trackId, artistId);
 
@@ -113,7 +113,7 @@ export const getScheduledTracks = async (req: AuthRequest, res: Response) => {
     if (artists.length === 0) return res.json([]);
     const artistId = artists[0].id;
 
-    const tracks = db.prepare(`
+    const tracks = await db.prepare(`
       SELECT id, title, scheduled_date, status
       FROM tracks
       WHERE artist_id = ? AND status = 'scheduled'

@@ -79,7 +79,7 @@ export const getYouTubeStatus = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: 'Track no encontrado o no pertenece al artista' });
     }
 
-    const status = db.prepare(`
+    const status = await db.prepare(`
       SELECT * FROM youtube_content_id WHERE track_id = ?
     `).get(trackIdNum);
 
@@ -112,7 +112,7 @@ export const listMyYouTubeRegistrations = async (req: AuthRequest, res: Response
     const placeholders = tracks.map(() => '?').join(',');
     const trackIds = tracks.map(t => t.id);
 
-    const registrations = db.prepare(`
+    const registrations = await db.prepare(`
       SELECT y.*, t.title as track_title
       FROM youtube_content_id y
       JOIN tracks t ON y.track_id = t.id

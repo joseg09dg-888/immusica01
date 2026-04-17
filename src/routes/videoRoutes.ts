@@ -20,6 +20,9 @@ router.post('/upload', uploadVideo);
 // Listar mis videos
 router.get('/', getMyVideos);
 
+// Analytics stub (must be before /:id to avoid matching 'analytics' as an id)
+router.get('/analytics', (req, res) => res.json({ views: 0, watchTime: 0, topVideos: [] }));
+
 // Obtener video por ID
 router.get('/:id', getVideoById);
 

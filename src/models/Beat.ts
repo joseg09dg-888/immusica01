@@ -21,7 +21,8 @@ export const createBeat = async (data: Omit<Beat, 'id' | 'created_at' | 'updated
   return db.prepare(`
     INSERT INTO beats (productor_id, titulo, genero, bpm, tonalidad, precio, archivo_url, archivo_completo_url, portada_url, descripcion, estado)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
+    RETURNING id
+  `).get(
     data.productor_id, data.titulo, data.genero, data.bpm, data.tonalidad, data.precio,
     data.archivo_url, data.archivo_completo_url, data.portada_url, data.descripcion, data.estado || 'disponible'
   );

@@ -114,7 +114,7 @@ export const subirBeat = [
       }
 
       // Manejo de archivos
-      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      const files = (req.files || {}) as { [fieldname: string]: Express.Multer.File[] };
       const demoUrl = files['demo'] ? '/uploads/demos/' + files['demo'][0].filename : null;
       const fullUrl = files['full'] ? '/uploads/full/' + files['full'][0].filename : null;
       const coverUrl = files['cover'] ? '/uploads/covers/' + files['cover'][0].filename : null;
@@ -131,10 +131,10 @@ export const subirBeat = [
         portada_url: coverUrl,
         descripcion: descripcion || null,
         estado: 'disponible'
-      });
+      }) as { id: number } | undefined;
 
-      const newBeat = await BeatModel.getBeatById(result.lastInsertRowid as number);
-      res.status(201).json(newBeat);
+      const newBeat = result?.id ? await BeatModel.getBeatById(result.id) : null;
+      res.status(201).json(newBeat || { message: 'Beat creado' });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Error al subir beat' });

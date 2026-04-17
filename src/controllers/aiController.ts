@@ -24,10 +24,13 @@ export const chat = async (req: AuthRequest, res: Response) => {
     if (!message?.trim()) return res.status(400).json({ error: 'Mensaje requerido' });
 
     // Check plan & token limits
-    const sub = await db.prepare(
-      `SELECT plan_id FROM subscriptions WHERE user_email = ? AND status = 'active' ORDER BY created_at DESC LIMIT 1`
-    ).get(req.user.email) as { plan_id: string } | undefined;
-    const plan = sub?.plan_id || 'free';
+    let plan = 'free';
+    try {
+      const sub = await db.prepare(
+        `SELECT plan_id FROM subscriptions WHERE user_email = ? AND status = 'active' ORDER BY created_at DESC LIMIT 1`
+      ).get(req.user.email) as { plan_id: string } | undefined;
+      plan = sub?.plan_id || 'free';
+    } catch { /* plan_id column may not exist yet — default to free */ }
     const limit = PLAN_LIMITS[plan] ?? 10;
 
     const userRow = await db.prepare(
@@ -61,7 +64,7 @@ export const chat = async (req: AuthRequest, res: Response) => {
     ];
 
     const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -77,6 +80,9 @@ export const chat = async (req: AuthRequest, res: Response) => {
       const msg: string = data.error.message || 'Error de Gemini API';
       if (msg.toLowerCase().includes('api key') || msg.toLowerCase().includes('leaked') || msg.toLowerCase().includes('invalid')) {
         return res.status(503).json({ error: 'La clave de IA necesita actualización. Contacta al administrador.' });
+      }
+      if (msg.toLowerCase().includes('depleted') || msg.toLowerCase().includes('credits') || resp.status === 429) {
+        return res.status(503).json({ error: 'Créditos de IA agotados. Recarga en AI Studio para continuar.' });
       }
       throw new Error(msg);
     }
@@ -107,7 +113,7 @@ export const chat = async (req: AuthRequest, res: Response) => {
 };
 
 export const getModels = (_req: AuthRequest, res: Response) => {
-  res.json({ model: 'gemini-1.5-flash', status: 'active' });
+  res.json({ model: 'gemini-2.0-flash-lite', status: 'active' });
 };
 
 export const archetypeAnalysis = async (req: AuthRequest, res: Response) => {
@@ -134,7 +140,7 @@ Basado en estas respuestas, determina el arquetipo artístico y responde SOLO co
 }`;
 
     const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
       { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 600 } }) }
     );
     const data = await resp.json() as any;
@@ -172,7 +178,7 @@ Genera una estrategia de marca personal completa y responde SOLO con JSON válid
 }`;
 
     const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
       { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.6, maxOutputTokens: 700 } }) }
     );
     const data = await resp.json() as any;
@@ -231,7 +237,7 @@ Crea 3 copies publicitarios optimizados para Meta Ads y responde SOLO con JSON v
 }`;
 
     const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
       { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 900 } }) }
     );
     const data = await resp.json() as any;
@@ -280,7 +286,7 @@ Crea un plan de contenido mensual de 4 semanas y responde SOLO con JSON válido:
 Incluye 3 posts por semana (4 semanas = 12 posts total). Variedad de formatos. Cada post debe ser accionable y específico.`;
 
     const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
       { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.6, maxOutputTokens: 1200 } }) }
     );
     const data = await resp.json() as any;
@@ -334,7 +340,7 @@ Para un artista de género "${genre}" tipo "${artistType}", proporciona análisi
 Adapta todos los datos al género "${genre}" y tipo de artista "${artistType}". Responde SOLO con el JSON válido, sin texto adicional.`;
 
     const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

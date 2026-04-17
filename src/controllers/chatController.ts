@@ -51,15 +51,11 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
     }
 
     // Guardar mensaje en la base de datos
-    const insert = db.prepare(`
+    const newMessage = await db.prepare(`
       INSERT INTO chat_messages (user_id, user_name, message, link)
       VALUES (?, ?, ?, ?)
-    `);
-    const result = await insert.run(req.user.id, userName, message, link || null);
-    const messageId = result.lastInsertRowid;
-
-    // Recuperar el mensaje recién insertado
-    const newMessage = await db.prepare('SELECT * FROM chat_messages WHERE id = ?').get(messageId);
+      RETURNING *
+    `).get(req.user.id, userName, message, link || null) || { user_id: req.user.id, user_name: userName, message, created_at: new Date().toISOString() };
 
     // Emitir el mensaje a todos los clientes conectados
     io.emit('new-message', newMessage);

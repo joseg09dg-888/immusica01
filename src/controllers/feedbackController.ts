@@ -37,7 +37,7 @@ export const getMyFeedback = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
 
-    const feedbacks = db.prepare(`
+    const feedbacks = await db.prepare(`
       SELECT * FROM feedback
       WHERE user_id = ?
       ORDER BY created_at DESC
@@ -63,7 +63,7 @@ export const getFeedbackById = async (req: AuthRequest, res: Response) => {
     const idNum = parseInt(idStr, 10);
     if (isNaN(idNum)) return res.status(400).json({ error: 'ID inválido' });
 
-    const feedback = db.prepare(`
+    const feedback = await db.prepare(`
       SELECT * FROM feedback WHERE id = ?
     `).get(idNum) as any;
 
@@ -126,7 +126,7 @@ export const getAllFeedback = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ error: 'Solo administradores' });
     }
 
-    const feedbacks = db.prepare(`
+    const feedbacks = await db.prepare(`
       SELECT f.*, u.name as user_name, u.email as user_email
       FROM feedback f
       JOIN users u ON f.user_id = u.id
