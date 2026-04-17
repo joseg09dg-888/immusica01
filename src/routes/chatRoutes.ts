@@ -15,4 +15,8 @@ router.post('/send', sendMessage);
 router.get('/recent', getRecentMessages);
 router.post('/report/:messageId', reportMessage);
 
+// Aliases for /api/community/messages
+router.get('/messages', getRecentMessages);
+router.post('/messages', sendMessage);
+
 export default router;

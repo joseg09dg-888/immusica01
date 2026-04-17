@@ -4,9 +4,10 @@ import { consultarLegal, analizarContrato, getHistorial } from '../controllers/l
 
 const router = express.Router();
 
-// router.use(authenticate); // <-- COMENTADO PARA PRUEBAS
+router.use(authenticate);
 
 router.post('/consultar', consultarLegal);
+router.post('/consulta', consultarLegal);  // alias used by frontend
 router.post('/analizar-contrato', analizarContrato);
 router.get('/historial', getHistorial);
 

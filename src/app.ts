@@ -120,7 +120,7 @@ app.use('/uploads', express.static('uploads'));
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: process.env.NODE_ENV === 'production' ? 100 : 1000,
   message: { error: 'Demasiadas peticiones, intenta más tarde' }
 });
 const authLimiter = rateLimit({
@@ -149,6 +149,7 @@ app.use('/api/stats', statsRoutes);
 app.use('/api/landing', landingRoutes);
 app.use('/api/releases', releaseRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/community', chatRoutes);  // alias for community page
 app.use('/api/playlists', playlistRoutes);
 app.use('/api/videos', videoRoutes);
 app.use('/api/lyrics', lyricsRoutes);

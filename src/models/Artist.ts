@@ -16,6 +16,7 @@ export const createArtist = async (artistData: { user_id: number; name: string; 
   const result = await db.prepare(`
     INSERT INTO artists (user_id, name, genre, bio, tier, avatar, spotify_verified)
     VALUES (?, ?, ?, ?, ?, ?, ?)
+    RETURNING id
   `).run(
     artistData.user_id,
     artistData.name,

@@ -441,6 +441,43 @@ async function initDB() {
       );
     `);
 
+    // Migrations: add columns that may not exist on older DBs
+    const migrations = [
+      `ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS max_artists INTEGER DEFAULT 1`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_tokens_used INTEGER DEFAULT 0`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_tokens_reset TIMESTAMPTZ`,
+      `ALTER TABLE tracks ADD COLUMN IF NOT EXISTS scheduled_date TEXT`,
+      `ALTER TABLE tracks ADD COLUMN IF NOT EXISTS published_at TEXT`,
+      `ALTER TABLE royalties ADD COLUMN IF NOT EXISTS streams INTEGER DEFAULT 0`,
+      `ALTER TABLE vault_files ADD COLUMN IF NOT EXISTS artist_id INTEGER`,
+      `ALTER TABLE vault_files ADD COLUMN IF NOT EXISTS uploaded_at TIMESTAMPTZ DEFAULT NOW()`,
+      `ALTER TABLE vault_files ADD COLUMN IF NOT EXISTS file_url TEXT`,
+      `ALTER TABLE vault_files ADD COLUMN IF NOT EXISTS file_name TEXT`,
+      `ALTER TABLE vault_files ADD COLUMN IF NOT EXISTS file_type TEXT`,
+      `ALTER TABLE vault_files ADD COLUMN IF NOT EXISTS file_size INTEGER`,
+      `ALTER TABLE vault_files ADD COLUMN IF NOT EXISTS description TEXT`,
+      `ALTER TABLE publishing_royalties ADD COLUMN IF NOT EXISTS cantidad REAL DEFAULT 0`,
+      `ALTER TABLE publishing_royalties ADD COLUMN IF NOT EXISTS tipo TEXT`,
+      `ALTER TABLE publishing_royalties ADD COLUMN IF NOT EXISTS territorio TEXT`,
+      `ALTER TABLE publishing_royalties ADD COLUMN IF NOT EXISTS uso_categoria TEXT`,
+      `ALTER TABLE legal_queries ADD COLUMN IF NOT EXISTS artist_id INTEGER`,
+      `ALTER TABLE videos ADD COLUMN IF NOT EXISTS artist_id INTEGER`,
+      `ALTER TABLE videos ADD COLUMN IF NOT EXISTS track_id INTEGER`,
+    ];
+    for (const sql of migrations) {
+      await client.query(sql).catch(() => {});
+    }
+    // Add unique constraint on user_artists if missing
+    await client.query(`
+      DO $$ BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint WHERE conname = 'user_artists_user_id_artist_id_key'
+        ) THEN
+          ALTER TABLE user_artists ADD CONSTRAINT user_artists_user_id_artist_id_key UNIQUE (user_id, artist_id);
+        END IF;
+      END $$;
+    `).catch(() => {});
+
     console.log('✅ PostgreSQL conectado y tablas listas');
   } catch (error) {
     console.error('❌ Error inicializando DB:', error);

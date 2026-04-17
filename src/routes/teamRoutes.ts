@@ -11,8 +11,30 @@ import {
 
 const router = express.Router();
 
+import { AuthRequest } from '../middleware/auth';
+import db from '../database';
+
 // Todas las rutas requieren autenticación
 router.use(authenticate);
+
+// GET /api/team — return current user's team info
+router.get('/', async (req: AuthRequest, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'No autorizado' });
+    const members = await db.prepare(`
+      SELECT u.id, u.name, u.email, ua.role
+      FROM user_artists ua
+      JOIN users u ON ua.user_id = u.id
+      WHERE ua.artist_id IN (
+        SELECT artist_id FROM user_artists WHERE user_id = ? AND role = 'owner'
+      )
+    `).all(req.user.id) as any[];
+    res.json(members);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al obtener equipo' });
+  }
+});
 
 // ========== GESTIÓN DE ACCESO A ARTISTAS ==========
 // Asignar artista a otro usuario (manager)

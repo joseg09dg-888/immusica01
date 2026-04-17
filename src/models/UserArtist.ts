@@ -11,9 +11,9 @@ export interface UserArtist {
 export const assignUserToArtist = async (userId: number, artistId: number, role: string = 'manager'): Promise<number> => {
   const result = await db.prepare(`
     INSERT INTO user_artists (user_id, artist_id, role)
-    VALUES (?, ?, ?)
-    ON CONFLICT (user_id, artist_id) DO NOTHING
-  `).run(userId, artistId, role);
+    SELECT ?, ?, ?
+    WHERE NOT EXISTS (SELECT 1 FROM user_artists WHERE user_id = ? AND artist_id = ?)
+  `).run(userId, artistId, role, userId, artistId);
   return result.lastInsertRowid as number;
 };
 

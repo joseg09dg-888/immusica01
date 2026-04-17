@@ -1,14 +1,20 @@
 import db from '../database';
 
 export const getUserMaxArtists = async (userId: number): Promise<number> => {
-  const subscription = await db.prepare(`
-    SELECT max_artists FROM subscriptions
-    WHERE user_email = (SELECT email FROM users WHERE id = ?)
-    AND status = 'ACTIVE'
-    ORDER BY start_date DESC LIMIT 1
-  `).get(userId) as { max_artists: number } | undefined;
-
-  return subscription?.max_artists || 0;
+  try {
+    const subscription = await db.prepare(`
+      SELECT plan_id FROM subscriptions
+      WHERE user_email = (SELECT email FROM users WHERE id = ?)
+      AND status IN ('active', 'ACTIVE')
+      ORDER BY created_at DESC LIMIT 1
+    `).get(userId) as { plan_id: string } | undefined;
+    const plan = subscription?.plan_id?.toLowerCase() || '';
+    if (plan === 'pro' || plan === 'label') return 999;
+    if (plan === 'indie' || plan === 'basic') return 3;
+    return 1;  // default: 1 artist allowed without subscription
+  } catch {
+    return 1;  // column missing or table issue — allow 1 artist
+  }
 };
 
 export const countUserArtists = async (userId: number): Promise<number> => {

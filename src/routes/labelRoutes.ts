@@ -12,7 +12,7 @@ router.get('/my', async (req: AuthRequest, res) => {
     const label = await db.prepare(
       `SELECT * FROM labels WHERE owner_id = ? LIMIT 1`
     ).get(req.user.id);
-    if (!label) return res.status(404).json({ error: 'No tienes un sello aún' });
+    if (!label) return res.json(null);
     res.json(label);
   } catch (err) {
     console.error(err);
@@ -102,7 +102,8 @@ router.get('/:id/stats', async (req: AuthRequest, res) => {
         const trackIds = trackRows.map(r => r.id);
         const ph2 = trackIds.map(() => '?').join(',');
         const royaltyRows = await db.prepare(
-          `SELECT SUM(cantidad) as total_revenue, SUM(streams) as total_streams
+          `SELECT SUM(r.cantidad) as total_revenue,
+                COALESCE(SUM(ds.streams), 0) as total_streams
            FROM royalties r LEFT JOIN daily_stats ds ON r.track_id = ds.track_id
            WHERE r.track_id IN (${ph2})`
         ).get(...trackIds) as { total_revenue: number | null; total_streams: number | null } | undefined;

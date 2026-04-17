@@ -11,6 +11,7 @@ import {
 const router = express.Router();
 
 // Rutas públicas (para visualizar letras)
+router.get('/', (req, res) => res.json([]));  // root: empty list (no user-specific context yet)
 router.get('/track/:trackId', getLyrics);
 router.get('/track/:trackId/export', exportLyrics);
 // Frontend compat: GET /lyrics/:trackId

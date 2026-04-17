@@ -495,6 +495,16 @@ async function initDB() {
       );
     `);
 
+    // Migrations for older DBs
+    const migrations = [
+      `ALTER TABLE legal_queries ADD COLUMN IF NOT EXISTS artist_id INTEGER`,
+      `ALTER TABLE vault_files ADD COLUMN IF NOT EXISTS artist_id INTEGER`,
+      `ALTER TABLE vault_files ADD COLUMN IF NOT EXISTS uploaded_at TIMESTAMPTZ DEFAULT NOW()`,
+    ];
+    for (const sql of migrations) {
+      await client.query(sql).catch(() => {});
+    }
+
     console.log('✅ PostgreSQL conectado y tablas listas');
   } catch (error) {
     console.error('❌ Error inicializando DB:', error);
