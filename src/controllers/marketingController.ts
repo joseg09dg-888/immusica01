@@ -62,7 +62,7 @@ export const procesarTest = async (req: AuthRequest, res: Response) => {
       }
     `;
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
     const result = await model.generateContent(prompt);
     const text = result.response.text();
 
@@ -125,7 +125,7 @@ export const generarBrandingSensorial = async (req: AuthRequest, res: Response) 
       }
     `;
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
     const result = await model.generateContent(prompt);
     const text = result.response.text();
 
@@ -188,7 +188,7 @@ export const generarMercadoObjetivo = async (req: AuthRequest, res: Response) =>
       }
     `;
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
     const result = await model.generateContent(prompt);
     const text = result.response.text();
 
@@ -278,7 +278,7 @@ export const generarPlanContenidos = async (req: AuthRequest, res: Response) => 
       }
     `;
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
     const result = await model.generateContent(prompt);
     const text = result.response.text();
 

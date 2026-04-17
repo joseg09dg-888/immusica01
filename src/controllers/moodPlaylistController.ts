@@ -145,7 +145,7 @@ export const generateMoodPlaylist = async (req: AuthRequest, res: Response) => {
       Ejemplo: ["Adele - Hello", "Coldplay - The Scientist", "Imagine Dragons - Believer"]
     `;
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
     const result = await model.generateContent(prompt);
     const text = result.response.text();
 

@@ -35,7 +35,7 @@ export const consultarLegal = async (req: AuthRequest, res: Response) => {
     const { pregunta } = req.body;
     if (!pregunta) return res.status(400).json({ error: 'La pregunta es obligatoria' });
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
     const result = await model.generateContent({
       contents: [
         { role: 'user', parts: [{ text: LEGAL_SYSTEM_PROMPT }] },
