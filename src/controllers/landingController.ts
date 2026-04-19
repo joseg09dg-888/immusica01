@@ -77,6 +77,7 @@ export const createLandingPage = async (req: AuthRequest, res: Response) => {
       INSERT INTO landing_pages
       (track_id, artist_id, slug, title, description, cover_url, spotify_url, apple_music_url, youtube_url, other_url, config)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      RETURNING id
     `).run(
       track_id,
       artistId,

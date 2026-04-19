@@ -487,6 +487,8 @@ async function initDB() {
          id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL,
          reason TEXT, message TEXT, created_at TIMESTAMPTZ DEFAULT NOW()
        )`,
+      `ALTER TABLE split_invitations ADD COLUMN IF NOT EXISTS email TEXT`,
+      `ALTER TABLE splits ADD COLUMN IF NOT EXISTS artist_name TEXT`,
     ];
     for (const sql of migrations) {
       await client.query(sql).catch(() => {});

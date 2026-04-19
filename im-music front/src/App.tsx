@@ -2439,7 +2439,8 @@ function AIChatPage() {
       const d = await apiFetch('/ai/chat',{method:'POST',body:JSON.stringify({message:text,history:messages})});
       setMessages(p=>[...p,{role:'assistant',content:d.response||d.message||'Sin respuesta'}]);
     } catch(e:any) {
-      setMessages(p=>[...p,{role:'assistant',content:`Error: ${e.message}`}]);
+      const msg = e.message || 'Error al contactar el servicio de IA';
+      setMessages(p=>[...p,{role:'assistant',content:msg}]);
     }
     setLoading(false);
   };

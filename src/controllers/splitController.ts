@@ -20,11 +20,11 @@ export const addSplit = async (req: Request, res: Response) => {
   try {
     const track = await db.prepare('SELECT id, artist_id FROM tracks WHERE id = ?').get(trackId) as TrackRow | undefined;
     if (!track) return res.status(404).json({ error: 'Track no encontrado' });
-    const sumResult = await db.prepare('SELECT SUM(percentage) as total FROM splits WHERE track_id = ? AND status = $2').get(trackId, 'accepted') as SumResult | undefined;
+    const sumResult = await db.prepare('SELECT SUM(percentage) as total FROM splits WHERE track_id = ?').get(trackId) as SumResult | undefined;
     const total = sumResult?.total || 0;
     if (total + percent > 100) return res.status(400).json({ error: 'La suma de porcentajes supera 100%' });
     const token = generateToken();
-    const result = await db.prepare(`INSERT INTO splits (track_id, artist_name, email, role, percentage, status, invitation_token) VALUES (?, ?, ?, ?, ?, 'pending', ?)`).run(trackId, name, email, role || 'collaborator', percent, token);
+    const result = await db.prepare(`INSERT INTO splits (track_id, artist_name, email, role, percentage, status, invitation_token) VALUES (?, ?, ?, ?, ?, 'pending', ?) RETURNING id`).run(trackId, name, email, role || 'collaborator', percent, token);
     const splitId = result.lastInsertRowid as number;
     const expiresAt = new Date(); expiresAt.setDate(expiresAt.getDate() + 30);
     await db.prepare(`INSERT INTO split_invitations (split_id, email, token, expires_at) VALUES (?, ?, ?, ?)`).run(splitId, email, token, expiresAt.toISOString());

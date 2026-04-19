@@ -2,7 +2,10 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import db from '../database';
 import dotenv from 'dotenv';
+import Anthropic from '@anthropic-ai/sdk';
 dotenv.config();
+
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY || '' });
 
 const SYSTEM_PROMPT = `Eres el asistente de IA de IM Music, una plataforma para artistas musicales independientes.
 Eres experto en: distribución musical, royalties, marketing digital, estrategia de carrera, derechos musicales,
@@ -52,41 +55,51 @@ export const chat = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) return res.status(503).json({ error: 'Servicio de IA no configurado — falta GEMINI_API_KEY' });
+    let text = '';
 
-    const contents = [
-      ...(history as { role: string; content: string }[]).map(h => ({
-        role: h.role === 'ai' ? 'model' : 'user',
-        parts: [{ text: h.content }]
-      })),
-      { role: 'user', parts: [{ text: `${SYSTEM_PROMPT}\n\nPregunta: ${message}` }] }
-    ];
+    // Try Gemini first, fall back to Claude Haiku if depleted
+    const geminiKey = process.env.GEMINI_API_KEY;
+    let geminiOk = false;
 
-    const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents,
-          generationConfig: { temperature: 0.7, maxOutputTokens: 500 }
-        })
+    if (geminiKey) {
+      const contents = [
+        ...(history as { role: string; content: string }[]).map(h => ({
+          role: h.role === 'ai' ? 'model' : 'user',
+          parts: [{ text: h.content }]
+        })),
+        { role: 'user', parts: [{ text: `${SYSTEM_PROMPT}\n\nPregunta: ${message}` }] }
+      ];
+      const resp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents, generationConfig: { temperature: 0.7, maxOutputTokens: 500 } }) }
+      );
+      const data = await resp.json() as any;
+      if (!data.error && data.candidates?.[0]?.content?.parts?.[0]?.text) {
+        text = data.candidates[0].content.parts[0].text;
+        geminiOk = true;
       }
-    );
-
-    const data = await resp.json() as any;
-    if (data.error) {
-      const msg: string = data.error.message || 'Error de Gemini API';
-      if (msg.toLowerCase().includes('api key') || msg.toLowerCase().includes('leaked') || msg.toLowerCase().includes('invalid')) {
-        return res.status(503).json({ error: 'La clave de IA necesita actualización. Contacta al administrador.' });
-      }
-      if (msg.toLowerCase().includes('depleted') || msg.toLowerCase().includes('credits') || resp.status === 429) {
-        return res.status(503).json({ error: 'Créditos de IA agotados. Recarga en AI Studio para continuar.' });
-      }
-      throw new Error(msg);
     }
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Sin respuesta';
+
+    // Claude Haiku fallback
+    if (!geminiOk) {
+      if (!process.env.ANTHROPIC_API_KEY) {
+        return res.status(503).json({ error: 'Servicio de IA temporalmente no disponible. Contacta al administrador.' });
+      }
+      const claudeResp = await anthropic.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 500,
+        system: SYSTEM_PROMPT,
+        messages: [
+          ...(history as { role: string; content: string }[]).map(h => ({
+            role: (h.role === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',
+            content: h.content
+          })),
+          { role: 'user', content: message }
+        ]
+      });
+      text = (claudeResp.content[0] as any).text || 'Sin respuesta';
+    }
 
     // Update token count (reset monthly)
     const nextReset = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();

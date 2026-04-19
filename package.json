@@ -16,6 +16,7 @@
     "node": "22.x"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.90.0",
     "@google/genai": "^1.44.0",
     "@google/generative-ai": "^0.24.1",
     "adm-zip": "^0.5.16",
