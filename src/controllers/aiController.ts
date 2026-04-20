@@ -2,10 +2,8 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import db from '../database';
 import dotenv from 'dotenv';
-import Anthropic from '@anthropic-ai/sdk';
+import axios from 'axios';
 dotenv.config();
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY || '' });
 
 const SYSTEM_PROMPT = `Eres el asistente de IA de IM Music, una plataforma para artistas musicales independientes.
 Eres experto en: distribución musical, royalties, marketing digital, estrategia de carrera, derechos musicales,
@@ -62,43 +60,66 @@ export const chat = async (req: AuthRequest, res: Response) => {
     let geminiOk = false;
 
     if (geminiKey) {
-      const contents = [
-        ...(history as { role: string; content: string }[]).map(h => ({
-          role: h.role === 'ai' ? 'model' : 'user',
-          parts: [{ text: h.content }]
-        })),
-        { role: 'user', parts: [{ text: `${SYSTEM_PROMPT}\n\nPregunta: ${message}` }] }
-      ];
-      const resp = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents, generationConfig: { temperature: 0.7, maxOutputTokens: 500 } }) }
-      );
-      const data = await resp.json() as any;
-      if (!data.error && data.candidates?.[0]?.content?.parts?.[0]?.text) {
-        text = data.candidates[0].content.parts[0].text;
-        geminiOk = true;
-      }
+      try {
+        const contents = [
+          ...(history as { role: string; content: string }[]).map(h => ({
+            role: h.role === 'ai' ? 'model' : 'user',
+            parts: [{ text: h.content }]
+          })),
+          { role: 'user', parts: [{ text: `${SYSTEM_PROMPT}\n\nPregunta: ${message}` }] }
+        ];
+        const resp = await axios.post(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+          { contents, generationConfig: { temperature: 0.7, maxOutputTokens: 500 } },
+          { timeout: 8000 }
+        );
+        const data = resp.data as any;
+        if (!data.error && data.candidates?.[0]?.content?.parts?.[0]?.text) {
+          text = data.candidates[0].content.parts[0].text;
+          geminiOk = true;
+        }
+      } catch { /* Gemini unavailable — fall through to Claude */ }
     }
 
-    // Claude Haiku fallback
+    // Claude Haiku fallback (via axios — avoids undici/fetch issues on Windows)
     if (!geminiOk) {
-      if (!process.env.ANTHROPIC_API_KEY) {
+      const anthropicKey = process.env.ANTHROPIC_API_KEY;
+      if (!anthropicKey) {
         return res.status(503).json({ error: 'Servicio de IA temporalmente no disponible. Contacta al administrador.' });
       }
-      const claudeResp = await anthropic.messages.create({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 500,
-        system: SYSTEM_PROMPT,
-        messages: [
-          ...(history as { role: string; content: string }[]).map(h => ({
-            role: (h.role === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',
-            content: h.content
-          })),
-          { role: 'user', content: message }
-        ]
-      });
-      text = (claudeResp.content[0] as any).text || 'Sin respuesta';
+      try {
+        const claudeResp = await axios.post(
+          'https://api.anthropic.com/v1/messages',
+          {
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 500,
+            system: SYSTEM_PROMPT,
+            messages: [
+              ...(history as { role: string; content: string }[]).map(h => ({
+                role: h.role === 'user' ? 'user' : 'assistant',
+                content: h.content
+              })),
+              { role: 'user', content: message }
+            ]
+          },
+          {
+            headers: {
+              'x-api-key': anthropicKey,
+              'anthropic-version': '2023-06-01',
+              'Content-Type': 'application/json'
+            },
+            timeout: 25000
+          }
+        );
+        text = (claudeResp.data as any)?.content?.[0]?.text || 'Sin respuesta';
+      } catch (claudeErr: any) {
+        const status = claudeErr?.response?.status;
+        const msg: string = claudeErr?.response?.data?.error?.message || claudeErr?.message || '';
+        if (status === 400 || status === 402 || msg.includes('credit') || msg.includes('balance')) {
+          return res.status(503).json({ error: 'Servicio de IA sin créditos. Recarga en console.anthropic.com o aistudio.google.com.' });
+        }
+        throw claudeErr;
+      }
     }
 
     // Update token count (reset monthly)
