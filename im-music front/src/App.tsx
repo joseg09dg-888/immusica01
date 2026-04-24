@@ -28,6 +28,16 @@ const SIDEBAR_W = 280;
 const API = '/api';
 const token = () => localStorage.getItem('im_token') || '';
 
+const COLORS = {
+  bg: '#000000', bgSecondary: '#0A0A0F',
+  bgCard: 'rgba(255,255,255,0.05)', bgCardHover: 'rgba(255,255,255,0.08)',
+  border: 'rgba(255,255,255,0.08)', borderHover: 'rgba(255,255,255,0.15)',
+  purple: '#5E17EB', purpleLight: '#7B3FFF', purpleSoft: 'rgba(94,23,235,0.15)',
+  text: '#F5F5F7', textSecondary: 'rgba(255,255,255,0.5)', textTertiary: 'rgba(255,255,255,0.25)',
+  green: '#30D158', blue: '#0A84FF', red: '#FF453A', yellow: '#FFD60A',
+  glass: 'rgba(255,255,255,0.06)', glassBorder: 'rgba(255,255,255,0.1)',
+};
+
 // ─── Language Context ─────────────────────────────────────────────────────────
 const LangContext = createContext<{ lang: Lang; setLang: (l: Lang) => void }>({ lang: 'es', setLang: () => {} });
 const useLang = () => useContext(LangContext);
@@ -166,63 +176,24 @@ function PageBackground({ color = '#5E17EB' }: { color?: string }) {
   );
 }
 
-// ─── Icon3D ─────────────────────────────────────────────────────────────────
-const Icon3D = memo(function Icon3D({ icon: Icon, color, size = 48, label }: { icon: any; color: string; size?: number; label?: string }) {
-  const [hovered, setHovered] = useState(false);
-  const [clicked, setClicked] = useState(false);
+// ─── AppleIcon / Icon3D ───────────────────────────────────────────────────────
+function AppleIcon({ icon: Icon, color = '#5E17EB', size = 44, label }: any) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-      <div
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => { setHovered(false); setClicked(false); }}
-        onMouseDown={() => setClicked(true)}
-        onMouseUp={() => setClicked(false)}
-        style={{
-          width: size, height: size,
-          borderRadius: size * 0.28,
-          position: 'relative',
-          transform: clicked
-            ? 'scale(0.88) translateY(4px) rotateX(15deg)'
-            : hovered
-            ? 'scale(1.12) translateY(-6px) rotateX(-8deg) rotateY(5deg)'
-            : 'scale(1) rotateX(0deg) rotateY(0deg)',
-          transformStyle: 'preserve-3d',
-          transition: clicked ? 'transform 0.08s ease' : 'transform 0.4s cubic-bezier(0.34,1.56,0.64,1)',
-          cursor: 'pointer',
-          boxShadow: clicked
-            ? `0 2px 0 ${color}80, 0 2px 10px ${color}30`
-            : hovered
-            ? `0 20px 0 ${color}40, 0 20px 40px ${color}40, 0 0 60px ${color}30`
-            : `0 8px 0 ${color}50, 0 8px 20px ${color}20`,
-        }}>
-        {/* Main face */}
-        <div style={{
-          position: 'absolute', inset: 0, borderRadius: 'inherit',
-          background: hovered
-            ? `linear-gradient(135deg, ${color}50 0%, ${color}30 50%, ${color}20 100%)`
-            : `linear-gradient(135deg, ${color}30 0%, ${color}15 100%)`,
-          border: `1px solid ${color}${hovered ? '70' : '40'}`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          backdropFilter: 'blur(10px)', overflow: 'hidden',
-        }}>
-          {/* Top shine */}
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '50%', background: 'linear-gradient(180deg, rgba(255,255,255,0.15), transparent)', borderRadius: `${size * 0.28}px ${size * 0.28}px 0 0`, pointerEvents: 'none' }} />
-          <Icon size={size * 0.44} color={hovered ? '#fff' : color} strokeWidth={1.8}
-            style={{ filter: hovered ? `drop-shadow(0 0 8px ${color})` : 'none', transition: 'all 0.3s ease', position: 'relative', zIndex: 1 }} />
-          {/* Bottom reflection */}
-          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '30%', background: `linear-gradient(0deg, ${color}20, transparent)`, pointerEvents: 'none' }} />
-        </div>
-        {/* 3D bottom edge */}
-        <div style={{ position: 'absolute', bottom: `${-size * 0.14}px`, left: '4%', right: '4%', height: size * 0.14, background: `linear-gradient(180deg, ${color}60, ${color}20)`, borderRadius: `0 0 ${size * 0.28}px ${size * 0.28}px`, transform: 'rotateX(-90deg)', transformOrigin: 'top', filter: 'blur(1px)' }} />
-        {/* Glow ring on hover */}
-        {hovered && <div style={{ position: 'absolute', inset: -8, borderRadius: size * 0.35, border: `1px solid ${color}40`, animation: 'glowRingPulse 1s ease-in-out infinite', pointerEvents: 'none' }} />}
+      <div style={{
+        width: size, height: size, borderRadius: size * 0.25,
+        background: `linear-gradient(145deg, ${color}25, ${color}10)`,
+        border: `1px solid ${color}30`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+      }}>
+        <Icon size={size * 0.45} color={color} strokeWidth={1.5} />
       </div>
-      {label && <span style={{ fontFamily: "'Anton', sans-serif", fontSize: '9px', fontWeight: 700, color: hovered ? '#fff' : 'rgba(255,255,255,0.35)', letterSpacing: '0.12em', textTransform: 'uppercase', transition: 'color 0.2s', textAlign: 'center' }}>{label}</span>}
+      {label && <span style={{ fontFamily: "'-apple-system','Space Grotesk',sans-serif", fontSize: '9px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.12em', textTransform: 'uppercase', textAlign: 'center' }}>{label}</span>}
     </div>
   );
-});
-// Keep GlassIcon as alias for backward compat
-const GlassIcon = Icon3D;
+}
+const Icon3D = AppleIcon;
+const GlassIcon = AppleIcon;
 
 // Group → color map for icons
 const GROUP_COLORS: Record<string, string> = {
@@ -271,78 +242,37 @@ function particleBurst(e: React.MouseEvent) {
   }
 }
 
-// ─── 3D Button ───────────────────────────────────────────────────────────────
-const Btn3D = memo(function Btn3D({ children, onClick, disabled = false, type = 'button', variant = 'primary', small = false, fullWidth = false }: {
+// ─── AppleBtn / Btn3D ─────────────────────────────────────────────────────────
+function AppleBtn({ children, onClick, disabled = false, type = 'button', variant = 'primary', small = false, fullWidth = false }: {
   children: React.ReactNode; onClick?: () => void; disabled?: boolean;
   type?: 'button' | 'submit'; variant?: 'primary' | 'ghost' | 'danger'; small?: boolean; fullWidth?: boolean;
 }) {
   const [pressed, setPressed] = useState(false);
-  const [hovered, setHovered] = useState(false);
-  const [ripples, setRipples] = useState<{ id: number; x: number; y: number }[]>([]);
-
-  const isPrimary = variant === 'primary';
   const isDanger = variant === 'danger';
-
-  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const id = Date.now();
-    setRipples(r => [...r, { id, x: e.clientX - rect.left, y: e.clientY - rect.top }]);
-    setTimeout(() => setRipples(r => r.filter(x => x.id !== id)), 650);
-    // Particle burst on primary
-    if (isPrimary) {
-      const colors = ['#5E17EB', '#7B3FFF', '#C084FC', '#F2EDE5', '#fff'];
-      for (let i = 0; i < 12; i++) {
-        const p = document.createElement('div');
-        const angle = (i / 12) * Math.PI * 2;
-        const dist = 50 + Math.random() * 50;
-        const sz = 3 + Math.random() * 5;
-        p.style.cssText = `position:fixed;left:${e.clientX}px;top:${e.clientY}px;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:50%;pointer-events:none;z-index:99999;transition:all 0.7s cubic-bezier(0.25,0.46,0.45,0.94);transform:translate(-50%,-50%) scale(1);opacity:1;`;
-        document.body.appendChild(p);
-        requestAnimationFrame(() => { p.style.transform = `translate(calc(-50% + ${Math.cos(angle)*dist}px),calc(-50% + ${Math.sin(angle)*dist-30}px)) scale(0)`; p.style.opacity = '0'; });
-        setTimeout(() => p.remove(), 700);
-      }
-    }
-    onClick?.();
-  };
-
-  const bg = isDanger ? 'linear-gradient(135deg,#7f1d1d,#991b1b)' : isPrimary ? 'linear-gradient(135deg,#6B21FF 0%,#5E17EB 50%,#4A12C0 100%)' : 'rgba(255,255,255,0.06)';
-  const shadow = pressed
-    ? isPrimary ? '0 2px 0 #2D0B6B, 0 2px 10px rgba(94,23,235,0.3)' : '0 1px 0 rgba(0,0,0,0.5)'
-    : hovered
-    ? isPrimary ? '0 12px 0 #2D0B6B, 0 12px 40px rgba(94,23,235,0.5), 0 0 60px rgba(94,23,235,0.3)' : '0 8px 0 rgba(0,0,0,0.4), 0 0 20px rgba(255,255,255,0.1)'
-    : isPrimary ? '0 6px 0 #2D0B6B, 0 6px 20px rgba(94,23,235,0.3)' : '0 4px 0 rgba(0,0,0,0.5)';
-
+  const bg = isDanger ? '#FF453A' : variant === 'primary' ? (pressed ? '#4A12C0' : '#5E17EB') : (pressed ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.06)');
   return (
-    <button type={type} disabled={disabled} onClick={handleClick}
+    <button type={type} disabled={disabled} onClick={onClick}
       onMouseDown={() => setPressed(true)} onMouseUp={() => setPressed(false)}
-      onMouseEnter={() => setHovered(true)} onMouseLeave={() => { setPressed(false); setHovered(false); }}
+      onMouseLeave={() => setPressed(false)}
       style={{
-        position: 'relative', overflow: 'hidden', background: bg, color: '#fff',
-        border: variant === 'ghost' ? '1px solid rgba(255,255,255,0.15)' : 'none',
-        borderRadius: '14px',
-        padding: small ? '10px 22px' : '15px 36px',
-        minHeight: small ? '40px' : '52px', minWidth: small ? '80px' : '160px',
-        fontFamily: "'Anton', sans-serif", letterSpacing: '0.15em', textTransform: 'uppercase',
-        fontSize: small ? '11px' : '13px',
-        cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.5 : 1,
-        display: 'inline-flex', alignItems: 'center', justifyContent: fullWidth ? 'center' : undefined, gap: '8px',
-        transform: pressed ? 'translateY(6px) scale(0.97)' : hovered ? 'translateY(-4px) scale(1.02)' : 'translateY(0) scale(1)',
-        boxShadow: shadow,
-        transition: pressed ? 'all 0.06s ease' : 'all 0.4s cubic-bezier(0.34,1.56,0.64,1)',
-        width: fullWidth ? '100%' : undefined, whiteSpace: 'nowrap',
+        background: bg,
+        border: variant === 'primary' || isDanger ? 'none' : '1px solid rgba(255,255,255,0.12)',
+        borderRadius: small ? 10 : 14, padding: small ? '8px 18px' : '13px 28px',
+        color: '#fff', fontFamily: "'-apple-system','SF Pro Display','BlinkMacSystemFont','Space Grotesk',sans-serif",
+        fontSize: small ? 12 : 14, fontWeight: 600, letterSpacing: '-0.01em',
+        cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.4 : 1,
+        transform: pressed ? 'scale(0.97)' : 'scale(1)',
+        transition: 'all 0.15s cubic-bezier(0.25,0.46,0.45,0.94)',
+        display: 'inline-flex', alignItems: 'center', gap: 6,
+        width: fullWidth ? '100%' : undefined, justifyContent: fullWidth ? 'center' : undefined,
+        boxShadow: variant === 'primary' && !pressed ? '0 4px 14px rgba(94,23,235,0.35)' : 'none',
+        whiteSpace: 'nowrap',
       }}>
-      {/* Top highlight */}
-      <div style={{ position:'absolute', top:0, left:0, right:0, height:'42%', background:'linear-gradient(180deg,rgba(255,255,255,0.13),transparent)', borderRadius:'14px 14px 0 0', pointerEvents:'none' }} />
-      {/* Shine sweep on hover */}
-      {hovered && isPrimary && <div style={{ position:'absolute', top:0, left:0, width:'60%', height:'100%', background:'linear-gradient(90deg,transparent,rgba(255,255,255,0.14),transparent)', animation:'btnShine 0.6s ease forwards', pointerEvents:'none' }} />}
-      {/* Ripples */}
-      {ripples.map(r => (
-        <div key={r.id} style={{ position:'absolute', left:r.x, top:r.y, width:0, height:0, background:'rgba(255,255,255,0.3)', borderRadius:'50%', transform:'translate(-50%,-50%)', animation:'rippleExpand 0.65s ease-out forwards', pointerEvents:'none' }} />
-      ))}
-      <span style={{ position:'relative', zIndex:1, display:'inline-flex', alignItems:'center', gap:'8px' }}>{children}</span>
+      {children}
     </button>
   );
-});
+}
+const Btn3D = AppleBtn;
 
 // ─── ══════════════════════════════════════════════════════════════
 //      LANDING PAGE
@@ -1417,34 +1347,31 @@ const MODULES = [
   { id: 'settings',        label: 'Ajustes',           icon: Settings,        group: 'Gestión' },
 ];
 
-function SidebarItem({ m, isActive, onNav, onClose }: { m: typeof MODULES[0]; isActive: boolean; onNav: (id:string)=>void; onClose: ()=>void }) {
+function SidebarItem({ m, isActive, onNav, onClose, locked, onLocked }: { m: typeof MODULES[0]; isActive: boolean; onNav: (id:string)=>void; onClose: ()=>void; locked?: boolean; onLocked?: ()=>void }) {
   const [hov, setHov] = useState(false);
   const iconColor = GROUP_COLORS[m.group] || P;
+  const handleClick = () => {
+    if (locked) { onLocked?.(); return; }
+    onNav(m.id); onClose();
+  };
   return (
-    <button key={m.id} onClick={() => { onNav(m.id); onClose(); }}
+    <button key={m.id} onClick={handleClick}
       onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{
         width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-        padding: '7px 14px', margin: '1px 0', borderRadius: '10px', cursor: 'pointer',
-        border: 'none', borderLeft: '2px solid transparent',
-        background: isActive
-          ? `linear-gradient(90deg, ${iconColor}22 0%, ${iconColor}06 100%)`
-          : hov ? `${iconColor}0a` : 'transparent',
-        color: isActive ? '#fff' : hov ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.38)',
-        fontSize: '12.5px', fontFamily: "'Space Grotesk', sans-serif",
+        padding: '7px 12px', margin: '1px 0', borderRadius: '10px', cursor: 'pointer',
+        border: 'none',
+        background: isActive ? 'rgba(94,23,235,0.2)' : hov ? 'rgba(255,255,255,0.05)' : 'transparent',
+        color: isActive ? '#fff' : hov ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.4)',
+        fontSize: '12.5px', fontFamily: "'-apple-system','Space Grotesk',sans-serif",
         fontWeight: isActive ? 600 : 400,
-        transition: 'all 0.2s cubic-bezier(0.34,1.56,0.64,1)',
+        transition: 'all 0.15s ease',
         textAlign: 'left',
-        transform: isActive ? 'translateX(3px)' : hov ? 'translateX(2px)' : 'translateX(0)',
-        position: 'relative',
+        opacity: locked ? 0.5 : 1,
       }}>
-      {/* Active left glow bar */}
-      {isActive && (
-        <div style={{ position:'absolute', left:0, top:'50%', transform:'translateY(-50%)', width:'3px', height:'60%', background:`linear-gradient(180deg, transparent, ${iconColor}, transparent)`, borderRadius:'0 3px 3px 0', boxShadow:`0 0 8px ${iconColor}cc, 0 0 16px ${iconColor}66` }} />
-      )}
-      <GlassIcon icon={m.icon} color={iconColor} size={30} />
+      <m.icon size={16} color={isActive ? '#fff' : iconColor} strokeWidth={1.5} style={{ flexShrink: 0 }} />
       <span style={{ flex: 1 }}>{m.label}</span>
-      {isActive && <span style={{ width:'5px', height:'5px', borderRadius:'50%', background: iconColor, boxShadow:`0 0 8px ${iconColor}, 0 0 16px ${iconColor}88`, animation:'activePulse 2s ease-in-out infinite', flexShrink: 0 }} />}
+      {locked && <Lock size={11} color="rgba(255,255,255,0.3)" />}
     </button>
   );
 }
@@ -1454,61 +1381,76 @@ const Sidebar = memo(function Sidebar({ active, onNav, user, onLogout, open, onC
 }) {
   const groups = [...new Set(MODULES.map(m => m.group))];
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [showFinancingModal, setShowFinancingModal] = useState(false);
   const toggle = (g: string) => setCollapsed(prev => { const n = new Set(prev); n.has(g) ? n.delete(g) : n.add(g); return n; });
+
+  const canAccessFinancing = user?.plan === 'pro' ||
+    (user?.plan === 'indie' &&
+      new Date().getTime() - new Date(user?.created_at || Date.now()).getTime() > 90 * 24 * 60 * 60 * 1000);
 
   return (
     <>
       {open && <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 20 }} />}
-      <aside className={`dashboard-sidebar${open ? ' sidebar-open' : ''}`} style={{ position: 'fixed', top: 0, left: 0, height: '100%', width: `${SIDEBAR_W}px`, background: 'linear-gradient(180deg, #0D0618 0%, #080410 50%, #050208 100%)', backdropFilter: 'blur(24px)', borderRight: '1px solid rgba(94,23,235,0.12)', zIndex: 30, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {/* Scanline texture overlay */}
-        <div style={{ position:'absolute', inset:0, backgroundImage:'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.008) 2px, rgba(255,255,255,0.008) 4px)', pointerEvents:'none', zIndex:0 }} />
-        {/* Glass reflection top */}
-        <div style={{ position:'absolute', top:0, left:0, right:0, height:'200px', background:'linear-gradient(180deg, rgba(94,23,235,0.08) 0%, transparent 100%)', pointerEvents:'none', zIndex:0 }} />
-        {/* Ambient ellipse glow top-left */}
-        <div style={{ position:'absolute', top:0, left:0, width:'200px', height:'200px', background:'radial-gradient(ellipse at 0% 0%, rgba(94,23,235,0.18) 0%, transparent 70%)', pointerEvents:'none', zIndex:0 }} />
+      {showFinancingModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+          onClick={() => setShowFinancingModal(false)}>
+          <div style={{ background: 'rgba(15,10,25,0.98)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: 36, maxWidth: 420, textAlign: 'center' }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
+            <h3 style={{ fontFamily: "'-apple-system','Space Grotesk',sans-serif", fontSize: 20, fontWeight: 700, color: '#F5F5F7', margin: '0 0 12px' }}>Financiamiento bloqueado</h3>
+            <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 14, color: 'rgba(255,255,255,0.5)', margin: '0 0 24px', lineHeight: 1.6 }}>El financiamiento está disponible para artistas con 90+ días en plataforma y plan INDIE o PRO.</p>
+            <AppleBtn onClick={() => setShowFinancingModal(false)}>Entendido</AppleBtn>
+          </div>
+        </div>
+      )}
+      <aside className={`dashboard-sidebar${open ? ' sidebar-open' : ''}`} style={{ position: 'fixed', top: 0, left: 0, height: '100%', width: `${SIDEBAR_W}px`, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(40px)', borderRight: '1px solid rgba(255,255,255,0.06)', zIndex: 30, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* Logo header */}
-        <div style={{ padding: '22px 20px 18px', borderBottom: '1px solid rgba(255,255,255,0.03)', display: 'flex', alignItems: 'center', gap: '12px', position:'relative', zIndex:1 }}>
-          <div style={{ width: '36px', height: '36px', background: `linear-gradient(135deg, ${P}, ${PL})`, borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 20px rgba(94,23,235,0.5), 0 4px 0 #2D0B6B`, animation: 'logoFloat 4s ease-in-out infinite', flexShrink: 0 }}>
-            <Music size={17} color="#fff" />
+        <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ width: '34px', height: '34px', background: `linear-gradient(135deg, ${P}, ${PL})`, borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 16px rgba(94,23,235,0.4)`, flexShrink: 0 }}>
+            <Music size={16} color="#fff" />
           </div>
           <div>
-            <span style={{ fontFamily: "'Anton', sans-serif", fontSize: '18px', letterSpacing: '0.06em', color: '#F2EDE5', display: 'block', lineHeight: 1 }}>IM MUSIC</span>
-            <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: '9px', color: 'rgba(94,23,235,0.7)', letterSpacing: '0.3em', textTransform: 'uppercase' }}>PLATFORM</span>
+            <span style={{ fontFamily: "'Anton', sans-serif", fontSize: '17px', letterSpacing: '0.06em', color: '#F5F5F7', display: 'block', lineHeight: 1 }}>IM MUSIC</span>
+            <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: '9px', color: 'rgba(94,23,235,0.6)', letterSpacing: '0.3em', textTransform: 'uppercase' }}>PLATFORM</span>
           </div>
         </div>
 
-        <div className="sidebar-scroll" style={{ flex: 1, overflowY: 'scroll', overflowX: 'hidden', padding: '8px 8px', scrollbarWidth: 'thin', scrollbarColor: 'rgba(94,23,235,0.5) transparent', height: 0, minHeight: 0 }}>
+        <div className="sidebar-scroll" style={{ flex: 1, overflowY: 'scroll', overflowX: 'hidden', padding: '8px 8px', scrollbarWidth: 'none', height: 0, minHeight: 0 }}>
           {groups.map((group, gi) => {
             const items = MODULES.filter(m => m.group === group);
             const isCollapsed = collapsed.has(group);
             return (
               <div key={group} style={{ marginBottom: '4px' }}>
-                {gi > 0 && <div style={{ height: '1px', background: 'rgba(255,255,255,0.03)', margin: '6px 8px 10px' }} />}
-                <button onClick={() => toggle(group)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 16px 6px', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)', fontSize: '9px', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, letterSpacing: '0.25em', textTransform: 'uppercase' }}>
+                {gi > 0 && <div style={{ height: '1px', background: 'rgba(255,255,255,0.04)', margin: '6px 4px 8px' }} />}
+                <button onClick={() => toggle(group)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '3px 12px 5px', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)', fontSize: '9px', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' }}>
                   <span>{group}</span>
                   <ChevronDown size={9} style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.2s', opacity: 0.5 }} />
                 </button>
-                {!isCollapsed && items.map(m => (
-                  <SidebarItem key={m.id} m={m} isActive={active === m.id} onNav={onNav} onClose={onClose} />
-                ))}
+                {!isCollapsed && items.map(m => {
+                  const isLocked = m.id === 'financing' && !canAccessFinancing;
+                  return (
+                    <SidebarItem key={m.id} m={m} isActive={active === m.id} onNav={onNav} onClose={onClose}
+                      locked={isLocked} onLocked={() => setShowFinancingModal(true)} />
+                  );
+                })}
               </div>
             );
           })}
         </div>
 
         {/* User footer */}
-        <div style={{ padding: '10px 12px 14px', borderTop: '1px solid rgba(255,255,255,0.04)', background: 'rgba(94,23,235,0.05)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '8px 10px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '6px' }}>
-            <div style={{ width: '32px', height: '32px', background: `linear-gradient(135deg,${P},${PL})`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '13px', fontFamily: "'Anton',sans-serif", color: '#fff', boxShadow: `0 0 12px rgba(94,23,235,0.4)` }}>
+        <div style={{ padding: '10px 12px 14px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '8px 10px', borderRadius: '10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '6px' }}>
+            <div style={{ width: '30px', height: '30px', background: `linear-gradient(135deg,${P},${PL})`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '12px', fontFamily: "'Anton',sans-serif", color: '#fff' }}>
               {(user?.name || user?.email || 'U')[0].toUpperCase()}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ color: '#F2EDE5', fontSize: '12px', fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.name || user?.email}</p>
+              <p style={{ color: '#F5F5F7', fontSize: '12px', fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.name || user?.email}</p>
               <p style={{ color: 'rgba(255,255,255,0.28)', fontSize: '10px', margin: 0, textTransform: 'capitalize' }}>{user?.role || 'artist'}</p>
             </div>
           </div>
           <button onClick={onLogout} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '7px', padding: '7px 10px', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.22)', fontSize: '11px', fontFamily: "'Space Grotesk', sans-serif", borderRadius: '8px', transition: 'all 0.15s' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#ef4444'; (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.06)'; }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#FF453A'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,69,58,0.06)'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.22)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
             <LogOut size={12} /> Cerrar sesión
           </button>
@@ -1581,86 +1523,63 @@ function SkeletonCard({ rows = 3 }: { rows?: number }) {
 }
 
 // ─── APP SHELL PAGES ──────────────────────────────────────────────────────────
-function PageShell({ title, children, action }: { title: string; children: React.ReactNode; action?: React.ReactNode }) {
+function PageShell({ title, children, action, helpText }: { title: string; children: React.ReactNode; action?: React.ReactNode; helpText?: string }) {
+  const [showHelp, setShowHelp] = useState(false);
   return (
-    <div style={{ padding: '32px', maxWidth: '1120px', margin: '0 auto', position: 'relative' }}>
+    <div style={{ padding: '32px', maxWidth: '1100px', margin: '0 auto', position: 'relative' }}>
       {title && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
-          <h1 style={{ fontFamily: "'Anton', sans-serif", fontSize: '28px', background: `linear-gradient(135deg, #fff 40%, ${PL})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', letterSpacing: '0.04em', margin: 0 }}>{title}</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <h1 style={{ fontFamily: "'-apple-system','SF Pro Display','Space Grotesk',sans-serif", fontSize: 26, fontWeight: 700, color: '#F5F5F7', letterSpacing: '-0.02em', margin: 0 }}>{title}</h1>
+            {helpText && (
+              <button onClick={() => setShowHelp(!showHelp)}
+                style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                ?
+              </button>
+            )}
+          </div>
           {action}
         </div>
       )}
       {!title && action && <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'32px' }}>{action}</div>}
+      {showHelp && helpText && (
+        <div style={{ background: 'rgba(94,23,235,0.08)', border: '1px solid rgba(94,23,235,0.2)', borderRadius: 14, padding: 16, marginBottom: 24 }}>
+          <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 14, color: 'rgba(255,255,255,0.6)', margin: 0, lineHeight: 1.7 }}>{helpText}</p>
+        </div>
+      )}
       {children}
     </div>
   );
 }
 
-// ─── HoloCard — holographic tilt card (zero-state, pure DOM mutations) ────────
-const HoloCard = memo(function HoloCard({ children, style = {}, color = P, intense = false }: { children: React.ReactNode; style?: React.CSSProperties; color?: string; intense?: boolean }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const glowRef = useRef<HTMLDivElement>(null);
-  const foilRef = useRef<HTMLDivElement>(null);
-  const rafId = useRef<number>(0);
-
-  const onMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    cancelAnimationFrame(rafId.current);
-    rafId.current = requestAnimationFrame(() => {
-      const el = ref.current; const glow = glowRef.current;
-      if (!el) return;
-      const r = el.getBoundingClientRect();
-      const x = ((e.clientX - r.left) / r.width) * 100;
-      const y = ((e.clientY - r.top) / r.height) * 100;
-      const rx = ((e.clientY - r.top - r.height / 2) / r.height) * -10;
-      const ry = ((e.clientX - r.left - r.width / 2) / r.width) * 10;
-      el.style.transform = `perspective(1000px) rotateX(${rx}deg) rotateY(${ry}deg) translateZ(${intense ? 18 : 10}px) scale(1.01)`;
-      el.style.borderColor = color + '45';
-      el.style.boxShadow = `0 30px 80px rgba(0,0,0,0.5), 0 0 60px ${color}18, inset 0 1px 0 rgba(255,255,255,0.08)`;
-      if (glow) glow.style.background = `radial-gradient(circle 220px at ${x}% ${y}%, ${color}16, transparent 60%)`;
-      if (intense && foilRef.current) foilRef.current.style.background = `linear-gradient(${x + y * 0.5}deg, rgba(255,0,128,0.03), ${color}08, rgba(0,200,255,0.03))`;
-    });
-  }, [color, intense]);
-
-  const onLeave = useCallback(() => {
-    cancelAnimationFrame(rafId.current);
-    const el = ref.current; const glow = glowRef.current;
-    if (!el) return;
-    el.style.transform = '';
-    el.style.borderColor = 'rgba(255,255,255,0.07)';
-    el.style.boxShadow = '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)';
-    el.style.transition = 'transform 0.55s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease, border-color 0.3s ease';
-    setTimeout(() => { if (el) el.style.transition = 'box-shadow 0.3s ease, border-color 0.3s ease'; }, 550);
-    if (glow) glow.style.background = 'none';
-    if (intense && foilRef.current) foilRef.current.style.background = 'none';
-  }, [intense]);
-
+// ─── AppleCard / HoloCard ─────────────────────────────────────────────────────
+function AppleCard({ children, style = {}, glow = false }: { children: React.ReactNode; style?: React.CSSProperties; glow?: boolean; color?: string; intense?: boolean }) {
+  const [hovered, setHovered] = useState(false);
   return (
-    <div ref={ref} onMouseMove={onMove} onMouseLeave={onLeave}
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
-        position: 'relative', overflow: 'hidden',
-        background: 'rgba(8,5,16,0.88)',
-        border: '1px solid rgba(255,255,255,0.07)',
-        borderRadius: 24, backdropFilter: 'blur(28px) saturate(180%)',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)',
-        transition: 'box-shadow 0.3s ease, border-color 0.3s ease',
+        background: hovered ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.04)',
+        border: `1px solid ${hovered ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.07)'}`,
+        borderRadius: 20,
+        backdropFilter: 'blur(40px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+        boxShadow: hovered
+          ? '0 20px 60px rgba(0,0,0,0.4), 0 0 0 0.5px rgba(255,255,255,0.1)'
+          : glow ? '0 8px 32px rgba(94,23,235,0.15)' : '0 8px 32px rgba(0,0,0,0.2)',
+        transition: 'all 0.3s cubic-bezier(0.25,0.46,0.45,0.94)',
+        transform: hovered ? 'translateY(-2px)' : 'none',
         padding: '24px',
         ...style,
       }}>
-      {/* Mouse-follow radial shine — mutated directly, no re-render */}
-      <div ref={glowRef} style={{ position:'absolute', inset:0, pointerEvents:'none', zIndex:1, borderRadius:'inherit' }} />
-      {/* Rainbow foil for intense cards */}
-      {intense && <div ref={foilRef} style={{ position:'absolute', inset:0, pointerEvents:'none', zIndex:2, borderRadius:'inherit', mixBlendMode:'screen' }} />}
-      {/* Top glass rim */}
-      <div style={{ position:'absolute', top:0, left:0, right:0, height:1, background:'linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent)', pointerEvents:'none', zIndex:3 }} />
-      <div style={{ position:'relative', zIndex:4 }}>{children}</div>
+      {children}
     </div>
   );
-});
+}
+const HoloCard = AppleCard;
 
-// Card — thin wrapper around HoloCard for backward compat
-const Card = memo(function Card({ children, style = {}, glow = false, color }: { children: React.ReactNode; style?: React.CSSProperties; glow?: boolean; color?: string }) {
-  return <HoloCard style={style} color={color || P} intense={glow}>{children}</HoloCard>;
-});
+const Card = AppleCard;
 
 // Icon circle — premium 52x52 with glow
 function IconCircle({ icon: Icon, color = PL, size = 52, iconSize = 20 }: { icon: any; color?: string; size?: number; iconSize?: number }) {
@@ -2033,6 +1952,12 @@ function CatalogPage() {
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  // Smart upload state
+  const [dragOver, setDragOver] = useState(false);
+  const [uploadFile, setUploadFile] = useState<File|null>(null);
+  const [showMetaModal, setShowMetaModal] = useState(false);
+  const [aiMetadata, setAiMetadata] = useState<any>({});
+  const [extracting, setExtracting] = useState(false);
   // Bulk upload state
   const [bulkFiles, setBulkFiles] = useState<File[]>([]);
   const [bulkResults, setBulkResults] = useState<{name:string;status:'ok'|'error'|'uploading'}[]>([]);
@@ -2101,10 +2026,90 @@ function CatalogPage() {
   const statusColors: Record<string, string> = { draft: '#52525b', published: '#16a34a', scheduled: '#1d4ed8' };
   const CATALOG_TABS = [{id:'tracks',label:'Tracks',icon:Music},{id:'bulk',label:'Subida Masiva',icon:Upload},{id:'lyrics',label:'Letras',icon:Mic}] as const;
 
+  const handleFileSelect = async (file: File) => {
+    setUploadFile(file);
+    setExtracting(true);
+    setShowMetaModal(true);
+    try {
+      const data = await apiFetch('/ai/extract-metadata', { method: 'POST', body: JSON.stringify({ filename: file.name, size: file.size, type: file.type, duration: 0 }) });
+      setAiMetadata(data);
+    } catch {
+      setAiMetadata({ title: file.name.replace(/\.[^/.]+$/, ''), artist: '', genre: '', type: 'single', bpm: '', key: '' });
+    }
+    setExtracting(false);
+  };
+
   return (
     <>
     <PageBackground color="#7B3FFF" />
-    <PageShell title="Catálogo" action={catalogTab==='tracks' ? <Btn3D small onClick={() => setShowForm(!showForm)}><Plus size={13} /> Nuevo track</Btn3D> : undefined}>
+    {showMetaModal && (
+      <div style={{position:'fixed',inset:0,zIndex:9999,background:'rgba(0,0,0,0.8)',backdropFilter:'blur(20px)',display:'flex',alignItems:'center',justifyContent:'center',padding:24}}>
+        <div style={{background:'rgba(15,10,25,0.98)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:24,padding:36,maxWidth:600,width:'100%',maxHeight:'90vh',overflowY:'auto'}}>
+          <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:24}}>
+            <div style={{fontSize:32}}>🎵</div>
+            <div>
+              <h3 style={{fontFamily:"'-apple-system','Space Grotesk',sans-serif",fontSize:20,fontWeight:700,color:'#F5F5F7',margin:0}}>{extracting ? 'Analizando tu canción...' : 'Metadatos del Track'}</h3>
+              <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:12,color:'rgba(255,255,255,0.35)',margin:0}}>{uploadFile?.name}</p>
+            </div>
+          </div>
+          {extracting ? (
+            <div style={{textAlign:'center',padding:'32px 0'}}>
+              <div style={{width:40,height:40,border:'3px solid rgba(94,23,235,0.3)',borderTop:'3px solid #5E17EB',borderRadius:'50%',animation:'spin 0.8s linear infinite',margin:'0 auto 16px'}}/>
+              <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:14,color:'rgba(255,255,255,0.4)'}}>La IA está extrayendo los metadatos...</p>
+            </div>
+          ) : (
+            <>
+              <div style={{display:'flex',gap:8,marginBottom:24}}>
+                {['Metadatos','Splits','Plataformas','Publicar'].map((s,i) => (
+                  <div key={i} style={{flex:1,height:3,borderRadius:2,background:i===0?'#5E17EB':'rgba(255,255,255,0.1)'}}/>
+                ))}
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:20}}>
+                {[
+                  {key:'title',label:'Título *',placeholder:'Nombre de la canción'},
+                  {key:'artist',label:'Artista principal',placeholder:'Tu nombre artístico'},
+                  {key:'genre',label:'Género',placeholder:'Trap, Reggaeton, Pop...'},
+                  {key:'type',label:'Tipo de lanzamiento',type:'select',options:['single','ep','album']},
+                  {key:'bpm',label:'BPM',placeholder:'120'},
+                  {key:'key',label:'Tonalidad',placeholder:'Am, C#, Dm...'},
+                ].map((f:any) => (
+                  <div key={f.key}>
+                    <label style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:'rgba(255,255,255,0.35)',letterSpacing:'0.12em',textTransform:'uppercase',display:'block',marginBottom:6}}>{f.label}</label>
+                    {f.type === 'select' ? (
+                      <select value={aiMetadata[f.key]||''} onChange={e=>setAiMetadata((p:any)=>({...p,[f.key]:e.target.value}))}
+                        style={{width:'100%',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:10,padding:'10px 12px',color:'#fff',fontFamily:"'Space Grotesk',sans-serif",fontSize:13,outline:'none'}}>
+                        {f.options.map((o:string)=><option key={o} value={o}>{o.toUpperCase()}</option>)}
+                      </select>
+                    ) : (
+                      <input value={aiMetadata[f.key]||''} onChange={e=>setAiMetadata((p:any)=>({...p,[f.key]:e.target.value}))} placeholder={f.placeholder}
+                        style={{width:'100%',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:10,padding:'10px 12px',color:'#fff',fontFamily:"'Space Grotesk',sans-serif",fontSize:13,outline:'none',boxSizing:'border-box'}}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div style={{background:'rgba(94,23,235,0.08)',border:'1px solid rgba(94,23,235,0.2)',borderRadius:12,padding:16,marginBottom:20}}>
+                <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:12,fontWeight:700,color:'rgba(94,23,235,0.8)',textTransform:'uppercase',letterSpacing:'0.1em',margin:'0 0 8px'}}>✨ IA detectó estos campos automáticamente</p>
+                <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:12,color:'rgba(255,255,255,0.4)',margin:0}}>Revisa y ajusta los metadatos antes de publicar.</p>
+              </div>
+              <div style={{display:'flex',gap:12}}>
+                <AppleBtn fullWidth onClick={async () => {
+                  if (!aiMetadata.title) { toast('El título es obligatorio', 'error'); return; }
+                  try {
+                    const data = await apiFetch('/tracks', { method:'POST', body: JSON.stringify({ title: aiMetadata.title, genre: aiMetadata.genre||'Sin género', bpm: aiMetadata.bpm?parseInt(aiMetadata.bpm):null, key: aiMetadata.key||null, release_type: aiMetadata.type||'single' }) });
+                    toast('✅ Track creado: ' + data.title, 'success');
+                    setShowMetaModal(false); setUploadFile(null); setAiMetadata({});
+                    load();
+                  } catch(e:any) { toast(e.message, 'error'); }
+                }}>SIGUIENTE: SPLITS →</AppleBtn>
+                <AppleBtn variant="ghost" onClick={() => { setShowMetaModal(false); setUploadFile(null); }}>Cancelar</AppleBtn>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    )}
+    <PageShell title="Catálogo" helpText="Sube tus canciones en .wav o .flac. La IA extrae los metadatos automáticamente. Cada track que subas se guardará también en tu Vault automáticamente.">
       {/* Tabs */}
       <div style={{display:'flex',gap:4,marginBottom:20,background:'rgba(255,255,255,0.03)',borderRadius:12,padding:4}}>
         {CATALOG_TABS.map(t=>(
@@ -2117,35 +2122,19 @@ function CatalogPage() {
 
       {/* TRACKS tab */}
       {catalogTab === 'tracks' && <>
-        {showForm && (
-          <HoloCard color="#5E17EB" style={{padding:28, marginBottom:20}}>
-            <h3 style={{fontFamily:"'Anton',sans-serif", fontSize:16, color:'#F2EDE5', margin:'0 0 20px'}}>
-              SUBIR NUEVO TRACK
-            </h3>
-            <div style={{display:'flex', flexDirection:'column', gap:12}}>
-              <input
-                value={title}
-                onChange={e => setTitle(e.target.value)}
-                placeholder="Título de la canción *"
-                style={{background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:10, padding:'12px 16px', color:'#fff', fontFamily:"'Space Grotesk',sans-serif", fontSize:13, outline:'none'}}
-              />
-              <input
-                value={genre}
-                onChange={e => setGenre(e.target.value)}
-                placeholder="Género (Ej: Trap, Reggaeton, Pop)"
-                style={{background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:10, padding:'12px 16px', color:'#fff', fontFamily:"'Space Grotesk',sans-serif", fontSize:13, outline:'none'}}
-              />
-              <div style={{display:'flex', gap:12}}>
-                <Btn3D onClick={create} disabled={loading || !title} fullWidth>
-                  {loading ? 'CREANDO...' : 'CREAR TRACK'}
-                </Btn3D>
-                <Btn3D variant="ghost" onClick={() => setShowForm(false)}>
-                  Cancelar
-                </Btn3D>
-              </div>
-            </div>
-          </HoloCard>
-        )}
+        {/* Smart drag & drop upload zone */}
+        <div
+          onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={async e => { e.preventDefault(); setDragOver(false); const file = e.dataTransfer.files[0]; if (file) handleFileSelect(file); }}
+          onClick={() => document.getElementById('catalog-file-input')?.click()}
+          style={{ border: `2px dashed ${dragOver ? '#5E17EB' : 'rgba(255,255,255,0.1)'}`, borderRadius: 20, padding: '40px 24px', textAlign: 'center', cursor: 'pointer', background: dragOver ? 'rgba(94,23,235,0.08)' : 'rgba(255,255,255,0.02)', transition: 'all 0.3s ease', marginBottom: 20 }}>
+          <input id="catalog-file-input" type="file" accept=".wav,.flac,.mp3,.aiff" style={{display:'none'}}
+            onChange={e => { const file = e.target.files?.[0]; if (file) handleFileSelect(file); }} />
+          <div style={{fontSize:40,marginBottom:12}}>🎵</div>
+          <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:15,fontWeight:600,color:'#F5F5F7',margin:'0 0 6px'}}>Arrastra tu canción aquí</p>
+          <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,color:'rgba(255,255,255,0.35)',margin:0}}>.wav, .flac, .mp3, .aiff · Máx 1GB</p>
+        </div>
         <div style={{display:'flex',gap:'4px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'10px',padding:'4px',marginBottom:16,width:'fit-content'}}>
           {(['list','grid'] as const).map(mode => (
             <button key={mode} onClick={() => setViewMode(mode)} style={{ background: viewMode===mode ? 'rgba(94,23,235,0.4)' : 'transparent', border:'none', borderRadius:'7px', padding:'6px 12px', color: viewMode===mode ? '#fff' : 'rgba(255,255,255,0.3)', cursor:'pointer', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif", transition:'all 0.15s' }}>
@@ -2280,7 +2269,7 @@ function RoyaltiesPage() {
   return (
     <>
     <PageBackground color="#22c55e" />
-    <PageShell title="Regalías">
+    <PageShell title="Regalías" helpText="Aquí ves todas tus regalías: Master (por reproducciones) y Publishing (por composición). Los pagos llegan 30-60 días después de cada mes.">
       {/* Tabs */}
       <div style={{display:'flex',gap:4,marginBottom:24,background:'rgba(255,255,255,0.03)',borderRadius:14,padding:4}}>
         {TABS.map(t => (
@@ -2446,7 +2435,7 @@ function AIChatPage() {
   };
 
   return (
-    <PageShell title="IA Chat">
+    <PageShell title="IA Chat" helpText="Soporte 24/7 de IM Music. Pregúntame cómo usar cualquier función, resolver dudas sobre distribución, regalías o marketing musical.">
       <div style={{ position:'relative', background:'rgba(6,3,14,0.94)', backdropFilter:'blur(28px)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:'24px', overflow:'hidden', display:'flex', flexDirection:'column', height:'calc(100vh - 160px)', minHeight:'480px' }}>
         {/* Neural dot pattern background */}
         <div style={{ position:'absolute', inset:0, backgroundImage:'radial-gradient(rgba(94,23,235,0.12) 1.5px, transparent 1.5px)', backgroundSize:'28px 28px', pointerEvents:'none', zIndex:0 }} />
@@ -3628,7 +3617,7 @@ function SplitsPage() {
   const ROLES = ['artista','productor','co-autor','letrista','ingeniero de mezcla','mánager'];
 
   return (
-    <PageShell title="Splits de Regalías">
+    <PageShell title="Splits de Regalías" helpText="Divide las regalías entre todos tus colaboradores. Agrega productores, co-autores o managers y define qué porcentaje le corresponde a cada uno.">
       {/* Tabs */}
       <div style={{display:'flex',gap:4,marginBottom:20,background:'rgba(255,255,255,0.03)',borderRadius:12,padding:4}}>
         {SPLITS_TABS.map(t=>(
@@ -4677,7 +4666,7 @@ function MarketingSuitePage() {
   const step = MS_STEPS[currentStep - 1];
 
   return (
-    <PageShell title="Marketing Suite">
+    <PageShell title="Marketing Suite" helpText="Sigue el flujo completo: Test de Arquetipo → Tu Marca → Estudio de Mercado → Meta Ads → Plan de Contenidos → Kit de Lanzamiento.">
       {/* Progress steps */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0', marginBottom: '32px', overflowX: 'auto', padding: '4px 0' }}>
         {MS_STEPS.map((s, i) => {
@@ -5372,6 +5361,47 @@ function CookieConsent() {
 }
 
 
+// ─── ONBOARDING TOUR ─────────────────────────────────────────────────────────
+function OnboardingTour({ onComplete, onNav }: { onComplete: () => void; onNav: (page: string) => void }) {
+  const [step, setStep] = useState(0);
+  const STEPS = [
+    { title: 'Bienvenido a IM Music 🎵', subtitle: 'La plataforma todo-en-uno para artistas independientes', description: 'Te vamos a guiar por las funciones principales en menos de 2 minutos.', action: 'COMENZAR TOUR', icon: '🎉' },
+    { title: 'Sube tu música', subtitle: 'Catálogo → Nuevo Track', description: 'Sube tus canciones en formato .wav o .flac. La IA extrae automáticamente los metadatos y te ayuda a configurar todo.', action: 'VER CATÁLOGO', onAction: () => onNav('catalog'), icon: '🎵' },
+    { title: 'Divide las regalías', subtitle: 'Splits → Agregar colaborador', description: 'Agrega a tu productor, co-autor o manager y define qué porcentaje le corresponde a cada uno. Los pagos son automáticos.', action: 'VER SPLITS', onAction: () => onNav('splits'), icon: '💰' },
+    { title: 'Lanza tu música', subtitle: 'Releases → Nuevo Release', description: 'Programa tu lanzamiento en Spotify, Apple Music, YouTube y 150+ plataformas con fecha y hora exacta.', action: 'VER RELEASES', onAction: () => onNav('releases'), icon: '🚀' },
+    { title: 'Marketing con IA', subtitle: 'Marketing Suite → Test de Arquetipo', description: 'Descubre tu identidad artística, analiza tu mercado y genera un plan de contenidos mensual personalizado.', action: 'VER MARKETING', onAction: () => onNav('marketing-suite'), icon: '✨' },
+    { title: '¡Listo para despegar! 🎯', subtitle: 'Todo está configurado', description: 'Ya conoces las funciones principales. Recuerda que el soporte de IA está disponible 24/7 para ayudarte.', action: 'COMENZAR', icon: '🏆' },
+  ];
+  const current = STEPS[step];
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(20px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <div style={{ background: 'rgba(15,10,25,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 28, padding: 48, maxWidth: 520, width: '100%', textAlign: 'center', boxShadow: '0 40px 80px rgba(0,0,0,0.6)' }}>
+        <div style={{ fontSize: 64, marginBottom: 24 }}>{current.icon}</div>
+        <h2 style={{ fontFamily: "'-apple-system','SF Pro Display','Space Grotesk',sans-serif", fontSize: 28, fontWeight: 700, color: '#F5F5F7', margin: '0 0 8px', letterSpacing: '-0.02em' }}>{current.title}</h2>
+        <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, fontWeight: 600, color: '#5E17EB', margin: '0 0 16px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{current.subtitle}</p>
+        <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 15, color: 'rgba(255,255,255,0.55)', margin: '0 0 32px', lineHeight: 1.7 }}>{current.description}</p>
+        <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginBottom: 32 }}>
+          {STEPS.map((_, i) => (
+            <div key={i} style={{ width: i === step ? 20 : 6, height: 6, borderRadius: 3, background: i === step ? '#5E17EB' : 'rgba(255,255,255,0.15)', transition: 'all 0.3s ease' }} />
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+          {step > 0 && <AppleBtn variant="ghost" onClick={() => setStep(s => s - 1)}>← Anterior</AppleBtn>}
+          <AppleBtn onClick={() => {
+            if ((current as any).onAction) (current as any).onAction();
+            if (step < STEPS.length - 1) { setStep(s => s + 1); }
+            else { localStorage.setItem('im_tour_done', '1'); onComplete(); }
+          }}>{current.action} →</AppleBtn>
+        </div>
+        <button onClick={() => { localStorage.setItem('im_tour_done', '1'); onComplete(); }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)', fontFamily: "'Space Grotesk',sans-serif", fontSize: 12, marginTop: 20, display: 'block', width: '100%' }}>
+          Saltar tour
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── APP ROOT ─────────────────────────────────────────────────────────────────
 type Screen = 'landing' | 'login' | 'app' | 'terms' | 'privacy';
 
@@ -5395,6 +5425,7 @@ export default function App() {
   const [activePage, setActivePage] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [lang, setLang] = useState<Lang>(() => (localStorage.getItem('im_lang') as Lang) || 'es');
+  const [showTour, setShowTour] = useState(() => !localStorage.getItem('im_tour_done'));
 
   const handleLogin = (u: any) => { setUser(u); setScreen('app'); };
   const handleLogout = () => { localStorage.removeItem('im_token'); setUser(null); setScreen('landing'); };
@@ -5440,6 +5471,9 @@ export default function App() {
 
       <CursorTrail />
       <ToastContainer />
+      {screen === 'app' && showTour && (
+        <OnboardingTour onComplete={() => setShowTour(false)} onNav={(page) => { setActivePage(page); setShowTour(false); }} />
+      )}
       <Sidebar active={activePage} onNav={setActivePage} user={user} onLogout={handleLogout} open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="dashboard-main">
         {/* Top bar */}

@@ -150,6 +150,56 @@ export const getModels = (_req: AuthRequest, res: Response) => {
   res.json({ model: 'gemini-2.0-flash', status: 'active' });
 };
 
+async function callAI(prompt: string): Promise<string> {
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (geminiKey) {
+    try {
+      const resp = await axios.post(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+        { contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 300 } },
+        { timeout: 8000 }
+      );
+      const text = (resp.data as any)?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (text) return text;
+    } catch { /* fall through */ }
+  }
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  if (anthropicKey) {
+    const resp = await axios.post(
+      'https://api.anthropic.com/v1/messages',
+      { model: 'claude-haiku-4-5-20251001', max_tokens: 300, messages: [{ role: 'user', content: prompt }] },
+      { headers: { 'x-api-key': anthropicKey, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' }, timeout: 20000 }
+    );
+    return (resp.data as any)?.content?.[0]?.text || '';
+  }
+  throw new Error('No AI provider available');
+}
+
+export const extractMetadata = async (req: AuthRequest, res: Response) => {
+  try {
+    const { filename, size, type } = req.body;
+    const prompt = `Extract music metadata from this audio file info:
+Filename: ${filename}
+File size: ${size} bytes
+File type: ${type}
+
+Return JSON only, no other text:
+{
+  "title": "song title from filename (remove extension and underscores)",
+  "artist": "",
+  "genre": "guessed genre from filename keywords",
+  "type": "single",
+  "bpm": "",
+  "key": ""
+}`;
+    const text = await callAI(prompt);
+    const clean = text.replace(/```json|```/g, '').trim();
+    res.json(JSON.parse(clean));
+  } catch {
+    res.json({ title: (req.body.filename as string)?.replace(/\.[^/.]+$/, '') || '', genre: '', type: 'single', bpm: '', key: '' });
+  }
+};
+
 export const archetypeAnalysis = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'No autorizado' });
