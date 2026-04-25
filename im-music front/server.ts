@@ -65,6 +65,32 @@ async function startServer() {
   const app = express();
   const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3001;
 
+  // DB migrations — run on startup
+  await pool.query(`
+    ALTER TABLE splits ALTER COLUMN track_id DROP NOT NULL;
+  `).catch(() => {});
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS marketplace_items (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER,
+      title TEXT NOT NULL,
+      genre TEXT,
+      bpm INTEGER,
+      price INTEGER DEFAULT 0,
+      description TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `).catch(() => {});
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS community_messages (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER,
+      user_name TEXT,
+      content TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `).catch(() => {});
+
   app.set("trust proxy", 1);
 
   // ─── Security headers (Helmet) ────────────────────────────────────────────
@@ -265,7 +291,7 @@ async function startServer() {
   app.get("/api/splits", requireAuth, async (req: any, res) => {
     try {
       const r = await pool.query(
-        "SELECT * FROM splits WHERE track_id IN (SELECT id FROM tracks WHERE artist_id=$1) ORDER BY created_at DESC",
+        "SELECT *, artist_name AS collaborator_name FROM splits WHERE track_id IN (SELECT id FROM tracks WHERE artist_id=$1) OR track_id IS NULL ORDER BY created_at DESC",
         [req.user.id]
       );
       res.json(r.rows);
@@ -353,11 +379,10 @@ async function startServer() {
     }
   });
 
-  app.get("/api/chat/recent", requireAuth, async (req: any, res) => {
+  app.get("/api/chat/recent", requireAuth, async (_req: any, res) => {
     try {
       const r = await pool.query(
-        "SELECT * FROM chat_messages WHERE user_id=$1 ORDER BY created_at DESC LIMIT 50",
-        [req.user.id]
+        "SELECT * FROM community_messages ORDER BY created_at ASC LIMIT 100"
       );
       res.json(r.rows);
     } catch { res.json([]); }
@@ -393,6 +418,85 @@ async function startServer() {
     const consulta = sanitize(req.body.consulta);
     if (!consulta) return res.status(400).json({ error: "Consulta vacía" });
     res.json({ respuesta: `Consulta registrada. El agente legal IA está en configuración.` });
+  });
+
+  // ─── Community / Chat ─────────────────────────────────────────────────────
+  app.get("/api/community/messages", requireAuth, async (_req, res) => {
+    try {
+      const r = await pool.query("SELECT * FROM community_messages ORDER BY created_at ASC LIMIT 100");
+      res.json(r.rows);
+    } catch { res.json([]); }
+  });
+  app.post("/api/community/messages", requireAuth, async (req: any, res) => {
+    const content = sanitize(req.body.content || req.body.message || '');
+    if (!content) return res.status(400).json({ error: "Mensaje vacío" });
+    try {
+      const r = await pool.query(
+        "INSERT INTO community_messages (user_id, user_name, content) VALUES ($1,$2,$3) RETURNING *",
+        [req.user.id, req.user.name || req.user.email, content]
+      );
+      res.status(201).json(r.rows[0]);
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  // Alias: frontend CommunityPage POSTs to /api/chat (not /api/chat/send)
+  app.post("/api/chat", requireAuth, async (req: any, res) => {
+    const content = sanitize(req.body.message || req.body.content || '');
+    if (!content) return res.status(400).json({ error: "Mensaje vacío" });
+    try {
+      await pool.query(
+        "INSERT INTO community_messages (user_id, user_name, content) VALUES ($1,$2,$3)",
+        [req.user.id, req.user.name || req.user.email, content]
+      );
+    } catch { /* table may not exist yet */ }
+    try {
+      await pool.query(
+        "INSERT INTO chat_messages (user_id, content) VALUES ($1,$2)",
+        [req.user.id, content]
+      );
+    } catch { /* ignore */ }
+    res.json({ success: true });
+  });
+
+  // ─── Marketplace ─────────────────────────────────────────────────────────
+  app.post("/api/marketplace/beats", requireAuth, async (req: any, res) => {
+    const title = sanitize(req.body.title || '');
+    if (!title) return res.status(400).json({ error: "El título es obligatorio" });
+    const genre = sanitize(req.body.genre || 'Sin género');
+    const bpm = parseInt(req.body.bpm) || null;
+    const price = parseInt(req.body.price || req.body.precio || 0);
+    const description = sanitize(req.body.description || req.body.descripcion || '');
+    try {
+      const r = await pool.query(
+        "INSERT INTO marketplace_items (user_id, title, genre, bpm, price, description) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *",
+        [req.user.id, title, genre, bpm, price, description]
+      );
+      res.status(201).json(r.rows[0]);
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.get("/api/marketplace/my-beats", requireAuth, async (req: any, res) => {
+    try {
+      const r = await pool.query(
+        "SELECT * FROM marketplace_items WHERE user_id=$1 ORDER BY created_at DESC",
+        [req.user.id]
+      );
+      res.json(r.rows);
+    } catch { res.json([]); }
+  });
+
+  app.get("/api/marketplace/hot", requireAuth, async (_req, res) => {
+    try {
+      const r = await pool.query("SELECT * FROM marketplace_items ORDER BY created_at DESC LIMIT 20");
+      res.json(r.rows);
+    } catch { res.json([]); }
+  });
+
+  app.get("/api/marketplace/top-rated", requireAuth, async (_req, res) => {
+    try {
+      const r = await pool.query("SELECT * FROM marketplace_items ORDER BY price DESC LIMIT 20");
+      res.json(r.rows);
+    } catch { res.json([]); }
   });
 
   // ─── 404 handler for unmatched API routes ────────────────────────────────

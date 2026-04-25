@@ -3536,10 +3536,10 @@ function MyBeatsStore() {
     setLoading(false);
   };
   const FORM_FIELDS = [
-    { key: 'title', label: 'Nombre del beat', placeholder: 'Ej: Dark Trap 140' },
-    { key: 'price', label: 'Precio (COP)', placeholder: 'Ej: 50000' },
-    { key: 'bpm', label: 'BPM', placeholder: 'Ej: 140' },
-    { key: 'key', label: 'Tonalidad', placeholder: 'Ej: Am' },
+    { key: 'title', label: 'Nombre del beat', placeholder: 'Título del beat, ej: Dark Trap 140' },
+    { key: 'price', label: 'Precio (COP)', placeholder: 'Precio en COP, ej: 50000' },
+    { key: 'bpm', label: 'BPM', placeholder: 'BPM, ej: 140' },
+    { key: 'key', label: 'Tonalidad', placeholder: 'Tonalidad, ej: Am' },
   ];
   return (
     <div>
@@ -3862,11 +3862,11 @@ function SplitsTab() {
                   <div key={i} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 0',borderTop:'1px solid rgba(255,255,255,0.04)'}}>
                     <div style={{width:32,height:32,borderRadius:'50%',background:'linear-gradient(135deg,#5E17EB,#7B3FFF)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                       <span style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:12,fontWeight:700,color:'#fff'}}>
-                        {(s.collaborator_name||s.name||'?')[0]?.toUpperCase()}
+                        {(s.collaborator_name||s.artist_name||s.name||'?')[0]?.toUpperCase()}
                       </span>
                     </div>
                     <div style={{flex:1}}>
-                      <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,fontWeight:600,color:'#F5F5F7',margin:0}}>{s.collaborator_name||s.name}</p>
+                      <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,fontWeight:600,color:'#F5F5F7',margin:0}}>{s.collaborator_name||s.artist_name||s.name}</p>
                       <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:'rgba(255,255,255,0.3)',margin:0}}>
                         {s.role} · {s.type === 'master' ? 'Master' : 'Publishing'}
                       </p>
