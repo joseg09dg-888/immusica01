@@ -1321,9 +1321,8 @@ function LoginPage({ onLogin, onBack }: { onLogin: (u: any) => void; onBack: () 
 const MODULES = [
   { id: 'dashboard',       label: 'Dashboard',        icon: LayoutDashboard, group: 'General' },
   // MÚSICA
-  { id: 'catalog',         label: 'Catálogo',          icon: Music,           group: 'Música' },
+  { id: 'catalog',         label: 'Catálogo & Distribución', icon: Music,      group: 'Música' },
   { id: 'royalties',       label: 'Regalías',          icon: DollarSign,      group: 'Música' },
-  { id: 'splits',          label: 'Splits',            icon: Users,           group: 'Música' },
   { id: 'releases',        label: 'Releases',          icon: Package,         group: 'Música' },
   { id: 'videos',          label: 'Videos & YouTube',  icon: Video,           group: 'Música' },
   // MARKETING
@@ -1944,8 +1943,8 @@ function TrackGridCard({ track: t, onDel }: { track: any; onDel: () => void }) {
   );
 }
 
-function CatalogPage() {
-  const [catalogTab, setCatalogTab] = useState<'tracks'|'bulk'|'lyrics'>('tracks');
+function CatalogPage({ initialTab = 'tracks' }: { initialTab?: string }) {
+  const [tab, setTab] = useState<'tracks'|'upload'|'splits'|'publishing'|'bulk'>(initialTab as any);
   const [tracks, setTracks] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState(''); const [genre, setGenre] = useState('');
@@ -2029,7 +2028,6 @@ function CatalogPage() {
   };
 
   const statusColors: Record<string, string> = { draft: '#52525b', published: '#16a34a', scheduled: '#1d4ed8' };
-  const CATALOG_TABS = [{id:'tracks',label:'Tracks',icon:Music},{id:'bulk',label:'Subida Masiva',icon:Upload},{id:'lyrics',label:'Letras',icon:Mic}] as const;
 
   const handleFileSelect = async (file: File) => {
     setUploadFile(file);
@@ -2205,32 +2203,28 @@ function CatalogPage() {
         </div>
       </div>
     )}
-    <PageShell title="Catálogo" helpText="Sube tus canciones en .wav o .flac. La IA extrae los metadatos automáticamente. Cada track que subas se guardará también en tu Vault automáticamente.">
+    <PageShell title="Catálogo & Distribución" helpText="Sube tus canciones en .wav o .flac. La IA extrae los metadatos automáticamente. Configura splits y distribución desde aquí.">
       {/* Tabs */}
-      <div style={{display:'flex',gap:4,marginBottom:20,background:'rgba(255,255,255,0.03)',borderRadius:12,padding:4}}>
-        {CATALOG_TABS.map(t=>(
-          <button key={t.id} onClick={()=>setCatalogTab(t.id)}
-            style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'9px 12px',borderRadius:9,border:'none',cursor:'pointer',background:catalogTab===t.id?'rgba(94,23,235,0.25)':'transparent',color:catalogTab===t.id?'#C084FC':'rgba(255,255,255,0.35)',fontFamily:"'Space Grotesk',sans-serif",fontSize:12,fontWeight:700,transition:'all 0.2s'}}>
-            <t.icon size={13}/>{t.label}
+      <div style={{display:'flex',gap:4,marginBottom:24,background:'rgba(255,255,255,0.03)',borderRadius:14,padding:4}}>
+        {[
+          {id:'tracks', label:'🎵 Mis Tracks'},
+          {id:'upload', label:'⬆️ Subir Canción'},
+          {id:'splits', label:'💰 Splits'},
+          {id:'publishing', label:'📝 Publishing'},
+          {id:'bulk', label:'📦 Subida Masiva'},
+        ].map(t => (
+          <button key={t.id} onClick={()=>setTab(t.id as any)}
+            style={{flex:1,padding:'10px 8px',borderRadius:10,border:'none',cursor:'pointer',
+              background:tab===t.id?'rgba(94,23,235,0.25)':'transparent',
+              color:tab===t.id?'#C084FC':'rgba(255,255,255,0.35)',
+              fontFamily:"'Space Grotesk',sans-serif",fontSize:11,fontWeight:700,transition:'all 0.2s'}}>
+            {t.label}
           </button>
         ))}
       </div>
 
-      {/* TRACKS tab */}
-      {catalogTab === 'tracks' && <>
-        {/* Smart drag & drop upload zone */}
-        <div
-          onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={async e => { e.preventDefault(); setDragOver(false); const file = e.dataTransfer.files[0]; if (file) handleFileSelect(file); }}
-          onClick={() => document.getElementById('catalog-file-input')?.click()}
-          style={{ border: `2px dashed ${dragOver ? '#5E17EB' : 'rgba(255,255,255,0.1)'}`, borderRadius: 20, padding: '40px 24px', textAlign: 'center', cursor: 'pointer', background: dragOver ? 'rgba(94,23,235,0.08)' : 'rgba(255,255,255,0.02)', transition: 'all 0.3s ease', marginBottom: 20 }}>
-          <input id="catalog-file-input" type="file" accept=".wav,.flac,.mp3,.aiff" style={{display:'none'}}
-            onChange={e => { const file = e.target.files?.[0]; if (file) handleFileSelect(file); }} />
-          <div style={{fontSize:40,marginBottom:12}}>🎵</div>
-          <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:15,fontWeight:600,color:'#F5F5F7',margin:'0 0 6px'}}>Arrastra tu canción aquí</p>
-          <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,color:'rgba(255,255,255,0.35)',margin:0}}>.wav, .flac, .mp3, .aiff · Máx 1GB</p>
-        </div>
+      {/* TRACKS tab — grid only */}
+      {tab === 'tracks' && <>
         <div style={{display:'flex',gap:'4px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'10px',padding:'4px',marginBottom:16,width:'fit-content'}}>
           {(['list','grid'] as const).map(mode => (
             <button key={mode} onClick={() => setViewMode(mode)} style={{ background: viewMode===mode ? 'rgba(94,23,235,0.4)' : 'transparent', border:'none', borderRadius:'7px', padding:'6px 12px', color: viewMode===mode ? '#fff' : 'rgba(255,255,255,0.3)', cursor:'pointer', fontSize:'11px', fontFamily:"'Space Grotesk',sans-serif", transition:'all 0.15s' }}>
@@ -2246,8 +2240,8 @@ function CatalogPage() {
           <Card><div style={{ textAlign:'center', padding:'56px 24px' }}>
             <div style={{ fontSize:'56px', marginBottom:'20px' }}>🎵</div>
             <p style={{ color:'#F2EDE5', fontFamily:"'Anton',sans-serif", fontSize:'20px', letterSpacing:'0.06em', margin:'0 0 8px' }}>TU CATÁLOGO ESTÁ VACÍO</p>
-            <p style={{ color:'rgba(255,255,255,0.3)', fontFamily:"'Space Grotesk',sans-serif", fontSize:'13px', margin:'0 0 24px' }}>Sube tu primer tema y empieza a crecer</p>
-            <Btn3D small onClick={() => setShowForm(true)}><Plus size={13}/> Crear primer track</Btn3D>
+            <p style={{ color:'rgba(255,255,255,0.3)', fontFamily:"'Space Grotesk',sans-serif", fontSize:'13px', margin:'0 0 24px' }}>Sube tu primer tema en la pestaña "Subir Canción"</p>
+            <Btn3D small onClick={() => setTab('upload')}><Plus size={13}/> Subir primera canción</Btn3D>
           </div></Card>
         ) : viewMode === 'list' ? (
           <Card>{tracks.map(t => (
@@ -2265,8 +2259,32 @@ function CatalogPage() {
         )}
       </>}
 
+      {/* UPLOAD tab — drag & drop + AI wizard */}
+      {tab === 'upload' && <>
+        <div
+          onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={async e => { e.preventDefault(); setDragOver(false); const file = e.dataTransfer.files[0]; if (file) handleFileSelect(file); }}
+          onClick={() => document.getElementById('catalog-file-input')?.click()}
+          style={{ border: `2px dashed ${dragOver ? '#5E17EB' : 'rgba(255,255,255,0.1)'}`, borderRadius: 20, padding: '60px 24px', textAlign: 'center', cursor: 'pointer', background: dragOver ? 'rgba(94,23,235,0.08)' : 'rgba(255,255,255,0.02)', transition: 'all 0.3s ease', marginBottom: 20 }}>
+          <input id="catalog-file-input" type="file" accept=".wav,.flac,.mp3,.aiff" style={{display:'none'}}
+            onChange={e => { const file = e.target.files?.[0]; if (file) handleFileSelect(file); }} />
+          <div style={{fontSize:48,marginBottom:16}}>🎵</div>
+          <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:16,fontWeight:600,color:'#F5F5F7',margin:'0 0 8px'}}>Arrastra tu canción aquí</p>
+          <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,color:'rgba(255,255,255,0.35)',margin:'0 0 16px'}}>.wav, .flac, .mp3, .aiff · Máx 1GB</p>
+          <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:12,color:'rgba(94,23,235,0.7)',margin:0}}>✨ La IA extrae metadatos automáticamente</p>
+        </div>
+        <div style={{background:'rgba(94,23,235,0.06)',border:'1px solid rgba(94,23,235,0.15)',borderRadius:14,padding:16,textAlign:'center'}}>
+          <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,color:'rgba(255,255,255,0.5)',margin:'0 0 4px'}}>El flujo de subida incluye: metadatos → splits → plataformas de distribución</p>
+          <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:'rgba(255,255,255,0.25)',margin:0}}>Una vez publicado, aparecerá en "Mis Tracks"</p>
+        </div>
+      </>}
+
+      {/* SPLITS tab */}
+      {tab === 'splits' && <SplitsTab />}
+
       {/* BULK UPLOAD tab */}
-      {catalogTab === 'bulk' && (
+      {tab === 'bulk' && (
         <div>
           <div onDragOver={e=>{e.preventDefault();setBulkDragging(true)}} onDragLeave={()=>setBulkDragging(false)} onDrop={e=>{e.preventDefault();setBulkDragging(false);setBulkFiles(f=>[...f,...Array.from(e.dataTransfer.files)])}}
             style={{border:`2px dashed ${bulkDragging?P:'rgba(255,255,255,0.15)'}`,borderRadius:16,padding:'48px 24px',textAlign:'center',cursor:'pointer',background:bulkDragging?`rgba(94,23,235,0.08)`:'rgba(255,255,255,0.02)',transition:'all 0.2s',marginBottom:20}}>
@@ -2306,8 +2324,8 @@ function CatalogPage() {
         </div>
       )}
 
-      {/* LYRICS tab */}
-      {catalogTab === 'lyrics' && (
+      {/* PUBLISHING tab — registered works + lyrics sync */}
+      {tab === 'publishing' && (
         <div style={{ display:'grid', gridTemplateColumns:'220px 1fr', gap:'20px' }}>
           <Card style={{ height:'fit-content' }}>
             <h3 style={{ fontFamily:"'Anton',sans-serif", fontSize:'13px', color:'#fff', letterSpacing:'0.06em', margin:'0 0 12px' }}>TRACKS</h3>
@@ -3686,7 +3704,192 @@ function SplitsPieChart({ splits }: { splits: { name: string; percentage: number
   );
 }
 
+function SplitsTab() {
+  const [splits, setSplits] = useState<any[]>([]);
+  const [tracks, setTracks] = useState<any[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({
+    track_id: '',
+    collaborator_name: '',
+    collaborator_email: '',
+    percentage: '',
+    role: 'productor',
+    type: 'master',
+  });
+
+  useEffect(() => {
+    apiFetch('/splits').then(d=>setSplits(Array.isArray(d)?d:[])).catch(()=>{});
+    apiFetch('/tracks').then(d=>setTracks(Array.isArray(d)?d:[])).catch(()=>{});
+  }, []);
+
+  const create = async () => {
+    if (!form.collaborator_name || !form.percentage) {
+      toast('Nombre y porcentaje son obligatorios', 'error');
+      return;
+    }
+    try {
+      await apiFetch('/splits', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...form,
+          percentage: parseFloat(form.percentage),
+          track_id: form.track_id ? parseInt(form.track_id) : null,
+        })
+      });
+      toast('Colaborador agregado', 'success');
+      setShowForm(false);
+      setForm({track_id:'',collaborator_name:'',collaborator_email:'',percentage:'',role:'productor',type:'master'});
+      apiFetch('/splits').then(d=>setSplits(Array.isArray(d)?d:[])).catch(()=>{});
+    } catch(e:any) { toast(e.message, 'error'); }
+  };
+
+  const grouped: Record<string, any[]> = {};
+  splits.forEach(s => {
+    const key = s.track_id ? String(s.track_id) : 'general';
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(s);
+  });
+
+  return (
+    <div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
+        <div>
+          <h3 style={{fontFamily:"'-apple-system','Space Grotesk',sans-serif",fontSize:18,fontWeight:700,color:'#F5F5F7',margin:'0 0 4px'}}>Gestión de Splits</h3>
+          <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,color:'rgba(255,255,255,0.4)',margin:0}}>
+            Master (grabación) y Publishing (composición)
+          </p>
+        </div>
+        <AppleBtn small onClick={()=>setShowForm(!showForm)}>+ AGREGAR COLABORADOR</AppleBtn>
+      </div>
+
+      {showForm && (
+        <AppleCard style={{padding:24,marginBottom:20}}>
+          <h4 style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:14,fontWeight:700,color:'#F5F5F7',margin:'0 0 16px'}}>
+            Nuevo colaborador
+          </h4>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:12}}>
+            <div>
+              <label style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:'rgba(255,255,255,0.35)',letterSpacing:'0.12em',textTransform:'uppercase',display:'block',marginBottom:6}}>Canción (opcional)</label>
+              <select value={form.track_id} onChange={e=>setForm(p=>({...p,track_id:e.target.value}))}
+                style={{width:'100%',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:10,padding:'10px 12px',color:'#fff',fontFamily:"'Space Grotesk',sans-serif",fontSize:13,outline:'none'}}>
+                <option value="">Todas las canciones</option>
+                {tracks.map((t:any)=><option key={t.id} value={t.id}>{t.title}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:'rgba(255,255,255,0.35)',letterSpacing:'0.12em',textTransform:'uppercase',display:'block',marginBottom:6}}>Tipo de split</label>
+              <select value={form.type} onChange={e=>setForm(p=>({...p,type:e.target.value}))}
+                style={{width:'100%',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:10,padding:'10px 12px',color:'#fff',fontFamily:"'Space Grotesk',sans-serif",fontSize:13,outline:'none'}}>
+                <option value="master">Master (grabación)</option>
+                <option value="publishing">Publishing (composición)</option>
+              </select>
+            </div>
+            <div>
+              <label style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:'rgba(255,255,255,0.35)',letterSpacing:'0.12em',textTransform:'uppercase',display:'block',marginBottom:6}}>Nombre *</label>
+              <input value={form.collaborator_name} onChange={e=>setForm(p=>({...p,collaborator_name:e.target.value}))} placeholder="Nombre del colaborador"
+                style={{width:'100%',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:10,padding:'10px 12px',color:'#fff',fontFamily:"'Space Grotesk',sans-serif",fontSize:13,outline:'none',boxSizing:'border-box'}}/>
+            </div>
+            <div>
+              <label style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:'rgba(255,255,255,0.35)',letterSpacing:'0.12em',textTransform:'uppercase',display:'block',marginBottom:6}}>Email</label>
+              <input value={form.collaborator_email} onChange={e=>setForm(p=>({...p,collaborator_email:e.target.value}))} placeholder="email@ejemplo.com"
+                style={{width:'100%',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:10,padding:'10px 12px',color:'#fff',fontFamily:"'Space Grotesk',sans-serif",fontSize:13,outline:'none',boxSizing:'border-box'}}/>
+            </div>
+            <div>
+              <label style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:'rgba(255,255,255,0.35)',letterSpacing:'0.12em',textTransform:'uppercase',display:'block',marginBottom:6}}>Porcentaje % *</label>
+              <input value={form.percentage} onChange={e=>setForm(p=>({...p,percentage:e.target.value}))} placeholder="30"
+                type="number" min="0" max="100"
+                style={{width:'100%',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:10,padding:'10px 12px',color:'#fff',fontFamily:"'Space Grotesk',sans-serif",fontSize:13,outline:'none',boxSizing:'border-box'}}/>
+            </div>
+            <div>
+              <label style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:'rgba(255,255,255,0.35)',letterSpacing:'0.12em',textTransform:'uppercase',display:'block',marginBottom:6}}>Rol</label>
+              <select value={form.role} onChange={e=>setForm(p=>({...p,role:e.target.value}))}
+                style={{width:'100%',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:10,padding:'10px 12px',color:'#fff',fontFamily:"'Space Grotesk',sans-serif",fontSize:13,outline:'none'}}>
+                <option value="productor">Productor</option>
+                <option value="co-autor">Co-autor</option>
+                <option value="letrista">Letrista</option>
+                <option value="ingeniero">Ingeniero de mezcla</option>
+                <option value="manager">Manager</option>
+                <option value="artista">Artista</option>
+              </select>
+            </div>
+          </div>
+          <div style={{display:'flex',gap:10}}>
+            <AppleBtn onClick={create} fullWidth>GUARDAR COLABORADOR</AppleBtn>
+            <AppleBtn variant="ghost" onClick={()=>setShowForm(false)}>Cancelar</AppleBtn>
+          </div>
+        </AppleCard>
+      )}
+
+      {splits.length === 0 ? (
+        <AppleCard style={{padding:40,textAlign:'center'}}>
+          <div style={{fontSize:40,marginBottom:12}}>💰</div>
+          <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:14,color:'rgba(255,255,255,0.25)'}}>
+            Sin colaboradores aún. Agrega productores, co-autores o managers.
+          </p>
+        </AppleCard>
+      ) : (
+        <div style={{display:'flex',flexDirection:'column',gap:12}}>
+          {Object.entries(grouped).map(([trackId, trackSplits]) => {
+            const track = tracks.find((t:any)=>String(t.id)===trackId);
+            const totalPct = trackSplits.reduce((sum,s)=>sum+parseFloat(s.percentage||0),0);
+            return (
+              <AppleCard key={trackId} style={{padding:20}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
+                  <div style={{display:'flex',alignItems:'center',gap:10}}>
+                    <div style={{width:36,height:36,borderRadius:10,background:'rgba(94,23,235,0.2)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                      <Music size={16} color="#7B3FFF"/>
+                    </div>
+                    <div>
+                      <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,fontWeight:700,color:'#F5F5F7',margin:0}}>
+                        {track?.title || 'Todas las canciones'}
+                      </p>
+                      <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:'rgba(255,255,255,0.3)',margin:0}}>
+                        {trackSplits.length} colaboradores
+                      </p>
+                    </div>
+                  </div>
+                  <div style={{
+                    background:totalPct===100?'rgba(48,209,88,0.15)':totalPct>100?'rgba(255,69,58,0.15)':'rgba(255,214,10,0.15)',
+                    border:`1px solid ${totalPct===100?'rgba(48,209,88,0.3)':totalPct>100?'rgba(255,69,58,0.3)':'rgba(255,214,10,0.3)'}`,
+                    borderRadius:100,padding:'4px 12px',
+                    fontFamily:"'Space Grotesk',sans-serif",fontSize:11,fontWeight:700,
+                    color:totalPct===100?'#30D158':totalPct>100?'#FF453A':'#FFD60A',
+                  }}>
+                    {totalPct}% {totalPct===100?'✓':totalPct>100?'⚠️ EXCEDE':'⚠️ INCOMPLETO'}
+                  </div>
+                </div>
+                {trackSplits.map((s:any,i:number)=>(
+                  <div key={i} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 0',borderTop:'1px solid rgba(255,255,255,0.04)'}}>
+                    <div style={{width:32,height:32,borderRadius:'50%',background:'linear-gradient(135deg,#5E17EB,#7B3FFF)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                      <span style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:12,fontWeight:700,color:'#fff'}}>
+                        {(s.collaborator_name||s.name||'?')[0]?.toUpperCase()}
+                      </span>
+                    </div>
+                    <div style={{flex:1}}>
+                      <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,fontWeight:600,color:'#F5F5F7',margin:0}}>{s.collaborator_name||s.name}</p>
+                      <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:'rgba(255,255,255,0.3)',margin:0}}>
+                        {s.role} · {s.type === 'master' ? 'Master' : 'Publishing'}
+                      </p>
+                    </div>
+                    <div style={{background:'rgba(94,23,235,0.15)',border:'1px solid rgba(94,23,235,0.3)',borderRadius:100,padding:'4px 12px'}}>
+                      <span style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:12,fontWeight:700,color:'#C084FC'}}>{s.percentage}%</span>
+                    </div>
+                  </div>
+                ))}
+              </AppleCard>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SplitsPage() {
+  return <CatalogPage initialTab="splits" />;
+}
+
+function _SplitsPageOld() {
   const [splitsTab, setSplitsTab] = useState<'master'|'publishing'|'all'>('master');
   const [splits, setSplits] = useState<any[]>([]);
   const [tracks, setTracks] = useState<any[]>([]);
@@ -5582,7 +5785,7 @@ export default function App() {
       case 'community':       return <CommunityPage />;
       case 'marketplace':     return <MarketplacePage />;
       case 'playlists':       return <PlaylistsPage />;
-      case 'splits':          return <SplitsPage />;
+      case 'splits':          return <CatalogPage initialTab="splits" />;
       case 'store-maximizer': return <StoreMaximizerPage />;
       case 'label':           return <LabelPage />;
       case 'team':            return <TeamPage />;

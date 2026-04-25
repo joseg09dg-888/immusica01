@@ -8,6 +8,7 @@ import rateLimit from "express-rate-limit";
 import { Pool } from "pg";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { createProxyMiddleware } from "http-proxy-middleware";
 
 dotenv.config();
 
@@ -413,6 +414,16 @@ async function startServer() {
       res.sendFile(path.join(__dirname, "dist", "index.html"));
     });
   }
+
+  app.use('/api', createProxyMiddleware({
+    target: 'http://localhost:3000',
+    changeOrigin: true,
+    on: {
+      error: (_err: Error, _req: express.Request, res: express.Response) => {
+        res.status(500).json({ error: 'Backend not available' });
+      }
+    }
+  }));
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`✅ IM MUSIC running on http://localhost:${PORT}`);
