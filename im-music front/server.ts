@@ -499,6 +499,66 @@ async function startServer() {
     } catch { res.json([]); }
   });
 
+  // ─── Releases ────────────────────────────────────────────────────────────
+  app.get("/api/releases", requireAuth, async (req: any, res) => {
+    try {
+      await pool.query(`CREATE TABLE IF NOT EXISTS releases (id SERIAL PRIMARY KEY, user_id INTEGER, title TEXT NOT NULL, release_date TEXT, platforms TEXT, status TEXT DEFAULT 'draft', type TEXT DEFAULT 'single', track_id INTEGER, created_at TIMESTAMPTZ DEFAULT NOW())`).catch(() => {});
+      const r = await pool.query("SELECT * FROM releases WHERE user_id=$1 ORDER BY created_at DESC", [req.user.id]);
+      res.json(r.rows);
+    } catch { res.json([]); }
+  });
+  app.post("/api/releases", requireAuth, async (req: any, res) => {
+    try {
+      const { title, release_date, platforms, status, type, track_id } = req.body;
+      const r = await pool.query(
+        "INSERT INTO releases (user_id, title, release_date, platforms, status, type, track_id) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *",
+        [req.user.id, sanitize(title)||'Sin título', release_date||null, platforms||'', status||'draft', type||'single', track_id||null]
+      );
+      res.json(r.rows[0]);
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ─── Videos ──────────────────────────────────────────────────────────────
+  app.get("/api/videos", requireAuth, async (req: any, res) => {
+    try {
+      await pool.query(`CREATE TABLE IF NOT EXISTS videos (id SERIAL PRIMARY KEY, user_id INTEGER, title TEXT NOT NULL, description TEXT, url TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`).catch(() => {});
+      const r = await pool.query("SELECT * FROM videos WHERE user_id=$1 ORDER BY created_at DESC", [req.user.id]);
+      res.json(r.rows);
+    } catch { res.json([]); }
+  });
+  app.post("/api/videos", requireAuth, async (req: any, res) => {
+    try {
+      const { title, description, url } = req.body;
+      const r = await pool.query(
+        "INSERT INTO videos (user_id, title, description, url) VALUES ($1,$2,$3,$4) RETURNING *",
+        [req.user.id, sanitize(title)||'Sin título', sanitize(description)||'', url||null]
+      );
+      res.json(r.rows[0]);
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+  app.get("/api/videos/analytics", requireAuth, async (_req, res) => {
+    res.json({ views: 0, subscribers: 0, watch_time: 0 });
+  });
+
+  // ─── Publishing ──────────────────────────────────────────────────────────
+  app.get("/api/publishing", requireAuth, async (req: any, res) => {
+    try {
+      await pool.query(`CREATE TABLE IF NOT EXISTS publishing (id SERIAL PRIMARY KEY, user_id INTEGER, title TEXT NOT NULL, composers TEXT, splits TEXT, iswc TEXT, track_id INTEGER, lyrics TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`).catch(() => {});
+      const r = await pool.query("SELECT * FROM publishing WHERE user_id=$1 ORDER BY created_at DESC", [req.user.id]);
+      res.json(r.rows);
+    } catch { res.json([]); }
+  });
+  app.post("/api/publishing", requireAuth, async (req: any, res) => {
+    try {
+      const { title, composers, splits, iswc, track_id, lyrics } = req.body;
+      const r = await pool.query(
+        "INSERT INTO publishing (user_id, title, composers, splits, iswc, track_id, lyrics) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *",
+        [req.user.id, sanitize(title)||'Sin título', composers||'', splits||'', iswc||'', track_id||null, lyrics||'']
+      );
+      res.json(r.rows[0]);
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
   // ─── 404 handler for unmatched API routes ────────────────────────────────
   app.use("/api/*", (_req, res) => {
     res.status(404).json({ error: "Ruta no encontrada" });
