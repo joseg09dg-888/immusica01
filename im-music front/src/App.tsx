@@ -1958,6 +1958,11 @@ function CatalogPage() {
   const [showMetaModal, setShowMetaModal] = useState(false);
   const [aiMetadata, setAiMetadata] = useState<any>({});
   const [extracting, setExtracting] = useState(false);
+  const [uploadStep, setUploadStep] = useState<'metadata'|'splits'|'platforms'|'done'>('metadata');
+  const [uploadSplits, setUploadSplits] = useState<any[]>([]);
+  const [splitForm, setSplitForm] = useState({ name:'', email:'', percentage:'', role:'productor' });
+  const [uploadPlatforms, setUploadPlatforms] = useState(['Spotify','Apple Music','YouTube Music','TikTok','Amazon Music','Deezer']);
+  const [publishing, setPublishing] = useState(false);
   // Bulk upload state
   const [bulkFiles, setBulkFiles] = useState<File[]>([]);
   const [bulkResults, setBulkResults] = useState<{name:string;status:'ok'|'error'|'uploading'}[]>([]);
@@ -2030,6 +2035,10 @@ function CatalogPage() {
     setUploadFile(file);
     setExtracting(true);
     setShowMetaModal(true);
+    setUploadStep('metadata');
+    setUploadSplits([]);
+    setSplitForm({ name:'', email:'', percentage:'', role:'productor' });
+    setUploadPlatforms(['Spotify','Apple Music','YouTube Music','TikTok','Amazon Music','Deezer']);
     try {
       const data = await apiFetch('/ai/extract-metadata', { method: 'POST', body: JSON.stringify({ filename: file.name, size: file.size, type: file.type, duration: 0 }) });
       setAiMetadata(data);
@@ -2039,40 +2048,53 @@ function CatalogPage() {
     setExtracting(false);
   };
 
+  const closeUploadModal = () => { setShowMetaModal(false); setUploadFile(null); setAiMetadata({}); setUploadStep('metadata'); setUploadSplits([]); };
+
+  const totalSplitPct = uploadSplits.reduce((sum, s) => sum + Number(s.percentage||0), 0);
+
   return (
     <>
     <PageBackground color="#7B3FFF" />
     {showMetaModal && (
       <div style={{position:'fixed',inset:0,zIndex:9999,background:'rgba(0,0,0,0.8)',backdropFilter:'blur(20px)',display:'flex',alignItems:'center',justifyContent:'center',padding:24}}>
         <div style={{background:'rgba(15,10,25,0.98)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:24,padding:36,maxWidth:600,width:'100%',maxHeight:'90vh',overflowY:'auto'}}>
+
+          {/* Step progress bar */}
+          <div style={{display:'flex',gap:8,marginBottom:24}}>
+            {(['metadata','splits','platforms'] as const).map((s,i) => {
+              const stepIdx = ['metadata','splits','platforms'].indexOf(uploadStep);
+              return <div key={s} style={{flex:1,height:3,borderRadius:2,background:i<stepIdx?'#5E17EB':i===stepIdx?'#7B3FFF':'rgba(255,255,255,0.1)',transition:'all 0.3s'}}/>;
+            })}
+          </div>
+
+          {/* Header */}
           <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:24}}>
-            <div style={{fontSize:32}}>🎵</div>
+            <div style={{fontSize:32}}>{uploadStep==='metadata'?'🎵':uploadStep==='splits'?'💰':'🚀'}</div>
             <div>
-              <h3 style={{fontFamily:"'-apple-system','Space Grotesk',sans-serif",fontSize:20,fontWeight:700,color:'#F5F5F7',margin:0}}>{extracting ? 'Analizando tu canción...' : 'Metadatos del Track'}</h3>
+              <h3 style={{fontFamily:"'-apple-system','Space Grotesk',sans-serif",fontSize:20,fontWeight:700,color:'#F5F5F7',margin:0}}>
+                {extracting ? 'Analizando con IA...' : uploadStep==='metadata' ? 'Paso 1 de 3: Metadatos' : uploadStep==='splits' ? 'Paso 2 de 3: ¿Quién colaboró?' : 'Paso 3 de 3: ¿Dónde distribuir?'}
+              </h3>
               <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:12,color:'rgba(255,255,255,0.35)',margin:0}}>{uploadFile?.name}</p>
             </div>
           </div>
+
           {extracting ? (
             <div style={{textAlign:'center',padding:'32px 0'}}>
               <div style={{width:40,height:40,border:'3px solid rgba(94,23,235,0.3)',borderTop:'3px solid #5E17EB',borderRadius:'50%',animation:'spin 0.8s linear infinite',margin:'0 auto 16px'}}/>
               <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:14,color:'rgba(255,255,255,0.4)'}}>La IA está extrayendo los metadatos...</p>
             </div>
-          ) : (
+
+          ) : uploadStep === 'metadata' ? (
             <>
-              <div style={{display:'flex',gap:8,marginBottom:24}}>
-                {['Metadatos','Splits','Plataformas','Publicar'].map((s,i) => (
-                  <div key={i} style={{flex:1,height:3,borderRadius:2,background:i===0?'#5E17EB':'rgba(255,255,255,0.1)'}}/>
-                ))}
-              </div>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:20}}>
-                {[
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:16}}>
+                {([
                   {key:'title',label:'Título *',placeholder:'Nombre de la canción'},
                   {key:'artist',label:'Artista principal',placeholder:'Tu nombre artístico'},
                   {key:'genre',label:'Género',placeholder:'Trap, Reggaeton, Pop...'},
                   {key:'type',label:'Tipo de lanzamiento',type:'select',options:['single','ep','album']},
                   {key:'bpm',label:'BPM',placeholder:'120'},
                   {key:'key',label:'Tonalidad',placeholder:'Am, C#, Dm...'},
-                ].map((f:any) => (
+                ] as any[]).map((f:any) => (
                   <div key={f.key}>
                     <label style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:'rgba(255,255,255,0.35)',letterSpacing:'0.12em',textTransform:'uppercase',display:'block',marginBottom:6}}>{f.label}</label>
                     {f.type === 'select' ? (
@@ -2088,21 +2110,95 @@ function CatalogPage() {
                   </div>
                 ))}
               </div>
-              <div style={{background:'rgba(94,23,235,0.08)',border:'1px solid rgba(94,23,235,0.2)',borderRadius:12,padding:16,marginBottom:20}}>
-                <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:12,fontWeight:700,color:'rgba(94,23,235,0.8)',textTransform:'uppercase',letterSpacing:'0.1em',margin:'0 0 8px'}}>✨ IA detectó estos campos automáticamente</p>
-                <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:12,color:'rgba(255,255,255,0.4)',margin:0}}>Revisa y ajusta los metadatos antes de publicar.</p>
+              <div style={{background:'rgba(94,23,235,0.08)',border:'1px solid rgba(94,23,235,0.2)',borderRadius:12,padding:14,marginBottom:20}}>
+                <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:12,fontWeight:700,color:'rgba(94,23,235,0.8)',textTransform:'uppercase',letterSpacing:'0.1em',margin:'0 0 4px'}}>✨ IA detectó estos campos automáticamente</p>
+                <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:12,color:'rgba(255,255,255,0.4)',margin:0}}>Revisa y ajusta antes de continuar.</p>
               </div>
               <div style={{display:'flex',gap:12}}>
-                <AppleBtn fullWidth onClick={async () => {
-                  if (!aiMetadata.title) { toast('El título es obligatorio', 'error'); return; }
+                <AppleBtn fullWidth onClick={() => { if (!aiMetadata.title) { toast('El título es obligatorio','error'); return; } setUploadStep('splits'); }}>SIGUIENTE: SPLITS →</AppleBtn>
+                <AppleBtn variant="ghost" onClick={closeUploadModal}>Cancelar</AppleBtn>
+              </div>
+            </>
+
+          ) : uploadStep === 'splits' ? (
+            <>
+              {/* Add collaborator form */}
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:14}}>
+                {[{k:'name',p:'Nombre',lbl:'Nombre'},{k:'email',p:'email@ejemplo.com',lbl:'Email'},{k:'percentage',p:'%',lbl:'Porcentaje %'},{k:'role',p:'',lbl:'Rol',select:['artista','productor','co-autor','letrista','mánager']}].map((f:any)=>(
+                  <div key={f.k}>
+                    <label style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:'rgba(255,255,255,0.35)',letterSpacing:'0.1em',textTransform:'uppercase',display:'block',marginBottom:5}}>{f.lbl}</label>
+                    {f.select ? (
+                      <select value={splitForm[f.k as keyof typeof splitForm]} onChange={e=>setSplitForm(s=>({...s,[f.k]:e.target.value}))}
+                        style={{width:'100%',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:10,padding:'9px 12px',color:'#fff',fontFamily:"'Space Grotesk',sans-serif",fontSize:13,outline:'none'}}>
+                        {f.select.map((o:string)=><option key={o} value={o}>{o}</option>)}
+                      </select>
+                    ) : (
+                      <input value={splitForm[f.k as keyof typeof splitForm]} onChange={e=>setSplitForm(s=>({...s,[f.k]:e.target.value}))} placeholder={f.p} type={f.k==='percentage'?'number':'text'}
+                        style={{width:'100%',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:10,padding:'9px 12px',color:'#fff',fontFamily:"'Space Grotesk',sans-serif",fontSize:13,outline:'none',boxSizing:'border-box'}}/>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <AppleBtn small variant="ghost" onClick={() => {
+                if (!splitForm.name||!splitForm.percentage) { toast('Nombre y porcentaje requeridos','error'); return; }
+                setUploadSplits(s=>[...s,{...splitForm}]);
+                setSplitForm({name:'',email:'',percentage:'',role:'productor'});
+              }}>+ Agregar colaborador</AppleBtn>
+
+              {/* Splits list */}
+              {uploadSplits.length > 0 && (
+                <div style={{marginTop:14,marginBottom:14}}>
+                  {uploadSplits.map((s,i)=>(
+                    <div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 12px',background:'rgba(255,255,255,0.04)',borderRadius:10,marginBottom:6}}>
+                      <span style={{flex:1,fontFamily:"'Space Grotesk',sans-serif",fontSize:13,color:'#fff'}}>{s.name} <span style={{color:'rgba(255,255,255,0.4)',fontSize:11}}>({s.role})</span></span>
+                      <span style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:14,fontWeight:700,color:'#5E17EB'}}>{s.percentage}%</span>
+                      <button onClick={()=>setUploadSplits(sp=>sp.filter((_,j)=>j!==i))} style={{background:'none',border:'none',cursor:'pointer',color:'rgba(255,255,255,0.3)',fontSize:16}}>×</button>
+                    </div>
+                  ))}
+                  <div style={{display:'flex',justifyContent:'space-between',padding:'8px 12px',borderTop:'1px solid rgba(255,255,255,0.06)',marginTop:4}}>
+                    <span style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:12,color:'rgba(255,255,255,0.4)'}}>Total asignado</span>
+                    <span style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,fontWeight:700,color:totalSplitPct>100?'#FF453A':totalSplitPct===100?'#30D158':'#fff'}}>{totalSplitPct}%{totalSplitPct>100?' ⚠️ Supera 100%':''}</span>
+                  </div>
+                </div>
+              )}
+              {uploadSplits.length === 0 && <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,color:'rgba(255,255,255,0.25)',margin:'14px 0',textAlign:'center'}}>Sin colaboradores — toda la regalía es tuya</p>}
+
+              <div style={{display:'flex',gap:12,marginTop:16}}>
+                <AppleBtn fullWidth onClick={() => { if(totalSplitPct>100){toast('El total de splits supera 100%','error');return;} setUploadStep('platforms'); }}>SIGUIENTE: PLATAFORMAS →</AppleBtn>
+                <AppleBtn variant="ghost" onClick={() => setUploadStep('metadata')}>← Atrás</AppleBtn>
+              </div>
+            </>
+
+          ) : (
+            <>
+              <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,color:'rgba(255,255,255,0.5)',marginBottom:16}}>Selecciona dónde quieres distribuir tu música:</p>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:20}}>
+                {['Spotify','Apple Music','YouTube Music','TikTok','Amazon Music','Deezer','Tidal','Napster'].map(pl=>(
+                  <label key={pl} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',background:'rgba(255,255,255,0.04)',borderRadius:10,cursor:'pointer',border:`1px solid ${uploadPlatforms.includes(pl)?'rgba(94,23,235,0.4)':'rgba(255,255,255,0.07)'}`}}>
+                    <input type="checkbox" checked={uploadPlatforms.includes(pl)} onChange={e=>setUploadPlatforms(p=>e.target.checked?[...p,pl]:p.filter(x=>x!==pl))} style={{accentColor:'#5E17EB'}}/>
+                    <span style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,color:'#fff'}}>{pl}</span>
+                  </label>
+                ))}
+              </div>
+              <div style={{display:'flex',gap:12}}>
+                <AppleBtn fullWidth disabled={publishing} onClick={async () => {
+                  if (!aiMetadata.title) { toast('El título es obligatorio','error'); return; }
+                  setPublishing(true);
                   try {
-                    const data = await apiFetch('/tracks', { method:'POST', body: JSON.stringify({ title: aiMetadata.title, genre: aiMetadata.genre||'Sin género', bpm: aiMetadata.bpm?parseInt(aiMetadata.bpm):null, key: aiMetadata.key||null, release_type: aiMetadata.type||'single' }) });
-                    toast('✅ Track creado: ' + data.title, 'success');
-                    setShowMetaModal(false); setUploadFile(null); setAiMetadata({});
+                    const track = await apiFetch('/tracks', { method:'POST', body: JSON.stringify({ title: aiMetadata.title, genre: aiMetadata.genre||'Sin género', bpm: aiMetadata.bpm?parseInt(aiMetadata.bpm):null, key: aiMetadata.key||null, release_type: aiMetadata.type||'single' }) });
+                    for (const s of uploadSplits) {
+                      await apiFetch('/splits', { method:'POST', body: JSON.stringify({ track_id: String(track.id), name: s.name, email: s.email, percentage: s.percentage, role: s.role, type:'master' }) }).catch(()=>{});
+                    }
+                    await apiFetch('/releases', { method:'POST', body: JSON.stringify({ title: aiMetadata.title, type: aiMetadata.type||'single', platforms: uploadPlatforms, track_id: track.id }) }).catch(()=>{});
+                    toast('✅ Tu canción está lista para distribución', 'success');
+                    closeUploadModal();
                     load();
-                  } catch(e:any) { toast(e.message, 'error'); }
-                }}>SIGUIENTE: SPLITS →</AppleBtn>
-                <AppleBtn variant="ghost" onClick={() => { setShowMetaModal(false); setUploadFile(null); }}>Cancelar</AppleBtn>
+                  } catch(e:any) { toast(e.message,'error'); }
+                  setPublishing(false);
+                }}>
+                  {publishing ? 'Publicando...' : '🚀 PUBLICAR EN '+uploadPlatforms.length+' PLATAFORMAS'}
+                </AppleBtn>
+                <AppleBtn variant="ghost" onClick={() => setUploadStep('splits')}>← Atrás</AppleBtn>
               </div>
             </>
           )}
@@ -5362,41 +5458,80 @@ function CookieConsent() {
 
 
 // ─── ONBOARDING TOUR ─────────────────────────────────────────────────────────
+const TOUR_STEPS = [
+  { id:'welcome', title:'Bienvenido a IM Music 🎉', subtitle:'Tu plataforma musical completa', description:'Te guiaremos por cada función paso a paso. El tour toma 3 minutos y te explicará exactamente cómo usar cada herramienta.', icon:'🎵', page:null, tip:null, requiredFields:[] },
+  { id:'catalog', title:'Paso 1: Sube tu música', subtitle:'Catálogo → Arrastra tu canción', description:'Arrastra un archivo .wav o .flac al área de subida. La IA extrae automáticamente: título, género, BPM, tonalidad. Verifica los metadatos antes de publicar — estos datos van directamente a Spotify, Apple Music y 150+ plataformas.', icon:'🎵', page:'catalog', tip:'⚡ Tip: Usa .wav 24-bit/44.1kHz para la mejor calidad en todas las plataformas.', requiredFields:['Título','Artista principal','Género','Tipo (Single/EP/Album)','Portada 3000x3000px','ISRC (opcional)'] },
+  { id:'splits', title:'Paso 2: Divide las regalías', subtitle:'Splits → Agregar colaboradores', description:'Apenas subes una canción, define quién recibe qué. Agrega tu productor (ej: 30%), co-autor (ej: 20%), manager. Los pagos son automáticos cada mes. Sin contratos complicados.', icon:'💰', page:'splits', tip:'⚡ Tip: El 100% debe sumar entre todos. Tú decides cuánto queda para ti.', requiredFields:['Nombre del colaborador','Email para pagos','Porcentaje %','Rol (Productor/Co-autor/Letrista)','Tipo (Master/Publishing)'] },
+  { id:'releases', title:'Paso 3: Programa el lanzamiento', subtitle:'Releases → Nuevo Release', description:'Define la fecha y hora exacta de tu lanzamiento. Selecciona las plataformas. IM Music envía tu música a Spotify, Apple Music, YouTube Music, TikTok y más. Se recomienda programar con 2-3 semanas de anticipación.', icon:'🚀', page:'releases', tip:'⚡ Tip: Lanza los viernes a las 12am para maximizar el algoritmo de Spotify.', requiredFields:['Título del release','Fecha de lanzamiento','Plataformas destino','Tipo de release','UPC (se genera automático)'] },
+  { id:'royalties', title:'Paso 4: Monitorea tus regalías', subtitle:'Regalías → Dashboard de ingresos', description:'Aquí ves todo el dinero que genera tu música. Master (reproducciones en streaming) y Publishing (cuando alguien usa tu canción). Los pagos llegan 30-60 días después de cada mes reportado.', icon:'💵', page:'royalties', tip:'⚡ Tip: Las regalías de Publishing son separadas — asegúrate de registrar tus obras en SAYCO.', requiredFields:[] },
+  { id:'marketing-suite', title:'Paso 5: Marketing con IA', subtitle:'Marketing Suite → Flujo completo', description:'Sigue el flujo de 6 pasos: Test de Arquetipo → Branding → Estudio de Mercado → Meta Ads → Plan de Contenidos → Kit de Lanzamiento. Cada paso usa IA para personalizar todo según tu música y público.', icon:'✨', page:'marketing-suite', tip:'⚡ Tip: Completa el test de arquetipo primero — define TODO lo demás.', requiredFields:['Test de arquetipo (5 preguntas)','Género musical','Tipo de artista'] },
+  { id:'ai-chat', title:'Paso 6: Soporte 24/7', subtitle:'IA Chat → Pregunta cualquier cosa', description:'El asistente de IM Music responde dudas sobre la plataforma, distribución, regalías, contratos y marketing. También puedes reportar bugs o sugerir mejoras aquí.', icon:'🤖', page:'ai-chat', tip:'⚡ Tip: Pregunta "¿cómo subo mi música?" para ver el proceso completo.', requiredFields:[] },
+  { id:'videos', title:'Paso 7: Videos & YouTube', subtitle:'Videos → Content ID + YouTube for Artists', description:'Gestiona tus videos musicales, activa Content ID para monetizar cuando alguien use tu audio en YouTube, y solicita verificación de YouTube for Artists para analytics avanzados.', icon:'🎬', page:'videos', tip:'⚡ Tip: El Content ID requiere plan PRO y puede tardar 2-4 semanas en activarse.', requiredFields:[] },
+  { id:'marketplace', title:'Paso 8: Vende tus beats', subtitle:'Marketplace → Mi Tienda', description:'Si produces beats, súbelos aquí y véndelos directamente a otros artistas. IM Music cobra solo 5% de comisión. Tú recibes el 95%. También puedes comprar beats de otros productores.', icon:'🛒', page:'marketplace', tip:'⚡ Tip: Pon el BPM y tonalidad siempre — los artistas filtran por eso.', requiredFields:['Título del beat','Género','BPM','Tonalidad','Precio en COP'] },
+  { id:'done', title:'¡Ya sabes todo! 🏆', subtitle:'Empieza por subir tu primera canción', description:'Recuerda el flujo: Subir canción → Configurar splits → Programar release → Monitorear regalías → Marketing. Si tienes dudas, el IA Chat está disponible 24/7.', icon:'🏆', page:'catalog', tip:null, requiredFields:[] },
+];
+
 function OnboardingTour({ onComplete, onNav }: { onComplete: () => void; onNav: (page: string) => void }) {
   const [step, setStep] = useState(0);
-  const STEPS = [
-    { title: 'Bienvenido a IM Music 🎵', subtitle: 'La plataforma todo-en-uno para artistas independientes', description: 'Te vamos a guiar por las funciones principales en menos de 2 minutos.', action: 'COMENZAR TOUR', icon: '🎉' },
-    { title: 'Sube tu música', subtitle: 'Catálogo → Nuevo Track', description: 'Sube tus canciones en formato .wav o .flac. La IA extrae automáticamente los metadatos y te ayuda a configurar todo.', action: 'VER CATÁLOGO', onAction: () => onNav('catalog'), icon: '🎵' },
-    { title: 'Divide las regalías', subtitle: 'Splits → Agregar colaborador', description: 'Agrega a tu productor, co-autor o manager y define qué porcentaje le corresponde a cada uno. Los pagos son automáticos.', action: 'VER SPLITS', onAction: () => onNav('splits'), icon: '💰' },
-    { title: 'Lanza tu música', subtitle: 'Releases → Nuevo Release', description: 'Programa tu lanzamiento en Spotify, Apple Music, YouTube y 150+ plataformas con fecha y hora exacta.', action: 'VER RELEASES', onAction: () => onNav('releases'), icon: '🚀' },
-    { title: 'Marketing con IA', subtitle: 'Marketing Suite → Test de Arquetipo', description: 'Descubre tu identidad artística, analiza tu mercado y genera un plan de contenidos mensual personalizado.', action: 'VER MARKETING', onAction: () => onNav('marketing-suite'), icon: '✨' },
-    { title: '¡Listo para despegar! 🎯', subtitle: 'Todo está configurado', description: 'Ya conoces las funciones principales. Recuerda que el soporte de IA está disponible 24/7 para ayudarte.', action: 'COMENZAR', icon: '🏆' },
-  ];
-  const current = STEPS[step];
+  const current = TOUR_STEPS[step];
+  const isLast = step === TOUR_STEPS.length - 1;
+
+  const goNext = () => {
+    if (current.page) onNav(current.page);
+    if (isLast) { localStorage.setItem('im_tour_done', '1'); onComplete(); }
+    else { setStep(s => s + 1); }
+  };
+
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(20px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-      <div style={{ background: 'rgba(15,10,25,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 28, padding: 48, maxWidth: 520, width: '100%', textAlign: 'center', boxShadow: '0 40px 80px rgba(0,0,0,0.6)' }}>
-        <div style={{ fontSize: 64, marginBottom: 24 }}>{current.icon}</div>
-        <h2 style={{ fontFamily: "'-apple-system','SF Pro Display','Space Grotesk',sans-serif", fontSize: 28, fontWeight: 700, color: '#F5F5F7', margin: '0 0 8px', letterSpacing: '-0.02em' }}>{current.title}</h2>
-        <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, fontWeight: 600, color: '#5E17EB', margin: '0 0 16px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{current.subtitle}</p>
-        <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 15, color: 'rgba(255,255,255,0.55)', margin: '0 0 32px', lineHeight: 1.7 }}>{current.description}</p>
-        <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginBottom: 32 }}>
-          {STEPS.map((_, i) => (
-            <div key={i} style={{ width: i === step ? 20 : 6, height: 6, borderRadius: 3, background: i === step ? '#5E17EB' : 'rgba(255,255,255,0.15)', transition: 'all 0.3s ease' }} />
+    <div style={{ position:'fixed', inset:0, zIndex:99999, background:'rgba(0,0,0,0.88)', backdropFilter:'blur(24px)', display:'flex', alignItems:'center', justifyContent:'center', padding:24 }}>
+      <div style={{ background:'rgba(12,8,20,0.98)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:28, padding:'40px 44px', maxWidth:560, width:'100%', boxShadow:'0 40px 80px rgba(0,0,0,0.7)' }}>
+        {/* Progress bar */}
+        <div style={{ display:'flex', gap:4, marginBottom:32 }}>
+          {TOUR_STEPS.map((_,i) => (
+            <div key={i} style={{ flex:1, height:3, borderRadius:2, background: i < step ? '#5E17EB' : i === step ? '#7B3FFF' : 'rgba(255,255,255,0.08)', transition:'all 0.3s ease' }} />
           ))}
         </div>
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-          {step > 0 && <AppleBtn variant="ghost" onClick={() => setStep(s => s - 1)}>← Anterior</AppleBtn>}
-          <AppleBtn onClick={() => {
-            if ((current as any).onAction) (current as any).onAction();
-            if (step < STEPS.length - 1) { setStep(s => s + 1); }
-            else { localStorage.setItem('im_tour_done', '1'); onComplete(); }
-          }}>{current.action} →</AppleBtn>
+        {/* Icon */}
+        <div style={{ fontSize:52, marginBottom:20, textAlign:'center' }}>{current.icon}</div>
+        {/* Step counter */}
+        <p style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:11, fontWeight:700, color:'rgba(94,23,235,0.8)', textTransform:'uppercase', letterSpacing:'0.15em', textAlign:'center', margin:'0 0 8px' }}>
+          {step === 0 ? 'BIENVENIDA' : isLast ? 'LISTO' : `FUNCIÓN ${step} DE ${TOUR_STEPS.length-2}`}
+        </p>
+        {/* Title */}
+        <h2 style={{ fontFamily:"'-apple-system','Space Grotesk',sans-serif", fontSize:24, fontWeight:700, color:'#F5F5F7', textAlign:'center', margin:'0 0 6px', letterSpacing:'-0.02em' }}>{current.title}</h2>
+        {/* Subtitle */}
+        <p style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:12, fontWeight:600, color:'#5E17EB', textAlign:'center', margin:'0 0 16px', textTransform:'uppercase', letterSpacing:'0.1em' }}>{current.subtitle}</p>
+        {/* Description */}
+        <p style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:14, color:'rgba(255,255,255,0.55)', lineHeight:1.75, margin:'0 0 16px', textAlign:'center' }}>{current.description}</p>
+        {/* Required fields */}
+        {current.requiredFields.length > 0 && (
+          <div style={{ background:'rgba(94,23,235,0.08)', border:'1px solid rgba(94,23,235,0.2)', borderRadius:14, padding:'14px 18px', marginBottom:16 }}>
+            <p style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:11, fontWeight:700, color:'rgba(94,23,235,0.8)', textTransform:'uppercase', letterSpacing:'0.1em', margin:'0 0 10px' }}>📋 DATOS REQUERIDOS POR LAS PLATAFORMAS:</p>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+              {current.requiredFields.map((f,i) => (
+                <span key={i} style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:100, padding:'4px 10px', fontFamily:"'Space Grotesk',sans-serif", fontSize:11, color:'rgba(255,255,255,0.6)' }}>{f}</span>
+              ))}
+            </div>
+          </div>
+        )}
+        {/* Tip */}
+        {current.tip && (
+          <div style={{ background:'rgba(48,209,88,0.08)', border:'1px solid rgba(48,209,88,0.2)', borderRadius:12, padding:'10px 14px', marginBottom:20 }}>
+            <p style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:12, color:'rgba(48,209,88,0.8)', margin:0 }}>{current.tip}</p>
+          </div>
+        )}
+        {/* Buttons */}
+        <div style={{ display:'flex', gap:10, justifyContent:'center', marginTop:24 }}>
+          {step > 0 && <AppleBtn variant="ghost" small onClick={() => setStep(s => s - 1)}>← Atrás</AppleBtn>}
+          <AppleBtn onClick={goNext}>{isLast ? 'EMPEZAR AHORA 🚀' : step === 0 ? 'INICIAR TOUR →' : 'SIGUIENTE →'}</AppleBtn>
         </div>
-        <button onClick={() => { localStorage.setItem('im_tour_done', '1'); onComplete(); }}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)', fontFamily: "'Space Grotesk',sans-serif", fontSize: 12, marginTop: 20, display: 'block', width: '100%' }}>
-          Saltar tour
-        </button>
+        {/* Skip */}
+        {!isLast && (
+          <button onClick={() => { localStorage.setItem('im_tour_done','1'); onComplete(); }}
+            style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.18)', fontFamily:"'Space Grotesk',sans-serif", fontSize:12, marginTop:16, display:'block', width:'100%', textAlign:'center' }}>
+            Saltar tour
+          </button>
+        )}
       </div>
     </div>
   );
