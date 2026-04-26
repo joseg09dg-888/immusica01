@@ -18,7 +18,7 @@ import {
   ArrowRight, Disc, Headphones, Shield,
   Download, FileText, Copy,
   Calendar, Clock, X, ToggleLeft, ToggleRight,
-  FileAudio, FileVideo, FileImage, Percent, User
+  FileAudio, FileVideo, FileImage, Percent, User, Pause
 } from 'lucide-react';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -1867,7 +1867,7 @@ const COVER_GRADIENTS = [
 ];
 
 const WAVE_BARS_CONST = [4,8,5,12,6,14,4,10,7,13,5,11,8,15,6,9];
-function TrackGridCard({ track: t, onDel }: { track: any; onDel: () => void }) {
+function TrackGridCard({ track: t, onDel, playing, onPlay }: { track: any; onDel: () => void; playing?: number | null; onPlay?: (track: any) => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const [hov, setHov] = useState(false);
   const rafId = useRef<number>(0);
@@ -1908,9 +1908,9 @@ function TrackGridCard({ track: t, onDel }: { track: any; onDel: () => void }) {
           <Music size={48} color="rgba(255,255,255,0.18)" />
         </div>
         {/* Play button overlay */}
-        <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background:hov?'rgba(0,0,0,0.28)':'transparent', transition:'background 0.3s ease' }}>
-          <div style={{ width:62, height:62, borderRadius:'50%', background:'rgba(255,255,255,0.14)', backdropFilter:'blur(10px)', border:'1px solid rgba(255,255,255,0.28)', display:'flex', alignItems:'center', justifyContent:'center', transform:hov?'scale(1)':'scale(0)', transition:'transform 0.35s cubic-bezier(0.34,1.56,0.64,1)', boxShadow:'0 8px 32px rgba(0,0,0,0.4)' }}>
-            <Play size={22} color="#fff" fill="#fff" />
+        <div onClick={() => onPlay?.(t)} style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background:hov||playing===t.id?'rgba(0,0,0,0.28)':'transparent', transition:'background 0.3s ease', cursor:'pointer' }}>
+          <div style={{ width:62, height:62, borderRadius:'50%', background: playing===t.id ? '#5E17EB' : 'rgba(255,255,255,0.14)', backdropFilter:'blur(10px)', border:'1px solid rgba(255,255,255,0.28)', display:'flex', alignItems:'center', justifyContent:'center', transform:hov||playing===t.id?'scale(1)':'scale(0)', transition:'transform 0.35s cubic-bezier(0.34,1.56,0.64,1)', boxShadow:'0 8px 32px rgba(0,0,0,0.4)' }}>
+            {playing === t.id ? <Pause size={22} color="#fff" fill="#fff" /> : <Play size={22} color="#fff" fill="#fff" />}
           </div>
         </div>
         {/* Status badge top-right */}
@@ -1932,24 +1932,52 @@ function TrackGridCard({ track: t, onDel }: { track: any; onDel: () => void }) {
         <p style={{ color:'#F2EDE5', fontSize:'14px', fontWeight:700, margin:0, fontFamily:"'Space Grotesk',sans-serif", overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.title}</p>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           <span style={{ background:`rgba(94,23,235,0.14)`, border:'1px solid rgba(94,23,235,0.25)', borderRadius:100, padding:'2px 8px', fontSize:'10px', color:'rgba(192,132,252,0.9)', fontFamily:"'Space Grotesk',sans-serif", fontWeight:600 }}>{t.genre||'Sin género'}</span>
-          <button onClick={e => { e.stopPropagation(); onDel(); }} style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.18)', padding:2, borderRadius:6, transition:'all 0.15s' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color='#ef4444'; (e.currentTarget as HTMLElement).style.background='rgba(239,68,68,0.1)'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color='rgba(255,255,255,0.18)'; (e.currentTarget as HTMLElement).style.background='transparent'; }}>
-            <Trash2 size={13}/>
-          </button>
+          <div style={{ display:'flex', gap:4, alignItems:'center' }}>
+            <button onClick={e => { e.stopPropagation(); onPlay?.(t); }}
+              style={{ width:28, height:28, borderRadius:'50%', background:playing===t.id?'#5E17EB':'rgba(94,23,235,0.2)', border:'1px solid rgba(94,23,235,0.4)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', transition:'all 0.2s ease' }}>
+              {playing===t.id ? <Pause size={11} color="#fff" fill="#fff"/> : <Play size={11} color="#7B3FFF" fill="#7B3FFF"/>}
+            </button>
+            <button onClick={e => { e.stopPropagation(); onDel(); }} style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.18)', padding:2, borderRadius:6, transition:'all 0.15s' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color='#ef4444'; (e.currentTarget as HTMLElement).style.background='rgba(239,68,68,0.1)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color='rgba(255,255,255,0.18)'; (e.currentTarget as HTMLElement).style.background='transparent'; }}>
+              <Trash2 size={13}/>
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function CatalogPage({ initialTab = 'tracks' }: { initialTab?: string }) {
+function CatalogPage({ initialTab = 'tracks', onPlay }: { initialTab?: string; onPlay?: (track: any) => void }) {
   const [tab, setTab] = useState<'tracks'|'upload'|'splits'|'publishing'|'bulk'>(initialTab as any);
   const [tracks, setTracks] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState(''); const [genre, setGenre] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
+  const [playing, setPlaying] = useState<number | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const playTrack = (track: any) => {
+    if (playing === track.id) {
+      audioRef.current?.pause();
+      setPlaying(null);
+    } else {
+      if (audioRef.current) audioRef.current.pause();
+      if (track.audio_url) {
+        audioRef.current = new Audio(track.audio_url);
+        audioRef.current.play().catch(() => {});
+        audioRef.current.onended = () => setPlaying(null);
+        setPlaying(track.id);
+        onPlay?.(track);
+      } else {
+        onPlay?.(track);
+        setPlaying(track.id);
+        toast('Este track no tiene audio subido aún', 'info');
+      }
+    }
+  };
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   // Smart upload state
   const [dragOver, setDragOver] = useState(false);
@@ -2246,6 +2274,9 @@ function CatalogPage({ initialTab = 'tracks' }: { initialTab?: string }) {
         ) : viewMode === 'list' ? (
           <Card>{tracks.map(t => (
             <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '14px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+              <button onClick={() => playTrack(t)} style={{ width: 36, height: 36, borderRadius: '50%', background: playing === t.id ? '#5E17EB' : 'rgba(94,23,235,0.2)', border: '1px solid rgba(94,23,235,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s ease', flexShrink: 0 }}>
+                {playing === t.id ? <Pause size={14} color="#fff" fill="#fff" /> : <Play size={14} color="#7B3FFF" fill="#7B3FFF" />}
+              </button>
               <div style={{ width: '42px', height: '42px', background: COVER_GRADIENTS[t.id % COVER_GRADIENTS.length], borderRadius: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Music size={15} color="rgba(255,255,255,0.8)" /></div>
               <div style={{ flex: 1 }}><p style={{ color: '#fff', fontSize: '13px', fontWeight: 600, margin: 0, fontFamily: "'Space Grotesk',sans-serif" }}>{t.title}</p><p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', margin: 0, fontFamily: "'Space Grotesk',sans-serif" }}>{t.genre || 'Sin género'}</p></div>
               <span style={{ background: statusColors[t.status] || '#52525b', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '3px 7px', borderRadius: '5px', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{t.status}</span>
@@ -2254,7 +2285,7 @@ function CatalogPage({ initialTab = 'tracks' }: { initialTab?: string }) {
           ))}</Card>
         ) : (
           <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'16px' }}>
-            {tracks.map(t => <TrackGridCard key={t.id} track={t} onDel={() => del(t.id, t.title)} />)}
+            {tracks.map(t => <TrackGridCard key={t.id} track={t} onDel={() => del(t.id, t.title)} playing={playing} onPlay={playTrack} />)}
           </div>
         )}
       </>}
@@ -3430,6 +3461,8 @@ function CommunityPage() {
 // ─── MARKETPLACE ──────────────────────────────────────────────────────────────
 // ─── BEAT CARD ───────────────────────────────────────────────────────────────
 function BeatCard({ beat, showBuy, showEdit, showRating }: { beat: any; showBuy?: boolean; showEdit?: boolean; showRating?: boolean }) {
+  const [beatPlaying, setBeatPlaying] = useState(false);
+  const beatAudioRef = useRef<HTMLAudioElement | null>(null);
   const GRADIENTS = [
     'linear-gradient(135deg,#5E17EB,#C084FC)',
     'linear-gradient(135deg,#7B3FFF,#2D0B6B)',
@@ -3443,10 +3476,27 @@ function BeatCard({ beat, showBuy, showEdit, showRating }: { beat: any; showBuy?
   const key = beat.key || beat.tonalidad || '--';
   const price = beat.price ?? beat.precio ?? 0;
   const rating = beat.rating || beat.rating_promedio;
+
+  const playBeat = () => {
+    if (beatPlaying) {
+      beatAudioRef.current?.pause();
+      setBeatPlaying(false);
+    } else {
+      if (beat.audio_url) {
+        beatAudioRef.current = new Audio(beat.audio_url);
+        beatAudioRef.current.play().catch(() => {});
+        beatAudioRef.current.onended = () => setBeatPlaying(false);
+        setBeatPlaying(true);
+      } else {
+        toast('Este beat no tiene preview de audio', 'info');
+      }
+    }
+  };
+
   return (
     <HoloCard color="#5E17EB" style={{ padding: 0, overflow: 'hidden' }}>
-      <div style={{ height: 120, background: GRADIENTS[gIdx], display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-        <Music size={36} color="rgba(255,255,255,0.3)" />
+      <div style={{ height: 120, background: GRADIENTS[gIdx], display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', cursor: 'pointer' }} onClick={playBeat}>
+        {beatPlaying ? <Pause size={36} color="rgba(255,255,255,0.8)" fill="rgba(255,255,255,0.8)" /> : <Music size={36} color="rgba(255,255,255,0.3)" />}
         <div style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.5)', borderRadius: 100, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 4 }}>
           <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 10, fontWeight: 700, color: '#F2EDE5' }}>{bpm} BPM</span>
         </div>
@@ -3571,7 +3621,16 @@ function MyBeatsStore() {
             </select>
           </div>
           <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="Descripción del beat..."
-            style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 14px', color: '#fff', fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, outline: 'none', resize: 'vertical', minHeight: 80, boxSizing: 'border-box', marginBottom: 16 }} />
+            style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 14px', color: '#fff', fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, outline: 'none', resize: 'vertical', minHeight: 80, boxSizing: 'border-box', marginBottom: 12 }} />
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 11, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.15em', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Preview de audio (opcional, máx 30 seg)</label>
+            <input type="file" accept=".mp3,.wav"
+              onChange={e => {
+                const file = e.target.files?.[0];
+                if (file) toast('Preview listo para publicar con el beat', 'info');
+              }}
+              style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 14px', color: 'rgba(255,255,255,0.5)', fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, outline: 'none', boxSizing: 'border-box', cursor: 'pointer' }} />
+          </div>
           <div style={{ display: 'flex', gap: 12 }}>
             <Btn3D onClick={submit} disabled={loading || !form.title || !form.price}>{loading ? 'PUBLICANDO...' : 'PUBLICAR BEAT'}</Btn3D>
             <Btn3D variant="ghost" onClick={() => setShowForm(false)}>Cancelar</Btn3D>
@@ -5743,6 +5802,60 @@ function OnboardingTour({ onComplete, onNav }: { onComplete: () => void; onNav: 
 // ─── APP ROOT ─────────────────────────────────────────────────────────────────
 type Screen = 'landing' | 'login' | 'app' | 'terms' | 'privacy';
 
+function MiniPlayer({ track, onClose }: { track: any; onClose: () => void }) {
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (track?.audio_url) {
+      const audio = new Audio(track.audio_url);
+      audioRef.current = audio;
+      audio.play().catch(() => {});
+      audio.ontimeupdate = () => setProgress(audio.currentTime);
+      audio.onloadedmetadata = () => setDuration(audio.duration);
+      audio.onended = onClose;
+      return () => { audio.pause(); audio.src = ''; };
+    }
+  }, [track]);
+
+  const formatTime = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+
+  return (
+    <div style={{
+      position: 'fixed', bottom: 0, left: 256, right: 0, zIndex: 1000,
+      background: 'rgba(8,5,16,0.97)',
+      backdropFilter: 'blur(24px)',
+      borderTop: '1px solid rgba(255,255,255,0.08)',
+      padding: '12px 32px',
+      display: 'flex', alignItems: 'center', gap: 16,
+    }}>
+      <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg,#5E17EB,#C084FC)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <Music size={18} color="#fff" />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, fontWeight: 600, color: '#F5F5F7', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{track?.title || track?.titulo}</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 10, color: 'rgba(255,255,255,0.3)', flexShrink: 0 }}>{formatTime(progress)}</span>
+          <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 2, cursor: 'pointer' }}
+            onClick={e => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const pct = (e.clientX - rect.left) / rect.width;
+              if (audioRef.current) audioRef.current.currentTime = pct * duration;
+            }}>
+            <div style={{ height: '100%', width: `${duration ? (progress / duration) * 100 : 0}%`, background: '#5E17EB', borderRadius: 2, transition: 'width 0.1s linear' }} />
+          </div>
+          <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 10, color: 'rgba(255,255,255,0.3)', flexShrink: 0 }}>{formatTime(duration)}</span>
+        </div>
+      </div>
+      <button onClick={() => { audioRef.current?.pause(); onClose(); }}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', padding: 8, fontSize: 18 }}>
+        ✕
+      </button>
+    </div>
+  );
+}
+
 export default function App() {
   const [screen, setScreen] = useState<Screen>(() => {
     try {
@@ -5762,6 +5875,7 @@ export default function App() {
   });
   const [activePage, setActivePage] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentTrack, setCurrentTrack] = useState<any>(null);
   const [lang, setLang] = useState<Lang>(() => (localStorage.getItem('im_lang') as Lang) || 'es');
   const [showTour, setShowTour] = useState(() => !localStorage.getItem('im_tour_done'));
 
@@ -5776,7 +5890,7 @@ export default function App() {
   const renderPage = () => {
     switch (activePage) {
       case 'dashboard':       return <DashboardPage onNav={setActivePage} />;
-      case 'catalog':         return <CatalogPage />;
+      case 'catalog':         return <CatalogPage onPlay={setCurrentTrack} />;
       case 'royalties':       return <RoyaltiesPage />;
       case 'ai-chat':         return <AIChatPage />;
       case 'releases':        return <ReleasesPage />;
@@ -5785,7 +5899,7 @@ export default function App() {
       case 'community':       return <CommunityPage />;
       case 'marketplace':     return <MarketplacePage />;
       case 'playlists':       return <PlaylistsPage />;
-      case 'splits':          return <CatalogPage initialTab="splits" />;
+      case 'splits':          return <CatalogPage initialTab="splits" onPlay={setCurrentTrack} />;
       case 'store-maximizer': return <StoreMaximizerPage />;
       case 'label':           return <LabelPage />;
       case 'team':            return <TeamPage />;
@@ -5844,6 +5958,7 @@ export default function App() {
           {renderPage()}
         </main>
       </div>
+      {currentTrack && <MiniPlayer track={currentTrack} onClose={() => setCurrentTrack(null)} />}
       {/* All keyframes are in index.css */}
     </div>
     </LangContext.Provider>
