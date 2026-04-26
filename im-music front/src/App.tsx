@@ -1982,6 +1982,8 @@ function CatalogPage({ initialTab = 'tracks', onPlay }: { initialTab?: string; o
   // Smart upload state
   const [dragOver, setDragOver] = useState(false);
   const [uploadFile, setUploadFile] = useState<File|null>(null);
+  const [uploadedAudioUrl, setUploadedAudioUrl] = useState<string|null>(null);
+  const [uploadingAudio, setUploadingAudio] = useState(false);
   const [showMetaModal, setShowMetaModal] = useState(false);
   const [aiMetadata, setAiMetadata] = useState<any>({});
   const [extracting, setExtracting] = useState(false);
@@ -2060,21 +2062,41 @@ function CatalogPage({ initialTab = 'tracks', onPlay }: { initialTab?: string; o
   const handleFileSelect = async (file: File) => {
     setUploadFile(file);
     setExtracting(true);
+    setUploadingAudio(true);
+    setUploadedAudioUrl(null);
     setShowMetaModal(true);
     setUploadStep('metadata');
     setUploadSplits([]);
     setSplitForm({ name:'', email:'', percentage:'', role:'productor' });
     setUploadPlatforms(['Spotify','Apple Music','YouTube Music','TikTok','Amazon Music','Deezer']);
-    try {
-      const data = await apiFetch('/ai/extract-metadata', { method: 'POST', body: JSON.stringify({ filename: file.name, size: file.size, type: file.type, duration: 0 }) });
-      setAiMetadata(data);
-    } catch {
+
+    // Upload audio and extract metadata in parallel
+    const [, metaResult] = await Promise.allSettled([
+      (async () => {
+        try {
+          const fd = new FormData();
+          fd.append('audio', file);
+          const res = await fetch(`${API}/upload/audio`, { method: 'POST', headers: { Authorization: `Bearer ${token()}` }, body: fd });
+          if (res.ok) {
+            const { url } = await res.json();
+            setUploadedAudioUrl(url);
+          }
+        } finally {
+          setUploadingAudio(false);
+        }
+      })(),
+      apiFetch('/ai/extract-metadata', { method: 'POST', body: JSON.stringify({ filename: file.name, size: file.size, type: file.type, duration: 0 }) }),
+    ]);
+
+    if (metaResult.status === 'fulfilled') {
+      setAiMetadata(metaResult.value);
+    } else {
       setAiMetadata({ title: file.name.replace(/\.[^/.]+$/, ''), artist: '', genre: '', type: 'single', bpm: '', key: '' });
     }
     setExtracting(false);
   };
 
-  const closeUploadModal = () => { setShowMetaModal(false); setUploadFile(null); setAiMetadata({}); setUploadStep('metadata'); setUploadSplits([]); };
+  const closeUploadModal = () => { setShowMetaModal(false); setUploadFile(null); setUploadedAudioUrl(null); setAiMetadata({}); setUploadStep('metadata'); setUploadSplits([]); };
 
   const totalSplitPct = uploadSplits.reduce((sum, s) => sum + Number(s.percentage||0), 0);
 
@@ -2100,7 +2122,11 @@ function CatalogPage({ initialTab = 'tracks', onPlay }: { initialTab?: string; o
               <h3 style={{fontFamily:"'-apple-system','Space Grotesk',sans-serif",fontSize:20,fontWeight:700,color:'#F5F5F7',margin:0}}>
                 {extracting ? 'Analizando con IA...' : uploadStep==='metadata' ? 'Paso 1 de 3: Metadatos' : uploadStep==='splits' ? 'Paso 2 de 3: ¿Quién colaboró?' : 'Paso 3 de 3: ¿Dónde distribuir?'}
               </h3>
-              <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:12,color:'rgba(255,255,255,0.35)',margin:0}}>{uploadFile?.name}</p>
+              <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:12,color:'rgba(255,255,255,0.35)',margin:0}}>
+                {uploadFile?.name}
+                {uploadingAudio && <span style={{color:'#C084FC',marginLeft:8}}>⏳ Subiendo audio...</span>}
+                {!uploadingAudio && uploadedAudioUrl && <span style={{color:'#30D158',marginLeft:8}}>✓ Audio listo</span>}
+              </p>
             </div>
           </div>
 
@@ -2207,11 +2233,11 @@ function CatalogPage({ initialTab = 'tracks', onPlay }: { initialTab?: string; o
                 ))}
               </div>
               <div style={{display:'flex',gap:12}}>
-                <AppleBtn fullWidth disabled={publishing} onClick={async () => {
+                <AppleBtn fullWidth disabled={publishing || uploadingAudio} onClick={async () => {
                   if (!aiMetadata.title) { toast('El título es obligatorio','error'); return; }
                   setPublishing(true);
                   try {
-                    const track = await apiFetch('/tracks', { method:'POST', body: JSON.stringify({ title: aiMetadata.title, genre: aiMetadata.genre||'Sin género', bpm: aiMetadata.bpm?parseInt(aiMetadata.bpm):null, key: aiMetadata.key||null, release_type: aiMetadata.type||'single' }) });
+                    const track = await apiFetch('/tracks', { method:'POST', body: JSON.stringify({ title: aiMetadata.title, genre: aiMetadata.genre||'Sin género', bpm: aiMetadata.bpm?parseInt(aiMetadata.bpm):null, key: aiMetadata.key||null, release_type: aiMetadata.type||'single', audio_url: uploadedAudioUrl||null }) });
                     for (const s of uploadSplits) {
                       await apiFetch('/splits', { method:'POST', body: JSON.stringify({ track_id: String(track.id), name: s.name, email: s.email, percentage: s.percentage, role: s.role, type:'master' }) }).catch(()=>{});
                     }
@@ -2222,7 +2248,7 @@ function CatalogPage({ initialTab = 'tracks', onPlay }: { initialTab?: string; o
                   } catch(e:any) { toast(e.message,'error'); }
                   setPublishing(false);
                 }}>
-                  {publishing ? 'Publicando...' : '🚀 PUBLICAR EN '+uploadPlatforms.length+' PLATAFORMAS'}
+                  {publishing ? 'Publicando...' : uploadingAudio ? '⏳ Subiendo audio...' : '🚀 PUBLICAR EN '+uploadPlatforms.length+' PLATAFORMAS'}
                 </AppleBtn>
                 <AppleBtn variant="ghost" onClick={() => setUploadStep('splits')}>← Atrás</AppleBtn>
               </div>

@@ -9,8 +9,18 @@ import { Pool } from "pg";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { createProxyMiddleware } from "http-proxy-middleware";
+import multer from "multer";
+import { v2 as cloudinary } from "cloudinary";
 
 dotenv.config();
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -227,13 +237,14 @@ async function startServer() {
     const title = sanitize(req.body.title);
     const genre = sanitize(req.body.genre);
     const release_date = sanitize(req.body.release_date);
+    const audio_url = req.body.audio_url || null;
 
     if (!title) return res.status(400).json({ error: "El título es obligatorio" });
 
     try {
       const r = await pool.query(
-        "INSERT INTO tracks (artist_id, title, genre, release_date, status) VALUES ($1,$2,$3,$4,'draft') RETURNING *",
-        [req.user.id, title, genre || null, release_date || new Date().toISOString().split("T")[0]]
+        "INSERT INTO tracks (artist_id, title, genre, release_date, status, audio_url) VALUES ($1,$2,$3,$4,'draft',$5) RETURNING *",
+        [req.user.id, title, genre || null, release_date || new Date().toISOString().split("T")[0], audio_url]
       );
       res.status(201).json(r.rows[0]);
     } catch (e: any) {
@@ -557,6 +568,29 @@ async function startServer() {
       );
       res.json(r.rows[0]);
     } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ─── Audio upload to Cloudinary ──────────────────────────────────────────
+  app.post("/api/upload/audio", requireAuth, upload.single("audio") as any, async (req: any, res) => {
+    try {
+      if (!req.file) return res.status(400).json({ error: "No se recibió archivo" });
+      const result: any = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { resource_type: "video", folder: "immusic/audio", use_filename: true },
+          (error, result) => { if (error) reject(error); else resolve(result); }
+        );
+        stream.end(req.file!.buffer);
+      });
+      res.json({
+        url: result.secure_url,
+        public_id: result.public_id,
+        duration: result.duration,
+        format: result.format,
+      });
+    } catch (e: any) {
+      console.error("Upload error:", e);
+      res.status(500).json({ error: e.message });
+    }
   });
 
   // ─── 404 handler for unmatched API routes ────────────────────────────────
