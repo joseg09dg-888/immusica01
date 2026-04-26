@@ -1984,6 +1984,10 @@ function CatalogPage({ initialTab = 'tracks', onPlay }: { initialTab?: string; o
   const [uploadFile, setUploadFile] = useState<File|null>(null);
   const [uploadedAudioUrl, setUploadedAudioUrl] = useState<string|null>(null);
   const [uploadingAudio, setUploadingAudio] = useState(false);
+  const [coverFile, setCoverFile] = useState<File|null>(null);
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState<string|null>(null);
+  const [uploadedCoverUrl, setUploadedCoverUrl] = useState<string|null>(null);
+  const [uploadingCover, setUploadingCover] = useState(false);
   const [showMetaModal, setShowMetaModal] = useState(false);
   const [aiMetadata, setAiMetadata] = useState<any>({});
   const [extracting, setExtracting] = useState(false);
@@ -2096,7 +2100,19 @@ function CatalogPage({ initialTab = 'tracks', onPlay }: { initialTab?: string; o
     setExtracting(false);
   };
 
-  const closeUploadModal = () => { setShowMetaModal(false); setUploadFile(null); setUploadedAudioUrl(null); setAiMetadata({}); setUploadStep('metadata'); setUploadSplits([]); };
+  const closeUploadModal = () => { setShowMetaModal(false); setUploadFile(null); setUploadedAudioUrl(null); setCoverFile(null); setCoverPreviewUrl(null); setUploadedCoverUrl(null); setAiMetadata({}); setUploadStep('metadata'); setUploadSplits([]); };
+
+  const handleCoverSelect = async (file: File) => {
+    setCoverFile(file);
+    setCoverPreviewUrl(URL.createObjectURL(file));
+    setUploadingCover(true);
+    try {
+      const fd = new FormData();
+      fd.append('cover', file);
+      const res = await fetch(`${API}/upload/cover`, { method: 'POST', headers: { Authorization: `Bearer ${token()}` }, body: fd });
+      if (res.ok) { const { url } = await res.json(); setUploadedCoverUrl(url); }
+    } finally { setUploadingCover(false); }
+  };
 
   const totalSplitPct = uploadSplits.reduce((sum, s) => sum + Number(s.percentage||0), 0);
 
@@ -2126,6 +2142,8 @@ function CatalogPage({ initialTab = 'tracks', onPlay }: { initialTab?: string; o
                 {uploadFile?.name}
                 {uploadingAudio && <span style={{color:'#C084FC',marginLeft:8}}>⏳ Subiendo audio...</span>}
                 {!uploadingAudio && uploadedAudioUrl && <span style={{color:'#30D158',marginLeft:8}}>✓ Audio listo</span>}
+                {uploadingCover && <span style={{color:'#C084FC',marginLeft:8}}>⏳ Subiendo portada...</span>}
+                {!uploadingCover && uploadedCoverUrl && <span style={{color:'#30D158',marginLeft:8}}>✓ Portada lista</span>}
               </p>
             </div>
           </div>
@@ -2138,36 +2156,97 @@ function CatalogPage({ initialTab = 'tracks', onPlay }: { initialTab?: string; o
 
           ) : uploadStep === 'metadata' ? (
             <>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:16}}>
+              {/* Cover art + basic info row */}
+              <div style={{display:'flex',gap:16,marginBottom:16}}>
+                {/* Cover upload zone */}
+                <div
+                  onClick={() => document.getElementById('cover-upload-input')?.click()}
+                  onDragOver={e=>{e.preventDefault();e.currentTarget.style.borderColor='#5E17EB';}}
+                  onDragLeave={e=>{e.currentTarget.style.borderColor=coverPreviewUrl?'rgba(94,23,235,0.4)':'rgba(255,255,255,0.12)';}}
+                  onDrop={async e=>{e.preventDefault();e.currentTarget.style.borderColor=coverPreviewUrl?'rgba(94,23,235,0.4)':'rgba(255,255,255,0.12)';const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/'))handleCoverSelect(f);}}
+                  style={{width:130,height:130,borderRadius:14,border:`2px dashed ${coverPreviewUrl?'rgba(94,23,235,0.4)':'rgba(255,255,255,0.12)'}`,cursor:'pointer',flexShrink:0,position:'relative',overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(255,255,255,0.03)'}}>
+                  <input id="cover-upload-input" type="file" accept=".jpg,.jpeg,.png,.webp" style={{display:'none'}} onChange={e=>{const f=e.target.files?.[0];if(f)handleCoverSelect(f);}}/>
+                  {coverPreviewUrl ? (
+                    <img src={coverPreviewUrl} alt="cover" style={{width:'100%',height:'100%',objectFit:'cover',position:'absolute',inset:0}}/>
+                  ) : (
+                    <div style={{textAlign:'center'}}>
+                      <div style={{fontSize:28,marginBottom:4}}>🖼️</div>
+                      <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:10,color:'rgba(255,255,255,0.3)',margin:0,lineHeight:1.3}}>Portada<br/>3000×3000</p>
+                    </div>
+                  )}
+                  {uploadingCover && <div style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.6)',display:'flex',alignItems:'center',justifyContent:'center'}}><div style={{width:20,height:20,border:'2px solid rgba(255,255,255,0.3)',borderTop:'2px solid #fff',borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/></div>}
+                  {!uploadingCover && uploadedCoverUrl && <div style={{position:'absolute',bottom:4,right:4,background:'#30D158',borderRadius:10,width:16,height:16,display:'flex',alignItems:'center',justifyContent:'center',fontSize:9}}>✓</div>}
+                </div>
+                {/* Title + artist */}
+                <div style={{flex:1,display:'flex',flexDirection:'column',gap:10}}>
+                  {[{key:'title',label:'Título *',placeholder:'Nombre de la canción'},{key:'artist',label:'Artista principal *',placeholder:'Tu nombre artístico'}].map((f:any)=>(
+                    <div key={f.key}>
+                      <label style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:10,color:'rgba(255,255,255,0.35)',letterSpacing:'0.12em',textTransform:'uppercase',display:'block',marginBottom:4}}>{f.label}</label>
+                      <input value={aiMetadata[f.key]||''} onChange={e=>setAiMetadata((p:any)=>({...p,[f.key]:e.target.value}))} placeholder={f.placeholder}
+                        style={{width:'100%',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:10,padding:'9px 12px',color:'#fff',fontFamily:"'Space Grotesk',sans-serif",fontSize:13,outline:'none',boxSizing:'border-box'}}/>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Metadata grid — 2 columns */}
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:12}}>
                 {([
-                  {key:'title',label:'Título *',placeholder:'Nombre de la canción'},
-                  {key:'artist',label:'Artista principal',placeholder:'Tu nombre artístico'},
                   {key:'genre',label:'Género',placeholder:'Trap, Reggaeton, Pop...'},
-                  {key:'type',label:'Tipo de lanzamiento',type:'select',options:['single','ep','album']},
+                  {key:'type',label:'Tipo',type:'select',options:['single','ep','album','mixtape']},
                   {key:'bpm',label:'BPM',placeholder:'120'},
                   {key:'key',label:'Tonalidad',placeholder:'Am, C#, Dm...'},
+                  {key:'language',label:'Idioma',type:'select',options:['es','en','pt','fr','de','it','ja','ko']},
+                  {key:'release_date',label:'Fecha de lanzamiento',type:'date'},
                 ] as any[]).map((f:any) => (
                   <div key={f.key}>
-                    <label style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:'rgba(255,255,255,0.35)',letterSpacing:'0.12em',textTransform:'uppercase',display:'block',marginBottom:6}}>{f.label}</label>
+                    <label style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:10,color:'rgba(255,255,255,0.35)',letterSpacing:'0.1em',textTransform:'uppercase',display:'block',marginBottom:4}}>{f.label}</label>
                     {f.type === 'select' ? (
                       <select value={aiMetadata[f.key]||''} onChange={e=>setAiMetadata((p:any)=>({...p,[f.key]:e.target.value}))}
-                        style={{width:'100%',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:10,padding:'10px 12px',color:'#fff',fontFamily:"'Space Grotesk',sans-serif",fontSize:13,outline:'none'}}>
-                        {f.options.map((o:string)=><option key={o} value={o}>{o.toUpperCase()}</option>)}
+                        style={{width:'100%',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:10,padding:'9px 12px',color:'#fff',fontFamily:"'Space Grotesk',sans-serif",fontSize:13,outline:'none'}}>
+                        {f.options.map((o:string)=><option key={o} value={o}>{o}</option>)}
                       </select>
+                    ) : f.type === 'date' ? (
+                      <input type="date" value={aiMetadata[f.key]||''} onChange={e=>setAiMetadata((p:any)=>({...p,[f.key]:e.target.value}))}
+                        style={{width:'100%',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:10,padding:'9px 12px',color:'#fff',fontFamily:"'Space Grotesk',sans-serif",fontSize:13,outline:'none',boxSizing:'border-box',colorScheme:'dark'}}/>
                     ) : (
                       <input value={aiMetadata[f.key]||''} onChange={e=>setAiMetadata((p:any)=>({...p,[f.key]:e.target.value}))} placeholder={f.placeholder}
-                        style={{width:'100%',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:10,padding:'10px 12px',color:'#fff',fontFamily:"'Space Grotesk',sans-serif",fontSize:13,outline:'none',boxSizing:'border-box'}}
-                      />
+                        style={{width:'100%',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:10,padding:'9px 12px',color:'#fff',fontFamily:"'Space Grotesk',sans-serif",fontSize:13,outline:'none',boxSizing:'border-box'}}/>
                     )}
                   </div>
                 ))}
               </div>
-              <div style={{background:'rgba(94,23,235,0.08)',border:'1px solid rgba(94,23,235,0.2)',borderRadius:12,padding:14,marginBottom:20}}>
-                <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:12,fontWeight:700,color:'rgba(94,23,235,0.8)',textTransform:'uppercase',letterSpacing:'0.1em',margin:'0 0 4px'}}>✨ IA detectó estos campos automáticamente</p>
-                <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:12,color:'rgba(255,255,255,0.4)',margin:0}}>Revisa y ajusta antes de continuar.</p>
+
+              {/* Advanced metadata (collapsible label) */}
+              <details style={{marginBottom:14}}>
+                <summary style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:'rgba(255,255,255,0.35)',cursor:'pointer',letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:10}}>▸ Metadatos avanzados (ISRC, sello, artistas feat.)</summary>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginTop:10}}>
+                  {([
+                    {key:'isrc',label:'ISRC',placeholder:'USAAA2300001'},
+                    {key:'upc',label:'UPC / EAN',placeholder:'123456789012'},
+                    {key:'label',label:'Sello discográfico',placeholder:'Nombre del sello / independiente'},
+                    {key:'copyright_year',label:'Año copyright',placeholder:String(new Date().getFullYear())},
+                    {key:'featured_artists',label:'Artistas feat.',placeholder:'Artista1, Artista2'},
+                  ] as any[]).map((f:any)=>(
+                    <div key={f.key}>
+                      <label style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:10,color:'rgba(255,255,255,0.35)',letterSpacing:'0.1em',textTransform:'uppercase',display:'block',marginBottom:4}}>{f.label}</label>
+                      <input value={aiMetadata[f.key]||''} onChange={e=>setAiMetadata((p:any)=>({...p,[f.key]:e.target.value}))} placeholder={f.placeholder}
+                        style={{width:'100%',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:10,padding:'9px 12px',color:'#fff',fontFamily:"'Space Grotesk',sans-serif",fontSize:13,outline:'none',boxSizing:'border-box'}}/>
+                    </div>
+                  ))}
+                  <div style={{display:'flex',alignItems:'center',gap:10,padding:'9px 12px',background:'rgba(255,255,255,0.03)',borderRadius:10,border:'1px solid rgba(255,255,255,0.08)'}}>
+                    <input type="checkbox" id="prev-released" checked={!!aiMetadata.previously_released} onChange={e=>setAiMetadata((p:any)=>({...p,previously_released:e.target.checked}))} style={{accentColor:'#5E17EB',width:14,height:14}}/>
+                    <label htmlFor="prev-released" style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:12,color:'rgba(255,255,255,0.5)',cursor:'pointer'}}>Ya fue lanzado anteriormente</label>
+                  </div>
+                </div>
+              </details>
+
+              <div style={{background:'rgba(94,23,235,0.08)',border:'1px solid rgba(94,23,235,0.2)',borderRadius:12,padding:12,marginBottom:16}}>
+                <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,fontWeight:700,color:'rgba(94,23,235,0.8)',textTransform:'uppercase',letterSpacing:'0.1em',margin:'0 0 2px'}}>✨ IA detectó estos campos automáticamente</p>
+                <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:'rgba(255,255,255,0.4)',margin:0}}>Revisa y ajusta antes de continuar.</p>
               </div>
               <div style={{display:'flex',gap:12}}>
-                <AppleBtn fullWidth onClick={() => { if (!aiMetadata.title) { toast('El título es obligatorio','error'); return; } setUploadStep('splits'); }}>SIGUIENTE: SPLITS →</AppleBtn>
+                <AppleBtn fullWidth onClick={() => { if (!aiMetadata.title) { toast('El título es obligatorio','error'); return; } if (!aiMetadata.artist) { toast('El artista principal es obligatorio','error'); return; } setUploadStep('splits'); }}>SIGUIENTE: SPLITS →</AppleBtn>
                 <AppleBtn variant="ghost" onClick={closeUploadModal}>Cancelar</AppleBtn>
               </div>
             </>
@@ -2237,7 +2316,7 @@ function CatalogPage({ initialTab = 'tracks', onPlay }: { initialTab?: string; o
                   if (!aiMetadata.title) { toast('El título es obligatorio','error'); return; }
                   setPublishing(true);
                   try {
-                    const track = await apiFetch('/tracks', { method:'POST', body: JSON.stringify({ title: aiMetadata.title, genre: aiMetadata.genre||'Sin género', bpm: aiMetadata.bpm?parseInt(aiMetadata.bpm):null, key: aiMetadata.key||null, release_type: aiMetadata.type||'single', audio_url: uploadedAudioUrl||null }) });
+                    const track = await apiFetch('/tracks', { method:'POST', body: JSON.stringify({ title: aiMetadata.title, artist_name: aiMetadata.artist||null, genre: aiMetadata.genre||'Sin género', bpm: aiMetadata.bpm?parseInt(aiMetadata.bpm):null, key: aiMetadata.key||null, key_signature: aiMetadata.key||null, release_type: aiMetadata.type||'single', language: aiMetadata.language||'es', release_date: aiMetadata.release_date||null, label: aiMetadata.label||null, copyright_year: aiMetadata.copyright_year?parseInt(aiMetadata.copyright_year):null, isrc: aiMetadata.isrc||null, upc: aiMetadata.upc||null, featured_artists: aiMetadata.featured_artists||null, previously_released: !!aiMetadata.previously_released, audio_url: uploadedAudioUrl||null, cover_url: uploadedCoverUrl||null }) });
                     for (const s of uploadSplits) {
                       await apiFetch('/splits', { method:'POST', body: JSON.stringify({ track_id: String(track.id), name: s.name, email: s.email, percentage: s.percentage, role: s.role, type:'master' }) }).catch(()=>{});
                     }

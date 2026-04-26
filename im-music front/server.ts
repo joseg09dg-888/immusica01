@@ -76,9 +76,19 @@ async function startServer() {
   const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3001;
 
   // DB migrations — run on startup
-  await pool.query(`
-    ALTER TABLE splits ALTER COLUMN track_id DROP NOT NULL;
-  `).catch(() => {});
+  await pool.query(`ALTER TABLE splits ALTER COLUMN track_id DROP NOT NULL;`).catch(() => {});
+  await pool.query(`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS artist_name TEXT;`).catch(() => {});
+  await pool.query(`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS bpm INTEGER;`).catch(() => {});
+  await pool.query(`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS key_signature TEXT;`).catch(() => {});
+  await pool.query(`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS label TEXT;`).catch(() => {});
+  await pool.query(`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS copyright_year INTEGER;`).catch(() => {});
+  await pool.query(`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS language TEXT DEFAULT 'es';`).catch(() => {});
+  await pool.query(`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS release_type TEXT DEFAULT 'single';`).catch(() => {});
+  await pool.query(`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS previously_released BOOLEAN DEFAULT false;`).catch(() => {});
+  await pool.query(`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS featured_artists TEXT;`).catch(() => {});
+  await pool.query(`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS isrc TEXT;`).catch(() => {});
+  await pool.query(`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS upc TEXT;`).catch(() => {});
+  await pool.query(`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS cover TEXT;`).catch(() => {});
   await pool.query(`
     CREATE TABLE IF NOT EXISTS marketplace_items (
       id SERIAL PRIMARY KEY,
@@ -238,13 +248,28 @@ async function startServer() {
     const genre = sanitize(req.body.genre);
     const release_date = sanitize(req.body.release_date);
     const audio_url = req.body.audio_url || null;
+    const cover_url = req.body.cover_url || null;
+    const artist_name = sanitize(req.body.artist_name || '');
+    const label = sanitize(req.body.label || '');
+    const copyright_year = parseInt(req.body.copyright_year) || new Date().getFullYear();
+    const language = sanitize(req.body.language || 'es');
+    const release_type = sanitize(req.body.release_type || req.body.type || 'single');
+    const previously_released = req.body.previously_released === true || req.body.previously_released === 'true';
+    const featured_artists = sanitize(req.body.featured_artists || '');
+    const isrc = sanitize(req.body.isrc || '');
+    const upc = sanitize(req.body.upc || '');
+    const bpm = parseInt(req.body.bpm) || null;
+    const key_signature = sanitize(req.body.key || req.body.key_signature || '');
 
     if (!title) return res.status(400).json({ error: "El título es obligatorio" });
 
     try {
       const r = await pool.query(
-        "INSERT INTO tracks (artist_id, title, genre, release_date, status, audio_url) VALUES ($1,$2,$3,$4,'draft',$5) RETURNING *",
-        [req.user.id, title, genre || null, release_date || new Date().toISOString().split("T")[0], audio_url]
+        `INSERT INTO tracks (artist_id, title, genre, release_date, status, audio_url, cover, artist_name, label, copyright_year, language, release_type, previously_released, featured_artists, isrc, upc, bpm, key_signature)
+         VALUES ($1,$2,$3,$4,'draft',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
+        [req.user.id, title, genre || null, release_date || new Date().toISOString().split("T")[0],
+         audio_url, cover_url, artist_name || null, label || null, copyright_year, language,
+         release_type, previously_released, featured_artists || null, isrc || null, upc || null, bpm, key_signature || null]
       );
       res.status(201).json(r.rows[0]);
     } catch (e: any) {
@@ -568,6 +593,24 @@ async function startServer() {
       );
       res.json(r.rows[0]);
     } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ─── Cover art upload to Cloudinary ─────────────────────────────────────
+  app.post("/api/upload/cover", requireAuth, upload.single("cover") as any, async (req: any, res) => {
+    try {
+      if (!req.file) return res.status(400).json({ error: "No se recibió imagen" });
+      const result: any = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { resource_type: "image", folder: "immusic/covers", transformation: [{ width: 3000, height: 3000, crop: "fill" }] },
+          (error, result) => { if (error) reject(error); else resolve(result); }
+        );
+        stream.end(req.file!.buffer);
+      });
+      res.json({ url: result.secure_url, public_id: result.public_id, width: result.width, height: result.height });
+    } catch (e: any) {
+      console.error("Cover upload error:", e);
+      res.status(500).json({ error: e.message });
+    }
   });
 
   // ─── Audio upload to Cloudinary ──────────────────────────────────────────
