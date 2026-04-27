@@ -1949,7 +1949,7 @@ function TrackGridCard({ track: t, onDel, playing, onPlay }: { track: any; onDel
   );
 }
 
-function CatalogPage({ initialTab = 'tracks', onPlay }: { initialTab?: string; onPlay?: (track: any) => void }) {
+function CatalogPage({ initialTab = 'tracks', onPlay, currentTrackId }: { initialTab?: string; onPlay?: (track: any) => void; currentTrackId?: number|null }) {
   const [tab, setTab] = useState<'tracks'|'upload'|'splits'|'publishing'|'bulk'>(initialTab as any);
   const [tracks, setTracks] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -1957,25 +1957,22 @@ function CatalogPage({ initialTab = 'tracks', onPlay }: { initialTab?: string; o
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [playing, setPlaying] = useState<number | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Sync visual playing state when MiniPlayer closes (audio ended/user closed)
+  useEffect(() => { if (!currentTrackId) setPlaying(null); }, [currentTrackId]);
 
   const playTrack = (track: any) => {
+    if (!track.audio_url) {
+      toast('Este track no tiene audio subido aún', 'info');
+      return;
+    }
     if (playing === track.id) {
-      audioRef.current?.pause();
+      // Toggle off — stop MiniPlayer
       setPlaying(null);
+      onPlay?.(null);
     } else {
-      if (audioRef.current) audioRef.current.pause();
-      if (track.audio_url) {
-        audioRef.current = new Audio(track.audio_url);
-        audioRef.current.play().catch(() => {});
-        audioRef.current.onended = () => setPlaying(null);
-        setPlaying(track.id);
-        onPlay?.(track);
-      } else {
-        onPlay?.(track);
-        setPlaying(track.id);
-        toast('Este track no tiene audio subido aún', 'info');
-      }
+      setPlaying(track.id);
+      onPlay?.(track);
     }
   };
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
@@ -5995,7 +5992,7 @@ export default function App() {
   const renderPage = () => {
     switch (activePage) {
       case 'dashboard':       return <DashboardPage onNav={setActivePage} />;
-      case 'catalog':         return <CatalogPage onPlay={setCurrentTrack} />;
+      case 'catalog':         return <CatalogPage onPlay={setCurrentTrack} currentTrackId={currentTrack?.id ?? null} />;
       case 'royalties':       return <RoyaltiesPage />;
       case 'ai-chat':         return <AIChatPage />;
       case 'releases':        return <ReleasesPage />;
@@ -6004,7 +6001,7 @@ export default function App() {
       case 'community':       return <CommunityPage />;
       case 'marketplace':     return <MarketplacePage />;
       case 'playlists':       return <PlaylistsPage />;
-      case 'splits':          return <CatalogPage initialTab="splits" onPlay={setCurrentTrack} />;
+      case 'splits':          return <CatalogPage initialTab="splits" onPlay={setCurrentTrack} currentTrackId={currentTrack?.id ?? null} />;
       case 'store-maximizer': return <StoreMaximizerPage />;
       case 'label':           return <LabelPage />;
       case 'team':            return <TeamPage />;

@@ -595,6 +595,105 @@ async function startServer() {
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
+  // ─── Stats ───────────────────────────────────────────────────────────────
+  app.get("/api/stats", requireAuth, async (req: any, res) => {
+    try {
+      const tracks = await pool.query("SELECT COUNT(*) as count FROM tracks WHERE artist_id=$1", [req.user.id]);
+      const revenue = await pool.query("SELECT COALESCE(SUM(amount),0) as total FROM royalties");
+      const streams = await pool.query("SELECT COALESCE(SUM(streams),0) as total FROM daily_stats");
+      res.json({
+        tracks: parseInt(tracks.rows[0]?.count || 0),
+        revenue: Number(revenue.rows[0]?.total || 0),
+        streams: Number(streams.rows[0]?.total || 0),
+        listeners: 0,
+        countries: 0,
+        playlist_adds: 0,
+      });
+    } catch { res.json({ tracks: 0, revenue: 0, streams: 0, listeners: 0, countries: 0, playlist_adds: 0 }); }
+  });
+
+  // ─── Feedback ────────────────────────────────────────────────────────────
+  app.get("/api/feedback", requireAuth, async (req: any, res) => {
+    try {
+      await pool.query(`CREATE TABLE IF NOT EXISTS feedback (id SERIAL PRIMARY KEY, user_id INTEGER, type TEXT DEFAULT 'bug', title TEXT, description TEXT, status TEXT DEFAULT 'open', created_at TIMESTAMPTZ DEFAULT NOW())`).catch(() => {});
+      const r = await pool.query("SELECT * FROM feedback WHERE user_id=$1 ORDER BY created_at DESC LIMIT 50", [req.user.id]);
+      res.json(r.rows);
+    } catch { res.json([]); }
+  });
+  app.post("/api/feedback", requireAuth, async (req: any, res) => {
+    try {
+      await pool.query(`CREATE TABLE IF NOT EXISTS feedback (id SERIAL PRIMARY KEY, user_id INTEGER, type TEXT DEFAULT 'bug', title TEXT, description TEXT, status TEXT DEFAULT 'open', created_at TIMESTAMPTZ DEFAULT NOW())`).catch(() => {});
+      const type = sanitize(req.body.type || 'bug');
+      const title = sanitize(req.body.title || '');
+      const description = sanitize(req.body.description || req.body.message || '');
+      const r = await pool.query(
+        "INSERT INTO feedback (user_id, type, title, description) VALUES ($1,$2,$3,$4) RETURNING *",
+        [req.user.id, type, title, description]
+      );
+      res.status(201).json(r.rows[0]);
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ─── Labels ──────────────────────────────────────────────────────────────
+  app.get("/api/labels/my", requireAuth, async (req: any, res) => {
+    try {
+      await pool.query(`CREATE TABLE IF NOT EXISTS labels (id SERIAL PRIMARY KEY, owner_id INTEGER, name TEXT NOT NULL, description TEXT, logo_url TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`).catch(() => {});
+      const r = await pool.query("SELECT * FROM labels WHERE owner_id=$1 ORDER BY created_at DESC", [req.user.id]);
+      res.json(r.rows);
+    } catch { res.json([]); }
+  });
+  app.post("/api/labels", requireAuth, async (req: any, res) => {
+    try {
+      const name = sanitize(req.body.name || '');
+      const description = sanitize(req.body.description || '');
+      if (!name) return res.status(400).json({ error: "El nombre es obligatorio" });
+      const r = await pool.query(
+        "INSERT INTO labels (owner_id, name, description) VALUES ($1,$2,$3) RETURNING *",
+        [req.user.id, name, description]
+      );
+      res.status(201).json(r.rows[0]);
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ─── Team ────────────────────────────────────────────────────────────────
+  app.get("/api/team", requireAuth, async (req: any, res) => {
+    try {
+      await pool.query(`CREATE TABLE IF NOT EXISTS team_members (id SERIAL PRIMARY KEY, owner_id INTEGER, name TEXT NOT NULL, email TEXT, role TEXT DEFAULT 'member', created_at TIMESTAMPTZ DEFAULT NOW())`).catch(() => {});
+      const r = await pool.query("SELECT * FROM team_members WHERE owner_id=$1 ORDER BY created_at DESC", [req.user.id]);
+      res.json(r.rows);
+    } catch { res.json([]); }
+  });
+  app.post("/api/team", requireAuth, async (req: any, res) => {
+    try {
+      const name = sanitize(req.body.name || '');
+      const email = sanitizeEmail(req.body.email || '');
+      const role = sanitize(req.body.role || 'member');
+      if (!name || !email) return res.status(400).json({ error: "Nombre y email son obligatorios" });
+      const r = await pool.query(
+        "INSERT INTO team_members (owner_id, name, email, role) VALUES ($1,$2,$3,$4) RETURNING *",
+        [req.user.id, name, email, role]
+      );
+      res.status(201).json(r.rows[0]);
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ─── Auth profile ────────────────────────────────────────────────────────
+  app.get("/api/auth/profile", requireAuth, async (req: any, res) => {
+    try {
+      const r = await pool.query("SELECT id, email, name, role FROM users WHERE id=$1", [req.user.id]);
+      if (!r.rows.length) return res.status(404).json({ error: "Usuario no encontrado" });
+      res.json(r.rows[0]);
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+  app.put("/api/auth/profile", requireAuth, async (req: any, res) => {
+    try {
+      const name = sanitize(req.body.name || '');
+      await pool.query("UPDATE users SET name=$1 WHERE id=$2", [name, req.user.id]);
+      const r = await pool.query("SELECT id, email, name, role FROM users WHERE id=$1", [req.user.id]);
+      res.json(r.rows[0]);
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
   // ─── Cover art upload to Cloudinary ─────────────────────────────────────
   app.post("/api/upload/cover", requireAuth, upload.single("cover") as any, async (req: any, res) => {
     try {
