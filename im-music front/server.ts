@@ -11,6 +11,7 @@ import jwt from "jsonwebtoken";
 import { createProxyMiddleware } from "http-proxy-middleware";
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
+import { DistributionService, generateISRC, generateUPC } from "./distributionService.js";
 
 dotenv.config();
 
@@ -89,6 +90,30 @@ async function startServer() {
   await pool.query(`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS isrc TEXT;`).catch(() => {});
   await pool.query(`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS upc TEXT;`).catch(() => {});
   await pool.query(`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS cover TEXT;`).catch(() => {});
+  await pool.query(`ALTER TABLE releases ADD COLUMN IF NOT EXISTS distributor_reference TEXT;`).catch(() => {});
+  await pool.query(`ALTER TABLE releases ADD COLUMN IF NOT EXISTS distribution_status TEXT DEFAULT 'draft';`).catch(() => {});
+  await pool.query(`ALTER TABLE releases ADD COLUMN IF NOT EXISTS error_message TEXT;`).catch(() => {});
+  await pool.query(`ALTER TABLE releases ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMPTZ;`).catch(() => {});
+  await pool.query(`ALTER TABLE releases ADD COLUMN IF NOT EXISTS audio_url TEXT;`).catch(() => {});
+  await pool.query(`ALTER TABLE releases ADD COLUMN IF NOT EXISTS cover_url TEXT;`).catch(() => {});
+  await pool.query(`ALTER TABLE releases ADD COLUMN IF NOT EXISTS artist_name TEXT;`).catch(() => {});
+  await pool.query(`ALTER TABLE releases ADD COLUMN IF NOT EXISTS genre TEXT;`).catch(() => {});
+  await pool.query(`ALTER TABLE releases ADD COLUMN IF NOT EXISTS isrc TEXT;`).catch(() => {});
+  await pool.query(`ALTER TABLE releases ADD COLUMN IF NOT EXISTS upc TEXT;`).catch(() => {});
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS distribution_queue (
+      id SERIAL PRIMARY KEY,
+      release_id INTEGER UNIQUE,
+      artist_id INTEGER,
+      payload JSONB NOT NULL,
+      status TEXT DEFAULT 'pending',
+      distributor TEXT DEFAULT 'onerpm',
+      distributor_reference TEXT,
+      error_message TEXT,
+      submitted_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `).catch(() => {});
   await pool.query(`
     CREATE TABLE IF NOT EXISTS marketplace_items (
       id SERIAL PRIMARY KEY,
@@ -548,10 +573,12 @@ async function startServer() {
   });
   app.post("/api/releases", requireAuth, async (req: any, res) => {
     try {
-      const { title, release_date, platforms, status, type, track_id } = req.body;
+      const { title, release_date, platforms, status, type, track_id, audio_url, cover_url, artist_name, genre, isrc, upc } = req.body;
+      const platformStr = Array.isArray(platforms) ? platforms.join(',') : (platforms || '');
       const r = await pool.query(
-        "INSERT INTO releases (user_id, title, release_date, platforms, status, type, track_id) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *",
-        [req.user.id, sanitize(title)||'Sin título', release_date||null, platforms||'', status||'draft', type||'single', track_id||null]
+        `INSERT INTO releases (user_id, title, release_date, platforms, status, type, track_id, audio_url, cover_url, artist_name, genre, isrc, upc, distribution_status)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'draft') RETURNING *`,
+        [req.user.id, sanitize(title)||'Sin título', release_date||null, platformStr, status||'draft', type||'single', track_id||null, audio_url||null, cover_url||null, sanitize(artist_name||''), sanitize(genre||''), isrc||null, upc||null]
       );
       res.json(r.rows[0]);
     } catch (e: any) { res.status(500).json({ error: e.message }); }
@@ -698,6 +725,133 @@ async function startServer() {
       await pool.query("UPDATE users SET name=$1 WHERE id=$2", [name, req.user.id]);
       const r = await pool.query("SELECT id, email, name, role FROM users WHERE id=$1", [req.user.id]);
       res.json(r.rows[0]);
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ─── Distribution service instance ──────────────────────────────────────
+  const distributionSvc = new DistributionService(pool);
+
+  // ─── Distribution: submit release ────────────────────────────────────────
+  app.post("/api/releases/:id/distribute", requireAuth, async (req: any, res) => {
+    const releaseId = parseInt(req.params.id);
+    if (isNaN(releaseId)) return res.status(400).json({ error: "ID inválido" });
+
+    try {
+      // Load release
+      const rr = await pool.query("SELECT * FROM releases WHERE id=$1 AND user_id=$2", [releaseId, req.user.id]);
+      if (!rr.rows.length) return res.status(404).json({ error: "Release no encontrado" });
+      const release = rr.rows[0];
+
+      // Load track if linked
+      let track: any = null;
+      if (release.track_id) {
+        const tr = await pool.query("SELECT * FROM tracks WHERE id=$1", [release.track_id]);
+        track = tr.rows[0] || null;
+      }
+
+      // Validation
+      const audioUrl = release.audio_url || track?.audio_url;
+      const coverUrl = release.cover_url || track?.cover;
+      if (!audioUrl) return res.status(400).json({ error: "Falta el archivo de audio" });
+      if (!coverUrl) return res.status(400).json({ error: "Falta la portada (cover art)" });
+
+      // Auto-generate ISRC if missing
+      let isrc = release.isrc || track?.isrc;
+      if (!isrc) {
+        const countR = await pool.query("SELECT COUNT(*) as c FROM releases WHERE isrc IS NOT NULL");
+        const seq = parseInt(countR.rows[0]?.c || 0) + 1;
+        isrc = generateISRC(seq);
+        await pool.query("UPDATE releases SET isrc=$1 WHERE id=$2", [isrc, releaseId]).catch(() => {});
+      }
+
+      // Auto-generate UPC for EP/Album if missing
+      let upc = release.upc || track?.upc;
+      if (!upc && (release.type === 'ep' || release.type === 'album')) {
+        const countU = await pool.query("SELECT COUNT(*) as c FROM releases WHERE upc IS NOT NULL");
+        const seqU = parseInt(countU.rows[0]?.c || 0) + 1;
+        upc = generateUPC(seqU);
+        await pool.query("UPDATE releases SET upc=$1 WHERE id=$2", [upc, releaseId]).catch(() => {});
+      }
+
+      // Load splits for this track
+      const splitsR = await pool.query(
+        "SELECT artist_name as name, email, percentage, role FROM splits WHERE track_id=$1",
+        [release.track_id || -1]
+      );
+
+      const platforms = typeof release.platforms === 'string'
+        ? release.platforms.split(',').map((s: string) => s.trim()).filter(Boolean)
+        : (release.platforms || ['Spotify', 'Apple Music', 'YouTube Music']);
+
+      const payload = {
+        release_id: releaseId,
+        artist_id: req.user.id,
+        title: release.title,
+        artist: release.artist_name || req.user.name || req.user.email,
+        genre: release.genre || track?.genre || 'Sin género',
+        release_date: release.release_date || new Date().toISOString().split('T')[0],
+        audio_url: audioUrl,
+        cover_url: coverUrl,
+        isrc,
+        upc: upc || undefined,
+        language: track?.language || 'es',
+        label: track?.label || undefined,
+        copyright_year: track?.copyright_year || new Date().getFullYear(),
+        platforms,
+        splits: splitsR.rows,
+      };
+
+      const result = await distributionSvc.submitRelease(payload);
+
+      // Update release status
+      await pool.query(
+        "UPDATE releases SET distribution_status=$1, distributor_reference=$2, submitted_at=$3, isrc=$4 WHERE id=$5",
+        [result.status === 'submitted' ? 'submitted' : 'queued', result.reference, new Date(), isrc, releaseId]
+      ).catch(() => {});
+
+      res.json({ ...result, isrc, upc });
+    } catch (e: any) {
+      console.error("distribute error:", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ─── Distribution: get queue status ──────────────────────────────────────
+  app.get("/api/distribution/queue", requireAuth, async (req: any, res) => {
+    try {
+      const r = await pool.query(
+        "SELECT * FROM distribution_queue WHERE artist_id=$1 ORDER BY created_at DESC LIMIT 50",
+        [req.user.id]
+      );
+      res.json(r.rows);
+    } catch { res.json([]); }
+  });
+
+  // ─── Distribution: release checklist ─────────────────────────────────────
+  app.get("/api/releases/:id/checklist", requireAuth, async (req: any, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: "ID inválido" });
+    try {
+      const rr = await pool.query("SELECT * FROM releases WHERE id=$1 AND user_id=$2", [id, req.user.id]);
+      if (!rr.rows.length) return res.status(404).json({ error: "No encontrado" });
+      const release = rr.rows[0];
+      let track: any = null;
+      if (release.track_id) {
+        const tr = await pool.query("SELECT * FROM tracks WHERE id=$1", [release.track_id]);
+        track = tr.rows[0] || null;
+      }
+      const splitsR = await pool.query("SELECT COUNT(*) as c FROM splits WHERE track_id=$1", [release.track_id || -1]);
+      const audioOk = !!(release.audio_url || track?.audio_url);
+      const coverOk = !!(release.cover_url || track?.cover);
+      const metaOk = !!(release.title && (release.artist_name || track?.artist_name));
+      const splitsOk = parseInt(splitsR.rows[0]?.c || 0) > 0;
+      const ready = audioOk && coverOk && metaOk;
+      res.json({
+        audio: audioOk, cover: coverOk, metadata: metaOk, splits: splitsOk,
+        ready, isrc: release.isrc || track?.isrc || null, upc: release.upc || track?.upc || null,
+        distribution_status: release.distribution_status || 'draft',
+        distributor_reference: release.distributor_reference || null,
+      });
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 

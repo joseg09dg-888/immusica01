@@ -2834,52 +2834,248 @@ function PublishingPage() {
 }
 
 // ─── RELEASES ─────────────────────────────────────────────────────────────────
+function ReleaseCard({ release, onDistribute, distributing }: { release: any; onDistribute: (id: number) => void; distributing: number|null }) {
+  const [checklist, setChecklist] = useState<any>(null);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    apiFetch(`/releases/${release.id}/checklist`).then(setChecklist).catch(() => {});
+  }, [release.id]);
+
+  const distStatus = release.distribution_status || 'draft';
+  const distColors: Record<string,string> = { draft:'#71717a', ready:'#3b82f6', queued:'#f59e0b', submitted:'#8b5cf6', distributed:'#22c55e', error:'#ef4444' };
+  const distLabels: Record<string,string> = { draft:'Borrador', ready:'Listo', queued:'En cola', submitted:'Enviado', distributed:'Distribuido', error:'Error' };
+
+  const canDistribute = checklist?.ready && (distStatus === 'draft' || distStatus === 'ready' || distStatus === 'error');
+
+  return (
+    <div style={{ border:'1px solid rgba(255,255,255,0.07)', borderRadius:16, marginBottom:12, overflow:'hidden', background:'rgba(255,255,255,0.02)' }}>
+      {/* Header row */}
+      <div style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 16px', cursor:'pointer' }} onClick={() => setExpanded(e => !e)}>
+        <div style={{ width:40, height:40, background:release.cover_url?'none':'rgba(94,23,235,0.12)', borderRadius:10, flexShrink:0, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          {release.cover_url ? <img src={release.cover_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/> : <Music size={16} color={PL}/>}
+        </div>
+        <div style={{ flex:1, minWidth:0 }}>
+          <p style={{ color:'#fff', fontSize:13, fontWeight:700, margin:'0 0 2px', fontFamily:"'Space Grotesk',sans-serif", overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{release.title}</p>
+          <p style={{ color:'rgba(255,255,255,0.3)', fontSize:11, margin:0, fontFamily:"'Space Grotesk',sans-serif" }}>
+            {release.release_date ? new Date(release.release_date).toLocaleDateString('es-CO') : '—'} · {release.type?.toUpperCase() || 'SINGLE'}
+          </p>
+        </div>
+        <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
+          <span style={{ background: distColors[distStatus]+'22', border:`1px solid ${distColors[distStatus]}44`, color: distColors[distStatus], fontSize:10, fontWeight:700, padding:'3px 8px', borderRadius:100, fontFamily:"'Space Grotesk',sans-serif", letterSpacing:'0.08em', textTransform:'uppercase' }}>
+            {distLabels[distStatus] || distStatus}
+          </span>
+          <span style={{ color:'rgba(255,255,255,0.2)', fontSize:16 }}>{expanded ? '▲' : '▼'}</span>
+        </div>
+      </div>
+
+      {expanded && (
+        <div style={{ padding:'0 16px 16px', borderTop:'1px solid rgba(255,255,255,0.05)' }}>
+          {/* Checklist */}
+          <p style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:11, color:'rgba(255,255,255,0.3)', letterSpacing:'0.1em', textTransform:'uppercase', margin:'14px 0 10px' }}>Lista de verificación</p>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:14 }}>
+            {[
+              { key:'audio', label:'Audio subido', desc:'Archivo .wav o .mp3' },
+              { key:'cover', label:'Portada subida', desc:'3000×3000px, JPG' },
+              { key:'metadata', label:'Metadatos completos', desc:'Título + artista' },
+              { key:'splits', label:'Splits configurados', desc:'Opcional' },
+            ].map(item => {
+              const ok = checklist?.[item.key as keyof typeof checklist];
+              const optional = item.key === 'splits';
+              return (
+                <div key={item.key} style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 10px', background:`${ok?'rgba(34,197,94,0.06)':optional?'rgba(255,255,255,0.02)':'rgba(239,68,68,0.06)'}`, border:`1px solid ${ok?'rgba(34,197,94,0.2)':optional?'rgba(255,255,255,0.06)':'rgba(239,68,68,0.2)'}`, borderRadius:10 }}>
+                  <span style={{ fontSize:14 }}>{ok ? '✅' : optional ? '➖' : '❌'}</span>
+                  <div>
+                    <p style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:12, fontWeight:600, color: ok?'#4ade80':optional?'rgba(255,255,255,0.4)':'#f87171', margin:0 }}>{item.label}</p>
+                    <p style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:10, color:'rgba(255,255,255,0.25)', margin:0 }}>{item.desc}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* ISRC / UPC */}
+          {(checklist?.isrc || checklist?.upc) && (
+            <div style={{ display:'flex', gap:8, marginBottom:12 }}>
+              {checklist.isrc && <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:11, color:'rgba(255,255,255,0.35)', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:8, padding:'4px 10px' }}>ISRC: {checklist.isrc}</span>}
+              {checklist.upc && <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:11, color:'rgba(255,255,255,0.35)', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:8, padding:'4px 10px' }}>UPC: {checklist.upc}</span>}
+            </div>
+          )}
+
+          {/* Distributor reference */}
+          {release.distributor_reference && (
+            <div style={{ padding:'8px 12px', background:'rgba(139,92,246,0.08)', border:'1px solid rgba(139,92,246,0.2)', borderRadius:10, marginBottom:12 }}>
+              <p style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:11, color:'rgba(139,92,246,0.8)', margin:'0 0 2px', fontWeight:700 }}>REF. DISTRIBUIDOR</p>
+              <p style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:12, color:'rgba(255,255,255,0.5)', margin:0 }}>{release.distributor_reference}</p>
+            </div>
+          )}
+
+          {/* Platforms */}
+          <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:14 }}>
+            {(typeof release.platforms === 'string' ? release.platforms.split(',') : (release.platforms || [])).filter(Boolean).map((p: string) => (
+              <span key={p} style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:10, fontWeight:700, color:PL, background:'rgba(94,23,235,0.1)', border:'1px solid rgba(94,23,235,0.25)', borderRadius:100, padding:'2px 8px' }}>{p.trim()}</span>
+            ))}
+          </div>
+
+          {/* Action */}
+          {canDistribute && (
+            <AppleBtn fullWidth disabled={distributing === release.id} onClick={() => onDistribute(release.id)}>
+              {distributing === release.id ? '⏳ Enviando...' : '🚀 DISTRIBUIR AHORA'}
+            </AppleBtn>
+          )}
+          {!checklist?.ready && distStatus === 'draft' && (
+            <div style={{ padding:'10px 12px', background:'rgba(239,68,68,0.06)', border:'1px solid rgba(239,68,68,0.15)', borderRadius:10, fontFamily:"'Space Grotesk',sans-serif", fontSize:12, color:'#f87171' }}>
+              Completa la lista de verificación antes de distribuir. Sube el audio y la portada desde Catálogo.
+            </div>
+          )}
+          {distStatus === 'queued' && (
+            <div style={{ padding:'10px 12px', background:'rgba(245,158,11,0.06)', border:'1px solid rgba(245,158,11,0.2)', borderRadius:10, fontFamily:"'Space Grotesk',sans-serif", fontSize:12, color:'#fbbf24' }}>
+              En cola de distribución. Se procesará cuando la API de ONErpm esté activa.<br/>
+              <span style={{ opacity:0.6 }}>Para activar: bogota@onerpm.com · onerpm.com/contact</span>
+            </div>
+          )}
+          {distStatus === 'submitted' && (
+            <div style={{ padding:'10px 12px', background:'rgba(34,197,94,0.06)', border:'1px solid rgba(34,197,94,0.2)', borderRadius:10, fontFamily:"'Space Grotesk',sans-serif", fontSize:12, color:'#4ade80' }}>
+              ✅ Enviado a distribución exitosamente. Tiempo de procesamiento: 1-3 días hábiles.
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ReleasesPage() {
   const [releases, setReleases] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ title:'', release_date:'', platforms:'Spotify,Apple Music,YouTube', status:'draft' });
+  const [tracks, setTracks] = useState<any[]>([]);
+  const [form, setForm] = useState({ title:'', release_date:'', type:'single', track_id:'', platforms:['Spotify','Apple Music','YouTube Music','TikTok','Amazon Music','Deezer'] });
   const [loading, setLoading] = useState(false);
+  const [distributing, setDistributing] = useState<number|null>(null);
+
   const load = () => apiFetch('/releases').then(d => setReleases(Array.isArray(d) ? d : [])).catch(() => {});
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    apiFetch('/tracks').then(d => setTracks(Array.isArray(d) ? d : [])).catch(() => {});
+  }, []);
+
   const save = async () => {
-    if (!form.title) return; setLoading(true);
-    try { await apiFetch('/releases', { method:'POST', body: JSON.stringify(form) }); setForm({ title:'', release_date:'', platforms:'Spotify,Apple Music,YouTube', status:'draft' }); setShowForm(false); load(); toast('Release programado'); } catch(e:any) { toast(e.message,'error'); }
+    if (!form.title) { toast('El título es obligatorio', 'error'); return; }
+    setLoading(true);
+    try {
+      // Pull audio/cover from linked track if exists
+      const linkedTrack = tracks.find(t => String(t.id) === form.track_id);
+      await apiFetch('/releases', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: form.title,
+          release_date: form.release_date || null,
+          type: form.type,
+          platforms: form.platforms,
+          track_id: form.track_id ? parseInt(form.track_id) : null,
+          audio_url: linkedTrack?.audio_url || null,
+          cover_url: linkedTrack?.cover || null,
+          artist_name: linkedTrack?.artist_name || null,
+          genre: linkedTrack?.genre || null,
+          isrc: linkedTrack?.isrc || null,
+          upc: linkedTrack?.upc || null,
+        }),
+      });
+      setForm({ title:'', release_date:'', type:'single', track_id:'', platforms:['Spotify','Apple Music','YouTube Music','TikTok','Amazon Music','Deezer'] });
+      setShowForm(false); load();
+      toast('✅ Release creado');
+    } catch (e:any) { toast(e.message, 'error'); }
     setLoading(false);
   };
-  const statusColor: Record<string,string> = { draft:'#71717a', scheduled:'#3b82f6', published:'#22c55e' };
+
+  const distribute = async (releaseId: number) => {
+    setDistributing(releaseId);
+    try {
+      const result = await apiFetch(`/releases/${releaseId}/distribute`, { method: 'POST' });
+      if (result.status === 'queued') {
+        toast('✅ En cola de distribución (ref: ' + result.reference + ')', 'success');
+      } else if (result.status === 'submitted') {
+        toast('🚀 Enviado a ONErpm (ref: ' + result.reference + ')', 'success');
+      } else {
+        toast('Error: ' + result.message, 'error');
+      }
+      load();
+    } catch (e:any) { toast(e.message, 'error'); }
+    setDistributing(null);
+  };
+
+  const ALL_PLATFORMS = ['Spotify','Apple Music','YouTube Music','TikTok','Amazon Music','Deezer','Tidal','Napster','iHeartRadio','Pandora'];
+
   return (
-    <PageShell title="Releases" action={<Btn3D small onClick={() => setShowForm(!showForm)}><Plus size={13}/> Nuevo release</Btn3D>}>
-      {showForm && <Card style={{ marginBottom:'20px' }}>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', marginBottom:'10px' }}>
-          <input style={IS} placeholder="Título del release" value={form.title} onChange={e => setForm(f=>({...f,title:e.target.value}))} />
-          <input style={{...IS, colorScheme:'dark'}} type="date" value={form.release_date} onChange={e => setForm(f=>({...f,release_date:e.target.value}))} />
-          <input style={IS} placeholder="Plataformas (separar con comas)" value={form.platforms} onChange={e => setForm(f=>({...f,platforms:e.target.value}))} />
-          <select style={{...IS}} value={form.status} onChange={e => setForm(f=>({...f,status:e.target.value}))}>
-            <option value="draft">Borrador</option>
-            <option value="scheduled">Programado</option>
-            <option value="published">Publicado</option>
-          </select>
-        </div>
-        <div style={{ display:'flex', gap:'10px' }}>
-          <Btn3D small onClick={save} disabled={loading}>{loading?'Guardando...':'Programar'}</Btn3D>
-          <Btn3D small variant="ghost" onClick={() => setShowForm(false)}>Cancelar</Btn3D>
-        </div>
-      </Card>}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'16px', marginBottom:'20px' }}>
-        {[{label:'Total releases',value:releases.length,icon:Package},{label:'Programados',value:releases.filter(r=>r.status==='scheduled').length,icon:Calendar},{label:'Publicados',value:releases.filter(r=>r.status==='published').length,icon:Check}].map(c=><StatCard key={c.label} label={c.label} value={c.value} icon={c.icon}/>)}
-      </div>
-      <Card>
-        {releases.length===0 && <EmptyState icon={Calendar} text="Sin releases. Programa tu próximo lanzamiento." />}
-        {releases.map(r=>(
-          <div key={r.id} style={{ display:'flex', alignItems:'center', gap:'14px', padding:'12px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
-            <div style={{ width:'38px', height:'38px', background:'rgba(94,23,235,0.12)', borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><Calendar size={15} color={PL}/></div>
-            <div style={{ flex:1 }}>
-              <p style={{ color:'#fff', fontSize:'13px', fontWeight:600, margin:'0 0 2px', fontFamily:"'Space Grotesk',sans-serif" }}>{r.title}</p>
-              <p style={{ color:'rgba(255,255,255,0.3)', fontSize:'11px', margin:0, fontFamily:"'Space Grotesk',sans-serif" }}>{r.release_date ? new Date(r.release_date).toLocaleDateString('es-CO') : '—'} · {r.platforms}</p>
-            </div>
-            <Badge color={statusColor[r.status]||'#71717a'} label={r.status}/>
+    <PageShell title="Releases & Distribución" helpText="Gestiona y distribuye tus lanzamientos. Conectamos con ONErpm para distribución real en más de 150 plataformas." action={<Btn3D small onClick={() => setShowForm(!showForm)}><Plus size={13}/> Nuevo release</Btn3D>}>
+
+      {/* New release form */}
+      {showForm && (
+        <Card style={{ marginBottom:20 }}>
+          <h4 style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:14, fontWeight:700, color:'#fff', margin:'0 0 16px' }}>Nuevo Release</h4>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:14 }}>
+            <input style={IS} placeholder="Título del release *" value={form.title} onChange={e => setForm(f=>({...f,title:e.target.value}))} />
+            <input style={{...IS,colorScheme:'dark'}} type="date" value={form.release_date} onChange={e => setForm(f=>({...f,release_date:e.target.value}))} />
+            <select style={IS} value={form.type} onChange={e => setForm(f=>({...f,type:e.target.value}))}>
+              <option value="single">Single</option>
+              <option value="ep">EP</option>
+              <option value="album">Álbum</option>
+            </select>
+            <select style={IS} value={form.track_id} onChange={e => setForm(f=>({...f,track_id:e.target.value}))}>
+              <option value="">— Vincular track (opcional) —</option>
+              {tracks.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
+            </select>
+          </div>
+          <p style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:11, color:'rgba(255,255,255,0.3)', letterSpacing:'0.1em', textTransform:'uppercase', margin:'0 0 8px' }}>Plataformas</p>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:6, marginBottom:16 }}>
+            {ALL_PLATFORMS.map(pl => (
+              <label key={pl} style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 10px', background:'rgba(255,255,255,0.03)', border:`1px solid ${form.platforms.includes(pl)?'rgba(94,23,235,0.4)':'rgba(255,255,255,0.07)'}`, borderRadius:8, cursor:'pointer' }}>
+                <input type="checkbox" checked={form.platforms.includes(pl)} onChange={e => setForm(f=>({...f,platforms:e.target.checked?[...f.platforms,pl]:f.platforms.filter(x=>x!==pl)}))} style={{ accentColor:P }}/>
+                <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:11, color:'rgba(255,255,255,0.7)' }}>{pl}</span>
+              </label>
+            ))}
+          </div>
+          <div style={{ display:'flex', gap:10 }}>
+            <Btn3D small onClick={save} disabled={loading}>{loading?'Guardando...':'Crear Release'}</Btn3D>
+            <Btn3D small variant="ghost" onClick={() => setShowForm(false)}>Cancelar</Btn3D>
+          </div>
+        </Card>
+      )}
+
+      {/* Stats */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:14, marginBottom:20 }}>
+        {[
+          { label:'Total', value:releases.length, icon:Package, color:'#7B3FFF' },
+          { label:'En cola', value:releases.filter(r=>r.distribution_status==='queued').length, icon:Clock, color:'#f59e0b' },
+          { label:'Enviados', value:releases.filter(r=>r.distribution_status==='submitted').length, icon:Send, color:'#8b5cf6' },
+          { label:'Distribuidos', value:releases.filter(r=>r.distribution_status==='distributed').length, icon:Check, color:'#22c55e' },
+        ].map(c => (
+          <div key={c.label} style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:14, padding:'14px 16px' }}>
+            <p style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:10, color:'rgba(255,255,255,0.3)', margin:'0 0 4px', textTransform:'uppercase', letterSpacing:'0.1em' }}>{c.label}</p>
+            <p style={{ fontFamily:"'Anton',sans-serif", fontSize:28, color:c.color, margin:0 }}>{c.value}</p>
           </div>
         ))}
+      </div>
+
+      {/* Release list */}
+      {releases.length === 0
+        ? <Card><EmptyState icon={Calendar} text="Sin releases. Crea tu primer lanzamiento arriba." /></Card>
+        : releases.map(r => <ReleaseCard key={r.id} release={r} onDistribute={distribute} distributing={distributing} />)
+      }
+
+      {/* ONErpm contact card */}
+      <Card style={{ marginTop:20, background:'rgba(94,23,235,0.06)', border:'1px solid rgba(94,23,235,0.15)' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+          <div style={{ fontSize:32 }}>🌎</div>
+          <div>
+            <p style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:13, fontWeight:700, color:'#C084FC', margin:'0 0 4px' }}>Activar distribución real con ONErpm</p>
+            <p style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:12, color:'rgba(255,255,255,0.4)', margin:'0 0 6px' }}>ONErpm distribuye a más de 150 plataformas globales. Contacta para activar la API:</p>
+            <div style={{ display:'flex', gap:12 }}>
+              <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:12, color:'#7B3FFF' }}>📧 bogota@onerpm.com</span>
+              <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:12, color:'#7B3FFF' }}>🌐 onerpm.com/contact</span>
+            </div>
+          </div>
+        </div>
       </Card>
     </PageShell>
   );
