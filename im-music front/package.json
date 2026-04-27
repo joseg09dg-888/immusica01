@@ -9,7 +9,9 @@
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
-    "start": "node server.ts"
+    "start": "node server.ts",
+    "qa": "node scripts/auto-qa.cjs",
+    "qa:watch": "node -e \"const r=()=>require('child_process').execSync('node scripts/auto-qa.cjs',{stdio:'inherit'});r();setInterval(r,1800000)\""
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
