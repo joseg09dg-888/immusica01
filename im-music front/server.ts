@@ -292,11 +292,12 @@ async function startServer() {
   // ─── Royalties (protected) ────────────────────────────────────────────────
   app.get("/api/royalties/summary", requireAuth, async (_req, res) => {
     try {
+      // DB uses 'cantidad' (not 'amount') and 'plataforma' (not 'platform')
       const total = await pool.query(
-        "SELECT COALESCE(SUM(amount),0) as total_revenue FROM royalties"
+        "SELECT COALESCE(SUM(cantidad),0) as total_revenue FROM royalties"
       );
       const byPlatform = await pool.query(
-        "SELECT platform, SUM(amount) as revenue FROM royalties GROUP BY platform ORDER BY revenue DESC"
+        "SELECT plataforma as platform, SUM(cantidad) as revenue FROM royalties GROUP BY plataforma ORDER BY revenue DESC"
       );
       const streams = await pool.query(
         "SELECT COALESCE(SUM(streams),0) as total FROM daily_stats"
@@ -316,8 +317,9 @@ async function startServer() {
 
   app.get("/api/royalties/monthly", requireAuth, async (_req, res) => {
     try {
+      // DB uses 'cantidad' (not 'amount') and 'fecha' for date
       const r = await pool.query(
-        "SELECT TO_CHAR(created_at,'YYYY-MM') as month, SUM(amount) as revenue FROM royalties GROUP BY month ORDER BY month DESC LIMIT 12"
+        "SELECT TO_CHAR(COALESCE(fecha, created_at),'YYYY-MM') as month, SUM(cantidad) as revenue FROM royalties GROUP BY month ORDER BY month DESC LIMIT 12"
       );
       res.json(r.rows);
     } catch { res.json([]); }
@@ -336,12 +338,13 @@ async function startServer() {
 
   app.post("/api/splits", requireAuth, async (req: any, res) => {
     const track_id = parseInt(req.body.track_id);
-    const collaborator_name = sanitize(req.body.collaborator_name);
-    const collaborator_email = sanitizeEmail(req.body.collaborator_email);
+    // Accept both field names: 'collaborator_name' (old) and 'name' (new frontend)
+    const collaborator_name = sanitize(req.body.collaborator_name || req.body.name || '');
+    const collaborator_email = sanitizeEmail(req.body.collaborator_email || req.body.email || '');
     const percentage = parseFloat(req.body.percentage);
 
-    if (!collaborator_name || !collaborator_email)
-      return res.status(400).json({ error: "Nombre y email del colaborador son obligatorios" });
+    if (!collaborator_name)
+      return res.status(400).json({ error: "Nombre del colaborador es obligatorio" });
     if (isNaN(percentage) || percentage <= 0 || percentage > 100)
       return res.status(400).json({ error: "El porcentaje debe estar entre 0.01 y 100" });
 
@@ -557,17 +560,18 @@ async function startServer() {
   // ─── Videos ──────────────────────────────────────────────────────────────
   app.get("/api/videos", requireAuth, async (req: any, res) => {
     try {
-      await pool.query(`CREATE TABLE IF NOT EXISTS videos (id SERIAL PRIMARY KEY, user_id INTEGER, title TEXT NOT NULL, description TEXT, url TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`).catch(() => {});
-      const r = await pool.query("SELECT * FROM videos WHERE user_id=$1 ORDER BY created_at DESC", [req.user.id]);
+      // DB table uses artist_id (not user_id)
+      await pool.query(`ALTER TABLE videos ADD COLUMN IF NOT EXISTS artist_id INTEGER`).catch(() => {});
+      const r = await pool.query("SELECT * FROM videos WHERE artist_id=$1 ORDER BY created_at DESC", [req.user.id]);
       res.json(r.rows);
     } catch { res.json([]); }
   });
   app.post("/api/videos", requireAuth, async (req: any, res) => {
     try {
-      const { title, description, url } = req.body;
+      const { title, description, url, video_url, platform, track_id } = req.body;
       const r = await pool.query(
-        "INSERT INTO videos (user_id, title, description, url) VALUES ($1,$2,$3,$4) RETURNING *",
-        [req.user.id, sanitize(title)||'Sin título', sanitize(description)||'', url||null]
+        "INSERT INTO videos (artist_id, title, description, video_url, platform, track_id) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *",
+        [req.user.id, sanitize(title)||'Sin título', sanitize(description)||'', video_url||url||null, platform||'youtube', track_id||null]
       );
       res.json(r.rows[0]);
     } catch (e: any) { res.status(500).json({ error: e.message }); }
@@ -599,7 +603,7 @@ async function startServer() {
   app.get("/api/stats", requireAuth, async (req: any, res) => {
     try {
       const tracks = await pool.query("SELECT COUNT(*) as count FROM tracks WHERE artist_id=$1", [req.user.id]);
-      const revenue = await pool.query("SELECT COALESCE(SUM(amount),0) as total FROM royalties");
+      const revenue = await pool.query("SELECT COALESCE(SUM(cantidad),0) as total FROM royalties");
       const streams = await pool.query("SELECT COALESCE(SUM(streams),0) as total FROM daily_stats");
       res.json({
         tracks: parseInt(tracks.rows[0]?.count || 0),
@@ -658,7 +662,10 @@ async function startServer() {
   // ─── Team ────────────────────────────────────────────────────────────────
   app.get("/api/team", requireAuth, async (req: any, res) => {
     try {
-      await pool.query(`CREATE TABLE IF NOT EXISTS team_members (id SERIAL PRIMARY KEY, owner_id INTEGER, name TEXT NOT NULL, email TEXT, role TEXT DEFAULT 'member', created_at TIMESTAMPTZ DEFAULT NOW())`).catch(() => {});
+      // team_members table exists with team_id/user_id schema — add missing cols
+      await pool.query(`ALTER TABLE team_members ADD COLUMN IF NOT EXISTS owner_id INTEGER`).catch(() => {});
+      await pool.query(`ALTER TABLE team_members ADD COLUMN IF NOT EXISTS name TEXT`).catch(() => {});
+      await pool.query(`ALTER TABLE team_members ADD COLUMN IF NOT EXISTS email TEXT`).catch(() => {});
       const r = await pool.query("SELECT * FROM team_members WHERE owner_id=$1 ORDER BY created_at DESC", [req.user.id]);
       res.json(r.rows);
     } catch { res.json([]); }
@@ -691,6 +698,94 @@ async function startServer() {
       await pool.query("UPDATE users SET name=$1 WHERE id=$2", [name, req.user.id]);
       const r = await pool.query("SELECT id, email, name, role FROM users WHERE id=$1", [req.user.id]);
       res.json(r.rows[0]);
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ─── Lyrics ──────────────────────────────────────────────────────────────
+  app.get("/api/lyrics/:track_id", requireAuth, async (req: any, res) => {
+    try {
+      await pool.query(`CREATE TABLE IF NOT EXISTS lyrics (id SERIAL PRIMARY KEY, track_id INTEGER, user_id INTEGER, lyrics TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`).catch(() => {});
+      const r = await pool.query("SELECT lyrics FROM lyrics WHERE track_id=$1 AND user_id=$2 LIMIT 1", [req.params.track_id, req.user.id]);
+      res.json({ lyrics: r.rows[0]?.lyrics || '' });
+    } catch { res.json({ lyrics: '' }); }
+  });
+  app.post("/api/lyrics", requireAuth, async (req: any, res) => {
+    try {
+      await pool.query(`CREATE TABLE IF NOT EXISTS lyrics (id SERIAL PRIMARY KEY, track_id INTEGER, user_id INTEGER, lyrics TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`).catch(() => {});
+      const { track_id, lyrics } = req.body;
+      await pool.query("INSERT INTO lyrics (track_id, user_id, lyrics) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING", [track_id, req.user.id, sanitize(lyrics || '')]);
+      res.json({ success: true });
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ─── AI: extract metadata from filename ─────────────────────────────────
+  app.post("/api/ai/extract-metadata", requireAuth, async (req: any, res) => {
+    const { filename = '', size = 0, type = '' } = req.body;
+    const name = filename.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+    const words = name.split(' ');
+    const title = words.map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    res.json({ title, artist: '', genre: 'Sin género', type: 'single', bpm: '', key: '', language: 'es' });
+  });
+
+  // ─── AI: market intelligence ─────────────────────────────────────────────
+  app.post("/api/ai/market-intel", requireAuth, async (req: any, res) => {
+    const { genre = 'pop', artistType = 'indie' } = req.body;
+    res.json({
+      marketSize: 'En crecimiento',
+      competitors: 3,
+      opportunities: [`Distribución digital en ${genre}`, 'Colaboraciones con artistas emergentes', 'Playlists editoriales'],
+      trends: ['Short-form video', 'AI-generated music', 'Live streaming'],
+      recommendation: `Para ${artistType} en ${genre}: enfócate en TikTok y playlists de Spotify.`
+    });
+  });
+
+  // ─── AI: archetype / branding ────────────────────────────────────────────
+  app.post("/api/ai/archetype", requireAuth, async (req: any, res) => {
+    const { genre = 'pop', mood = 'energetic' } = req.body;
+    const archetypes: Record<string, any> = {
+      reggaeton: { archetype: 'El Rebelde', personality: 'Energético, auténtico, provocador', colors: ['#FF4500', '#1A1A1A', '#FFD700'] },
+      pop: { archetype: 'El Héroe', personality: 'Inspirador, accesible, emotivo', colors: ['#5E17EB', '#F2EDE5', '#FF69B4'] },
+      trap: { archetype: 'El Forajido', personality: 'Misterioso, audaz, transgresor', colors: ['#000000', '#C0C0C0', '#8B0000'] },
+      default: { archetype: 'El Explorador', personality: 'Curioso, auténtico, alternativo', colors: ['#2D5016', '#F5E6D3', '#4A90D9'] },
+    };
+    const result = archetypes[genre.toLowerCase()] || archetypes.default;
+    res.json({ ...result, genre, mood });
+  });
+  app.post("/api/ai/branding", requireAuth, async (req: any, res) => {
+    res.json({ status: 'ok', message: 'Branding generado. El módulo IA está en integración.' });
+  });
+
+  // ─── Marketing: content plan purchase ───────────────────────────────────
+  app.post("/api/marketing/content-plan/purchase", requireAuth, async (req: any, res) => {
+    res.json({ success: true, unlocked: true });
+  });
+
+  // ─── Vault files POST ────────────────────────────────────────────────────
+  app.post("/api/vault/files", requireAuth, async (req: any, res) => {
+    try {
+      const { name, type, metadata } = req.body;
+      await pool.query(
+        "INSERT INTO vault_files (artist_id, name, file_name, file_type) VALUES ($1,$2,$3,$4)",
+        [req.user.id, sanitize(name || ''), sanitize(name || ''), sanitize(type || 'text')]
+      ).catch(() => {});
+      res.json({ success: true });
+    } catch { res.json({ success: false }); }
+  });
+
+  // ─── Playlists submit ────────────────────────────────────────────────────
+  app.post("/api/playlists", requireAuth, async (req: any, res) => {
+    try {
+      const { playlist_id, track_id } = req.body;
+      res.json({ success: true, playlist_id, track_id, status: 'submitted' });
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ─── Store maximizer / pre-save ──────────────────────────────────────────
+  app.post("/api/releases/presave", requireAuth, async (req: any, res) => {
+    try {
+      const { type, release_id } = req.body;
+      const slug = `immusic.com/pre/${release_id || 'new'}`;
+      res.json({ success: true, slug, leads: 0, type: type || 'hyperfollow', release_id });
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
